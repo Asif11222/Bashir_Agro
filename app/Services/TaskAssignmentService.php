@@ -50,6 +50,12 @@ class TaskAssignmentService
             );
 
             NotificationService::notifyAdmins(new TaskAssignedNotification($assignment));
+
+            // Notify the assigned farmer directly if they have an active user account
+            if ($assignment->farmer && $assignment->farmer->user) {
+                $assignment->farmer->user->notify(new TaskAssignedNotification($assignment));
+            }
+
             DashboardService::clearKpiCache();
 
             return $assignment;

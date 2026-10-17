@@ -10,7 +10,9 @@ use App\Models\Farmer;
 use App\Models\FarmLocation;
 use App\Models\TaskAssignment;
 use App\Models\TaskTemplate;
+use App\Notifications\SystemNotification;
 use App\Services\TaskAssignmentService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -221,7 +223,7 @@ class TaskAssignmentController extends Controller
     /**
      * Review and verify a farmer's task submission.
      */
-    public function reviewSubmission(Request $request, TaskAssignment $assignment): RedirectResponse
+    public function reviewSubmission(Request $request, TaskAssignment $assignment): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'verification_status' => ['required', 'string', 'in:approved,rejected,pending'],
@@ -230,6 +232,13 @@ class TaskAssignmentController extends Controller
 
         $submission = $assignment->submission;
         if (! $submission) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'এই কাজের কোনো জমা প্রতিবেদন পাওয়া যায়নি।',
+                ], 404);
+            }
+
             return back()->with('error', 'এই কাজের কোনো জমা প্রতিবেদন পাওয়া যায়নি।');
         }
 
@@ -244,6 +253,15 @@ class TaskAssignmentController extends Controller
             'notes' => $validated['review_notes'] ?: $submission->notes,
         ]);
 
+        // When rejected, reset assignment status back to in_progress so the farmer can rework & resubmit
+        if ($validated['verification_status'] === 'rejected') {
+            $this->assignmentService->updateStatus($assignment, 'in_progress', [
+                'completed_at' => null,
+            ], auth()->user());
+        } elseif ($validated['verification_status'] === 'approved' && $assignment->status !== 'completed') {
+            $this->assignmentService->updateStatus($assignment, 'completed', [], auth()->user());
+        }
+
         ActivityLog::record(
             action: 'submission.reviewed',
             description: "কাজের জমা প্রতিবেদন যাচাই সম্পন্ন: #{$assignment->id} ({$oldStatus} → {$validated['verification_status']})",
@@ -257,6 +275,37 @@ class TaskAssignmentController extends Controller
             default => 'পর্যালোচনাধীন',
         };
 
-        return back()->with('success', "জমা প্রতিবেদন সফলভাবে {$statusText} করা হয়েছে।");
+        // Notify the assigned farmer if account exists
+        $assignment->load(['farmer.user', 'taskTemplate']);
+        if ($assignment->farmer?->user) {
+            $title = $validated['verification_status'] === 'approved' ? 'কাজের প্রতিবেদন অনুমোদিত' : 'কাজের প্রতিবেদন প্রত্যাখ্যাত';
+            $message = $validated['verification_status'] === 'approved'
+                ? "আপনার জমা দেওয়া কাজ #{$assignment->id} ({$assignment->taskTemplate?->name}) অনুমোদিত হয়েছে।"
+                : "আপনার জমা দেওয়া কাজ #{$assignment->id} ({$assignment->taskTemplate?->name}) প্রত্যাখ্যাত হয়েছে। নির্দেশ: ".($validated['review_notes'] ?: 'প্রয়োজনীয় সংশোধন করে পুনরায় জমা দিন।');
+
+            $assignment->farmer->user->notify(new SystemNotification(
+                title: $title,
+                message: $message,
+                module: 'assignments',
+                actionUrl: "/assignments/{$assignment->id}"
+            ));
+        }
+
+        $message = "জমা প্রতিবেদন সফলভাবে {$statusText} করা হয়েছে।";
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'verification_status' => $validated['verification_status'],
+                'status_text' => $statusText,
+                'assignment_status' => $assignment->status,
+                'review_notes' => $submission->notes,
+                'updated_at' => now()->format('d M, Y h:i A'),
+            ]);
+        }
+
+        return redirect()->to(route('admin.assignments.show', $assignment).'#review-section')
+            ->with('success', $message);
     }
 }

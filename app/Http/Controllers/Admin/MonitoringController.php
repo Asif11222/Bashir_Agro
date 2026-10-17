@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\TaskAssignment;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -14,7 +15,7 @@ class MonitoringController extends Controller
     /**
      * Display live task monitoring, field validation status, and recent operations.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $search = trim((string) $request->query('search', ''));
         $status = $request->query('status');
@@ -137,7 +138,7 @@ class MonitoringController extends Controller
             ->limit(10)
             ->get();
 
-        return view('monitoring.index', [
+        $data = [
             'activeTab' => 'monitor',
             'title' => 'কার্যক্রম পর্যবেক্ষণ',
             'assignments' => $assignments,
@@ -159,6 +160,26 @@ class MonitoringController extends Controller
             'totalAssignmentsCount' => $totalAssignmentsCount,
             'todaysAssignmentsCount' => $todaysAssignmentsCount,
             'globalInProgressCount' => $globalInProgressCount,
-        ]);
+        ];
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'table_html' => view('monitoring.partials.table', $data)->render(),
+                'tabs_html' => view('monitoring.partials.tabs', $data)->render(),
+                'kpis_html' => view('monitoring.partials.kpis', $data)->render(),
+                'sidebar_html' => view('monitoring.partials.sidebar_focus', $data)->render(),
+                'has_filters' => ($search !== '' || ! empty($priority) || ($dateFilter && $dateFilter !== 'today')),
+                'counts' => [
+                    'scopedTotal' => $scopedTotalCount,
+                    'assigned' => $assignedCount,
+                    'inProgress' => $inProgressCount,
+                    'completed' => $completedCount,
+                    'late' => $lateCount,
+                    'cancelled' => $cancelledCount,
+                ],
+            ]);
+        }
+
+        return view('monitoring.index', $data);
     }
 }

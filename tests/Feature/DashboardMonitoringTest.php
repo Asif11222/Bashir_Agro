@@ -374,4 +374,50 @@ class DashboardMonitoringTest extends TestCase
         $responseMonitoring = $this->actingAs($this->admin)->get('/admin/monitoring');
         $responseMonitoring->assertSee('নতুন কৃষক নিবন্ধিত হয়েছে: মোঃ জামান (F-000004)');
     }
+
+    public function test_monitoring_ajax_request_returns_json_partials(): void
+    {
+        $response = $this->actingAs($this->admin)->getJson('/admin/monitoring');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'table_html',
+            'tabs_html',
+            'kpis_html',
+            'sidebar_html',
+            'has_filters',
+            'counts' => [
+                'scopedTotal',
+                'assigned',
+                'inProgress',
+                'completed',
+                'late',
+                'cancelled',
+            ],
+        ]);
+    }
+
+    public function test_monitoring_ajax_filtering_by_priority_returns_filtered_json(): void
+    {
+        TaskAssignment::create([
+            'task_template_id' => $this->task->id,
+            'farmer_id' => $this->farmer->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => today(),
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'priority' => 'urgent',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson('/admin/monitoring?priority=urgent');
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'has_filters' => true,
+        ]);
+        $data = $response->json();
+        $this->assertStringContainsString('জরুরি', $data['table_html']);
+    }
 }

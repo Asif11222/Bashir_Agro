@@ -42,22 +42,37 @@
                             <option value="urgent" {{ $priority === 'urgent' ? 'selected' : '' }}>জরুরি</option>
                         </select>
 
-                        <select name="date_filter" class="input" style="padding:7px 10px;font-size:12px;width:auto;" onchange="this.form.submit()">
+                        <select name="date_filter" id="dateFilterSelect" class="input" style="padding:7px 10px;font-size:12px;width:auto;" onchange="handleDateFilterChange(this)">
                             <option value="">সকল তারিখ</option>
                             <option value="today" {{ $dateFilter === 'today' ? 'selected' : '' }}>আজকের কাজ</option>
                             <option value="this_week" {{ $dateFilter === 'this_week' ? 'selected' : '' }}>এই সপ্তাহের কাজ</option>
                             <option value="custom" {{ $dateFilter === 'custom' ? 'selected' : '' }}>নির্দিষ্ট তারিখ</option>
                         </select>
 
-                        @if($dateFilter === 'custom')
-                            <input type="date" name="date" class="input" value="{{ $customDate }}" style="padding:6px 10px;font-size:12px;width:auto;" onchange="this.form.submit()">
-                        @endif
+                        <input type="date" id="customDateInput" name="date" class="input" value="{{ $customDate }}" style="padding:6px 10px;font-size:12px;width:auto;display:{{ $dateFilter === 'custom' ? 'inline-block' : 'none' }};" onchange="this.form.submit()">
 
                         <button type="submit" class="btn soft" style="padding:7px 14px">ফিল্টার</button>
                         @if($search || $priority || $dateFilter)
                             <a href="{{ route('admin.assignments.index', array_filter(['status' => $status])) }}" class="btn" style="padding:7px 12px" title="ফিল্টার মুছুন">✕ রিস্টার্ট</a>
                         @endif
                     </form>
+                    <script>
+                        function handleDateFilterChange(select) {
+                            var dateInput = document.getElementById('customDateInput');
+                            if (select.value === 'custom') {
+                                if (dateInput) {
+                                    dateInput.style.display = 'inline-block';
+                                    dateInput.focus();
+                                }
+                            } else {
+                                if (dateInput) {
+                                    dateInput.style.display = 'none';
+                                    dateInput.value = '';
+                                }
+                                select.form.submit();
+                            }
+                        }
+                    </script>
                 </div>
 
                 {{-- Status Tabs --}}

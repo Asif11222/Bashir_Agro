@@ -11,7 +11,7 @@
     </div>
 @endif
 
-@if ($errors->any())
+@if (isset($errors) && $errors->any())
     <div class="alert-danger" style="margin: 0 0 16px 0;">
         <ul style="margin:0;padding-left:18px">
             @foreach ($errors->all() as $error)

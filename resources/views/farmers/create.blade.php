@@ -141,16 +141,86 @@
     margin-top: 2px;
 }
 
-/* Top Row: Personal Info (60%) + Profile Photo (40%) */
+/* Top Row: Personal Info (Expanded for clean multi-column alignment) + Profile Photo */
 .top-split-row {
     display: grid;
-    grid-template-columns: 1.45fr 1fr;
+    grid-template-columns: minmax(0, 1fr) 250px;
     gap: 18px;
+    align-items: stretch;
 }
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .top-split-row {
         grid-template-columns: 1fr;
     }
+}
+
+/* Personal Info Card & Form Grid Alignment */
+.personal-info-card .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+    row-gap: 14px;
+    align-items: start;
+}
+@media (max-width: 600px) {
+    .personal-info-card .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.personal-info-card .field {
+    display: flex;
+    flex-direction: column;
+}
+
+.personal-info-card .field > .label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 20px;
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .personal-info-card .field > .label {
+        white-space: normal;
+    }
+}
+
+.field-badge-auto {
+    font-size: 10px;
+    font-weight: 600;
+    color: #08783f;
+    background: #eaf8ef;
+    border: 1px solid #c9edd5;
+    padding: 1px 7px;
+    border-radius: 10px;
+    line-height: 1.4;
+}
+
+.opt-text {
+    font-size: 11px;
+    font-weight: 500;
+    color: #7b8e84;
+}
+
+/* Profile Photo Card Alignment */
+.photo-card {
+    display: flex;
+    flex-direction: column;
+}
+.photo-card .photo-upload-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 12px 0;
 }
 
 /* Input Icon Wrappers */
@@ -615,7 +685,7 @@
                 <!-- Top Row: Personal Info (Left) + Profile Photo (Right) -->
                 <div class="top-split-row">
                     <!-- Personal Info Card -->
-                    <section class="farmer-card">
+                    <section class="farmer-card personal-info-card">
                         <div class="card-header">
                             <div class="card-header-left">
                                 <div class="card-header-icon">
@@ -645,11 +715,16 @@
 
                             <!-- Farmer ID (Server Generated) -->
                             <label class="field">
-                                <span class="label">কৃষক আইডি <span class="req">*</span></span>
+                                <span class="label">
+                                    <span>কৃষক আইডি <span class="req">*</span></span>
+                                    <span class="field-badge-auto" title="সিস্টেম দ্বারা স্বয়ংক্রিয়ভাবে তৈরি হবে">স্বয়ংক্রিয়</span>
+                                </span>
                                 <div class="input-wrap">
-                                    <input class="input" type="text" value="{{ $nextFarmerCode ?? 'F-006' }}" disabled style="background:#f4f7f5;color:var(--muted);font-weight:700;">
+                                    <span class="field-icon">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="14" x="3" y="5" rx="2"/><path d="M7 15h4M15 15h2M7 11h10"/></svg>
+                                    </span>
+                                    <input class="input" type="text" value="{{ $nextFarmerCode ?? 'F-006' }}" disabled style="background:#f4f7f5;color:var(--muted);font-weight:700;" title="সিস্টেম দ্বারা স্বয়ংক্রিয়ভাবে তৈরি হবে">
                                 </div>
-                                <small style="font-size:10px;color:var(--muted);display:block;margin-top:2px;">সিস্টেম দ্বারা স্বয়ংক্রিয়ভাবে তৈরি হবে</small>
                             </label>
 
                             <!-- Mobile Phone -->
@@ -668,7 +743,9 @@
 
                             <!-- NID -->
                             <label class="field">
-                                <span class="label">জাতীয় পরিচয়পত্র নম্বর (ঐচ্ছিক)</span>
+                                <span class="label">
+                                    <span>জাতীয় পরিচয়পত্র নম্বর <span class="opt-text">(ঐচ্ছিক)</span></span>
+                                </span>
                                 <div class="input-wrap">
                                     <span class="field-icon">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
@@ -730,7 +807,7 @@
                     </section>
 
                     <!-- Profile Photo Card -->
-                    <section class="farmer-card">
+                    <section class="farmer-card photo-card">
                         <div class="card-header">
                             <div class="card-header-left">
                                 <div class="card-header-icon">

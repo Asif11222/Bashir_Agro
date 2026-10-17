@@ -32,6 +32,8 @@ class AssignmentResource extends JsonResource
             'task' => new TaskResource($this->whenLoaded('taskTemplate')),
             'farmer' => new FarmerResource($this->whenLoaded('farmer')),
             'location' => new LocationResource($this->whenLoaded('location')),
+            'submission' => new SubmissionResource($this->whenLoaded('submission')),
+            'verification_status' => $this->relationLoaded('submission') ? $this->submission?->verification_status : null,
         ];
     }
 }

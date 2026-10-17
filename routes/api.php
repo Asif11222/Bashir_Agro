@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\DashboardApiController;
 use App\Http\Controllers\Api\V1\FarmApiController;
 use App\Http\Controllers\Api\V1\FarmerController;
 use App\Http\Controllers\Api\V1\LocationController;
+use App\Http\Controllers\Api\V1\NotificationApiController;
 use App\Http\Controllers\Api\V1\SubmissionController;
 use App\Http\Controllers\Api\V1\TaskController;
 use Illuminate\Support\Facades\Route;
@@ -54,6 +55,11 @@ Route::prefix('v1')->group(function () {
         // Farm Locations
         Route::get('/locations', [LocationController::class, 'index'])->name('api.v1.locations.index');
         Route::get('/locations/{location}', [LocationController::class, 'show'])->name('api.v1.locations.show');
+
+        // Notifications
+        Route::get('/notifications', [NotificationApiController::class, 'index'])->name('api.v1.notifications.index');
+        Route::post('/notifications/{id}/read', [NotificationApiController::class, 'markAsRead'])->name('api.v1.notifications.read');
+        Route::post('/notifications/read-all', [NotificationApiController::class, 'markAllAsRead'])->name('api.v1.notifications.read-all');
 
         // Field Boundary Management (Phase 12A V2)
         Route::get('/farms', [FarmApiController::class, 'index'])->name('api.v1.farms.index');

@@ -11,7 +11,6 @@
 <body>
 <div class="app">
     @include('components.sidebar', ['active' => $activeTab ?? 'dashboard'])
-    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
     <main class="main">
         @include('components.topbar', ['title' => $title ?? 'ড্যাশবোর্ড'])
@@ -22,6 +21,8 @@
         </div>
     </main>
 </div>
+
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
 <div class="modal-wrap" id="modal">
     @yield('modal')

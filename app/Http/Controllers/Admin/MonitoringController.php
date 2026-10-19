@@ -168,6 +168,7 @@ class MonitoringController extends Controller
                 'tabs_html' => view('monitoring.partials.tabs', $data)->render(),
                 'kpis_html' => view('monitoring.partials.kpis', $data)->render(),
                 'sidebar_html' => view('monitoring.partials.sidebar_focus', $data)->render(),
+                'recent_activities_html' => view('monitoring.partials.recent_activities', $data)->render(),
                 'has_filters' => ($search !== '' || ! empty($priority) || ($dateFilter && $dateFilter !== 'today')),
                 'counts' => [
                     'scopedTotal' => $scopedTotalCount,

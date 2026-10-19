@@ -131,11 +131,6 @@
                             @enderror
                         </div>
                     </div>
-
-                    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
-                        <a href="{{ route('admin.assignments.index') }}" class="btn">বাতিল</a>
-                        <button type="submit" class="btn primary">✓ কাজ বরাদ্দ সম্পন্ন করুন</button>
-                    </div>
                 </section>
             </div>
 
@@ -181,6 +176,11 @@
                     </div>
                 </section>
             </div>
+        </div>
+
+        <div class="sticky-actions" style="margin-top:24px;">
+            <a href="{{ route('admin.assignments.index') }}" class="btn">বাতিল</a>
+            <button type="submit" class="btn primary">✓ কাজ বরাদ্দ সম্পন্ন করুন</button>
         </div>
     </form>
 </div>

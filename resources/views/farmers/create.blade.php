@@ -578,20 +578,46 @@
     border-color: #077a41;
 }
 
-/* Sidebar action buttons */
-.sidebar-actions {
+/* Form Bottom Action Bar (Right corner of screen, full-width container) */
+.form-bottom-actions {
+    margin-top: 24px;
+    padding: 14px 0 6px;
     display: flex;
+    justify-content: flex-end;
+    align-items: center;
     gap: 10px;
-    align-items: stretch;
+    position: sticky;
+    bottom: 0;
+    background: rgba(244, 247, 245, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 20;
+}
+.form-bottom-actions .cancel-btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink);
+    border-radius: 9px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+.form-bottom-actions .cancel-btn:hover {
+    background: #f4fbf6;
+    border-color: #9ec5b1;
+    color: #08783f;
 }
 .draft-submit-btn {
-    order: 1;
-    flex: 1;
     border: 1px solid #bfd8cb;
     background: #eaf5ee;
     color: #096839;
     border-radius: 9px;
-    padding: 11px 14px;
+    padding: 10px 20px;
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
@@ -606,13 +632,11 @@
     border-color: #9ec5b1;
 }
 .primary-submit-btn {
-    order: 2;
-    flex: 1;
     border: 0;
     background: #08783f;
     color: #fff;
     border-radius: 9px;
-    padding: 11px 14px;
+    padding: 10px 24px;
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
@@ -626,6 +650,20 @@
 .primary-submit-btn:hover {
     background: #066233;
     box-shadow: 0 4px 12px rgba(8, 120, 63, 0.35);
+}
+
+@media (max-width: 600px) {
+    .form-bottom-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .form-bottom-actions .cancel-btn,
+    .draft-submit-btn,
+    .primary-submit-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 /* Modal styling for Quick Task Selection */
@@ -1167,19 +1205,20 @@
                     </div>
                 </section>
 
-                <!-- Action Buttons (Draft / Save) -->
-                <div class="sidebar-actions">
-                    <button type="submit" name="action" value="save" class="primary-submit-btn">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                        সংরক্ষণ করুন
-                    </button>
-                    <button type="submit" name="action" value="draft" class="draft-submit-btn">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                        খসড়া সংরক্ষণ
-                    </button>
-                </div>
-
             </div>
+        </div>
+
+        <!-- Form Bottom Actions (Bottom Right Corner of Screen) -->
+        <div class="sticky-actions form-bottom-actions">
+            <a href="{{ route('admin.farmers.index') }}" class="btn cancel-btn">বাতিল</a>
+            <button type="submit" name="action" value="draft" class="draft-submit-btn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                খসড়া সংরক্ষণ
+            </button>
+            <button type="submit" name="action" value="save" class="primary-submit-btn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                সংরক্ষণ করুন
+            </button>
         </div>
     </form>
 </div>

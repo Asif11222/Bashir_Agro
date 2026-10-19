@@ -2,6 +2,34 @@
 
 @section('title', 'কার্যক্রম পর্যবেক্ষণ — আমার ফার্ম')
 
+@push('styles')
+<style>
+.recent-activities-timeline {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 24px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+@media (max-width: 900px) {
+    .recent-activities-timeline {
+        grid-template-columns: 1fr;
+    }
+}
+.recent-activities-timeline::-webkit-scrollbar {
+    width: 5px;
+}
+.recent-activities-timeline::-webkit-scrollbar-thumb {
+    background: #c3d9cc;
+    border-radius: 4px;
+}
+.recent-activities-timeline::-webkit-scrollbar-thumb:hover {
+    background: #9abfa9;
+}
+</style>
+@endpush
+
 @section('content')
 <div class="page">
     <div class="head">
@@ -28,6 +56,11 @@
     {{-- Main Monitoring Content Grid --}}
     <div class="grid monitoring-grid section-gap">
         <div class="monitoring-main-col">
+            {{-- Recent Operational Activities Card (Placed before live monitoring card, matching selected card size) --}}
+            <div id="monitoring-recent-activities-container">
+                @include('monitoring.partials.recent_activities')
+            </div>
+
             <section class="card">
                 <div class="card-title">
                     <div class="title-left">
@@ -105,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const tabsContainer = document.getElementById('monitoring-tabs-container');
     const kpiContainer = document.getElementById('kpi-cards-container');
     const sidebarCol = document.getElementById('monitoring-side-col');
+    const recentActivitiesContainer = document.getElementById('monitoring-recent-activities-container');
 
     let abortController = null;
     let searchDebounceTimer = null;
@@ -182,6 +216,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (data.sidebar_html && sidebarCol) {
                 sidebarCol.innerHTML = data.sidebar_html;
+            }
+            if (data.recent_activities_html && recentActivitiesContainer) {
+                recentActivitiesContainer.innerHTML = data.recent_activities_html;
             }
 
             // Update Reset button visibility

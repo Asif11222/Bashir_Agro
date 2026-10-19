@@ -154,11 +154,6 @@
                         </select>
                     </div>
                 </section>
-
-                <div class="sticky-actions" style="margin-top:20px;">
-                    <a href="{{ route('admin.tasks.index') }}" class="btn">বাতিল</a>
-                    <button type="submit" class="btn primary" style="padding:10px 24px;font-size:14px;">কাজ সংরক্ষণ করুন</button>
-                </div>
             </div>
 
             <div class="form-side-col">
@@ -203,6 +198,11 @@
                     </div>
                 </section>
             </div>
+        </div>
+
+        <div class="sticky-actions" style="margin-top:24px;">
+            <a href="{{ route('admin.tasks.index') }}" class="btn">বাতিল</a>
+            <button type="submit" class="btn primary" style="padding:10px 24px;font-size:14px;">কাজ সংরক্ষণ করুন</button>
         </div>
     </form>
 </div>

@@ -315,25 +315,82 @@ class FarmerController extends Controller
     }
 
     /**
-     * Remove the specified farmer from storage (Soft Delete).
+     * Remove the specified farmer from storage permanently.
      */
     public function destroy(Farmer $farmer): RedirectResponse
     {
         $farmerName = $farmer->full_name;
         $farmerCode = $farmer->farmer_code;
+        $farmerId = $farmer->id;
+        $userId = $farmer->user_id;
 
-        DB::transaction(function () use ($farmer, $farmerName, $farmerCode) {
+        DB::transaction(function () use ($farmer, $farmerName, $farmerCode, $farmerId, $userId) {
             $oldValues = $farmer->toArray();
-            $farmer->delete();
 
+            // 1. Delete profile photo from storage if exists
+            if ($farmer->profile_photo_path && Storage::disk('public')->exists($farmer->profile_photo_path)) {
+                Storage::disk('public')->delete($farmer->profile_photo_path);
+            }
+
+            // 2. Clean up task submissions evidence photos and assignment notifications
+            foreach ($farmer->taskAssignments as $assignment) {
+                if ($assignment->submission) {
+                    foreach ($assignment->submission->evidencePhotos as $photo) {
+                        if ($photo->photo_path && Storage::disk('public')->exists($photo->photo_path)) {
+                            Storage::disk('public')->delete($photo->photo_path);
+                        }
+                    }
+                }
+                DB::table('notifications')
+                    ->where('data', 'like', '%"assignment_id":'.$assignment->id.'%')
+                    ->orWhere('data', 'like', '%"assignment_id":'.'"'.$assignment->id.'"'.'%')
+                    ->delete();
+            }
+
+            // 3. Detach farm locations
+            $farmer->farmLocations()->detach();
+
+            // 4. Unset farmer_id on farm_locations if this farmer is the owner
+            FarmLocation::where('farmer_id', $farmerId)->update(['farmer_id' => null]);
+
+            // 5. Delete emergency contact
+            $farmer->emergencyContact()->delete();
+
+            // 6. Delete linked user account and its tokens/notifications
+            if ($userId) {
+                $user = User::find($userId);
+                if ($user && $user->role === 'farmer') {
+                    DB::table('notifications')
+                        ->where('notifiable_type', User::class)
+                        ->where('notifiable_id', $userId)
+                        ->delete();
+
+                    $user->tokens()->delete();
+                    $user->delete();
+                }
+            }
+
+            // Also clean up any user row having this phone number if role is farmer
+            if ($farmer->phone) {
+                $phoneUser = User::where('phone', $farmer->phone)->where('role', 'farmer')->first();
+                if ($phoneUser && $phoneUser->id !== $userId) {
+                    $phoneUser->tokens()->delete();
+                    $phoneUser->delete();
+                }
+            }
+
+            // 7. Record activity log before deleting
             ActivityLog::record(
                 action: 'farmer.deleted',
-                description: "কৃষক মুছে ফেলা হয়েছে (Soft Delete): {$farmerName} ({$farmerCode})",
+                description: "কৃষক স্থায়ীভাবে মুছে ফেলা হয়েছে: {$farmerName} ({$farmerCode})",
                 subject: $farmer,
                 oldValues: $oldValues
             );
+
+            // 8. Permanently delete the farmer
+            $farmer->forceDelete();
         });
 
-        return redirect()->route('admin.farmers.index')->with('success', "কৃষক {$farmerName} ({$farmerCode}) সফলভাবে মুছে ফেলা হয়েছে।");
+        return redirect()->route('admin.farmers.index')->with('success', "কৃষক {$farmerName} ({$farmerCode}) সফলভাবে ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।");
     }
 }

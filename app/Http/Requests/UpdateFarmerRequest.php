@@ -30,7 +30,7 @@ class UpdateFarmerRequest extends FormRequest
 
         return [
             'full_name' => ['required', 'string', 'max:150'],
-            'phone' => ['required', 'string', 'max:20', Rule::unique('farmers', 'phone')->ignore($farmerId)],
+            'phone' => ['required', 'string', 'max:20', Rule::unique('farmers', 'phone')->ignore($farmerId)->whereNull('deleted_at')],
             'email' => ['nullable', 'email', 'max:255'],
             'username' => ['nullable', 'string', 'max:50'],
             'password' => ['nullable', 'string', 'min:6'],

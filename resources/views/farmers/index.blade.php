@@ -99,7 +99,7 @@
                                 <div style="display:inline-flex;gap:5px;">
                                     <a href="{{ route('admin.farmers.show', $farmer) }}" class="btn" style="padding:5px 9px;font-size:11px">দেখুন</a>
                                     <a href="{{ route('admin.farmers.edit', $farmer) }}" class="btn soft" style="padding:5px 9px;font-size:11px">সম্পাদনা</a>
-                                    <form method="POST" action="{{ route('admin.farmers.destroy', $farmer) }}" style="display:inline;" onsubmit="return confirm('আপনি কি নিশ্চিতভাবে এই কৃষক মুছে ফেলতে চান? এটি সফট ডিলিট হবে।');">
+                                    <form method="POST" action="{{ route('admin.farmers.destroy', $farmer) }}" style="display:inline;" onsubmit="return confirm('আপনি কি নিশ্চিতভাবে এই কৃষককে মুছে ফেলতে চান? এটি ডাটাবেজ থেকে স্থায়ীভাবে মুছে যাবে।');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn danger" style="padding:5px 9px;font-size:11px">মুছুন</button>

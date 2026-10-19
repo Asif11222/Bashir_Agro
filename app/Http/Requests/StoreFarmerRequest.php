@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreFarmerRequest extends FormRequest
 {
@@ -24,7 +25,7 @@ class StoreFarmerRequest extends FormRequest
     {
         return [
             'full_name' => ['required', 'string', 'max:150'],
-            'phone' => ['required', 'string', 'max:20', 'unique:farmers,phone'],
+            'phone' => ['required', 'string', 'max:20', Rule::unique('farmers', 'phone')->whereNull('deleted_at')],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'username' => ['nullable', 'string', 'max:50'],
             'password' => ['nullable', 'string', 'min:6'],

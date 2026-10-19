@@ -290,7 +290,7 @@ class FarmerManagementTest extends TestCase
         ]);
     }
 
-    public function test_soft_delete_farmer_works(): void
+    public function test_permanent_delete_farmer_works(): void
     {
         $farmer = Farmer::create([
             'farmer_code' => 'F-000001',
@@ -305,11 +305,43 @@ class FarmerManagementTest extends TestCase
         $response = $this->actingAs($this->admin)->delete("/admin/farmers/{$farmer->id}");
 
         $response->assertRedirect(route('admin.farmers.index'));
-        $this->assertSoftDeleted('farmers', ['id' => $farmer->id]);
+        $this->assertDatabaseMissing('farmers', ['id' => $farmer->id]);
 
         $this->assertDatabaseHas('activity_logs', [
             'action' => 'farmer.deleted',
             'subject_id' => $farmer->id,
+        ]);
+    }
+
+    public function test_can_re_register_farmer_with_same_phone_after_deletion(): void
+    {
+        $farmer = Farmer::create([
+            'farmer_code' => 'F-000001',
+            'full_name' => 'পূর্বের কৃষক',
+            'phone' => '01799887766',
+            'primary_activity' => 'সবজি চাষ',
+            'address' => 'ঢাকা',
+            'status' => 'active',
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->actingAs($this->admin)->delete("/admin/farmers/{$farmer->id}");
+        $this->assertDatabaseMissing('farmers', ['id' => $farmer->id]);
+
+        $response = $this->actingAs($this->admin)->post('/admin/farmers', [
+            'full_name' => 'নতুন কৃষক একই নম্বরে',
+            'phone' => '01799887766',
+            'address' => 'বগুড়া',
+            'primary_activity' => 'মাছ চাষ',
+            'emergency_contact_name' => 'যোগাযোগ',
+            'emergency_contact_phone' => '01800000000',
+            'emergency_contact_relationship' => 'পিতা/মাতা',
+        ]);
+
+        $response->assertRedirect(route('admin.farmers.index'));
+        $this->assertDatabaseHas('farmers', [
+            'full_name' => 'নতুন কৃষক একই নম্বরে',
+            'phone' => '01799887766',
         ]);
     }
 

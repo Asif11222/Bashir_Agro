@@ -228,7 +228,13 @@
                                 </div>
                             </div>
                         </div>
-                        <input class="input" type="password" name="password" placeholder="নতুন পাসওয়ার্ড (ঐচ্ছিক)" minlength="6">
+                        <div class="password-field-wrap">
+                            <input class="input" type="password" name="password" id="edit_farmer_password" placeholder="নতুন পাসওয়ার্ড (ঐচ্ছিক)" minlength="6">
+                            <button type="button" class="password-toggle-btn" id="toggle_edit_password_btn" data-toggle-password="edit_farmer_password" title="পাসওয়ার্ড দেখুন" aria-label="পাসওয়ার্ড দেখুন">
+                                <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="eye-slash-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;"><path d="m9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                            </button>
+                        </div>
                         <small style="color:var(--muted);display:block;margin-top:4px;font-size:11px;">পাসওয়ার্ড পরিবর্তন না করতে চাইলে খালি রাখুন।</small>
                         @error('password')
                             <div class="field-error">{{ $message }}</div>

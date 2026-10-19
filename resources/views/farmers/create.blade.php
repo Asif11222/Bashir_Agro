@@ -1034,7 +1034,7 @@
                                     <span class="field-icon">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                                     </span>
-                                    <input class="input" type="password" name="password" id="password_input" value="{{ old('password') }}" placeholder="পাসওয়ার্ড লিখুন" minlength="6" required>
+                                    <input class="input" type="password" name="password" id="password_input" value="{{ old('password') }}" placeholder="পাসওয়ার্ড লিখুন" minlength="6" required style="padding-right: 38px;">
                                     <button type="button" class="password-toggle-btn" id="toggle_password_btn" title="পাসওয়ার্ড দেখুন/লুকান">
                                         <svg id="eye_icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                                         <svg id="eye_slash_icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="m9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>

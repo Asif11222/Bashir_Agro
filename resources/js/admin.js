@@ -84,6 +84,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Password visibility toggles
+    document.querySelectorAll('[data-toggle-password]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = btn.dataset.togglePassword;
+            const input = targetId ? document.getElementById(targetId) : btn.parentElement.querySelector('input');
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+
+            const eyeIcon = btn.querySelector('.eye-icon, #eye_icon');
+            const eyeSlashIcon = btn.querySelector('.eye-slash-icon, #eye_slash_icon');
+            if (eyeIcon && eyeSlashIcon) {
+                eyeIcon.style.display = isPassword ? 'none' : 'block';
+                eyeSlashIcon.style.display = isPassword ? 'block' : 'none';
+            }
+
+            const label = isPassword ? 'পাসওয়ার্ড লুকান' : 'পাসওয়ার্ড দেখুন';
+            btn.setAttribute('title', label);
+            btn.setAttribute('aria-label', label);
+            input.focus();
+        });
+    });
+
     // Toast helper
     window.showToast = function (message) {
         const toast = document.getElementById('toast');

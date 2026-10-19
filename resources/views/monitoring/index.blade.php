@@ -322,7 +322,8 @@ document.addEventListener('DOMContentLoaded', function () {
         autoSyncTimer = setTimeout(() => {
             const activeEl = document.activeElement;
             const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA');
-            if (!isTyping && !document.hidden) {
+            const isIdle = typeof window.isUserSessionIdle === 'function' && window.isUserSessionIdle();
+            if (!isTyping && !document.hidden && !isIdle) {
                 fetchMonitoringData(null, { isBackground: true });
             }
             scheduleAutoSync();

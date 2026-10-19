@@ -30,5 +30,8 @@
 
 <script src="{{ asset('js/admin.js') }}"></script>
 @stack('scripts')
+@auth
+    @include('components.idle-session-modal')
+@endauth
 </body>
 </html>

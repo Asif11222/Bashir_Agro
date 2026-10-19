@@ -105,6 +105,7 @@
                 @enderror
             </div>
 
+            <div class="form-grid section-gap">
                 <label class="field">
                     <span class="label">অভিজ্ঞতা (বছর)</span>
                     <input class="input" type="number" name="experience_years" min="0" max="70" value="{{ old('experience_years', $farmer->experience_years) }}">

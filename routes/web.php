@@ -52,6 +52,9 @@ Route::prefix('admin')
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
         Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::get('/audit', [AuditController::class, 'index'])->name('audit');
+        Route::post('/session/keep-alive', function () {
+            return response()->json(['status' => 'active', 'timestamp' => now()->timestamp]);
+        })->name('session.keep-alive');
     });
 
 // Swagger UI API Documentation (powered by Scramble OpenAPI spec)

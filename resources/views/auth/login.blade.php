@@ -15,6 +15,16 @@
             <p>কৃষি ব্যবস্থাপনা অ্যাডমিন প্যানেলে লগইন করুন</p>
         </div>
 
+        @if (request()->query('reason') === 'idle')
+            <div class="notice warn" style="margin-bottom: 16px; font-size: 13px; line-height: 1.45; display: flex; align-items: flex-start; gap: 8px;">
+                <span style="font-size: 16px;">⏱</span>
+                <div>
+                    <b>সেশনের মেয়াদ শেষ হয়েছে</b><br>
+                    নিষ্ক্রিয় থাকার কারণে অ্যাকাউন্ট সুরক্ষার্থে সেশন সমাপ্ত হয়েছে। অনুগ্রহ করে পুনরায় লগইন করুন।
+                </div>
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="alert-danger">
                 @foreach ($errors->all() as $error)

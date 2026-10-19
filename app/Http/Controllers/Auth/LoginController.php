@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -75,13 +76,24 @@ class LoginController extends Controller
     /**
      * Log the user out of the application with full session teardown.
      */
-    public function logout(Request $request): RedirectResponse
+    public function logout(Request $request): RedirectResponse|JsonResponse
     {
         Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        $reason = $request->input('reason', $request->query('reason'));
+        $redirectUrl = route('login', array_filter(['reason' => $reason]));
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'status' => 'logged_out',
+                'redirect' => $redirectUrl,
+            ]);
+        }
+
+        return redirect()->to($redirectUrl);
     }
 }

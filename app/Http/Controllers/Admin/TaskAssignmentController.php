@@ -11,6 +11,7 @@ use App\Models\FarmLocation;
 use App\Models\TaskAssignment;
 use App\Models\TaskTemplate;
 use App\Notifications\SystemNotification;
+use App\Notifications\TaskCancelledNotification;
 use App\Services\TaskAssignmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -200,12 +201,24 @@ class TaskAssignmentController extends Controller
      */
     public function destroy(TaskAssignment $assignment): RedirectResponse
     {
-        $assignment->load(['farmer', 'taskTemplate']);
+        $assignment->load(['farmer.user', 'taskTemplate', 'location']);
         $farmerName = $assignment->farmer->full_name ?? 'কৃষক';
         $taskName = $assignment->taskTemplate->name ?? 'কাজ';
 
         DB::transaction(function () use ($assignment, $farmerName, $taskName) {
             $oldValues = $assignment->toArray();
+
+            // Clean up related previous notifications for this assignment
+            DB::table('notifications')
+                ->where('data', 'like', '%"assignment_id":'.$assignment->id.'%')
+                ->orWhere('data', 'like', '%"assignment_id":'.'"'.$assignment->id.'"'.'%')
+                ->delete();
+
+            // Notify the assigned farmer that the assignment has been cancelled / deleted
+            if ($assignment->farmer && $assignment->farmer->user) {
+                $assignment->farmer->user->notify(new TaskCancelledNotification($assignment));
+            }
+
             $assignment->delete();
 
             ActivityLog::record(

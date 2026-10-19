@@ -6,7 +6,7 @@
 <style>
 /* Farmer Creation Page Styling - Clean Modern UI */
 .farmer-page-wrapper {
-    max-width: 1280px;
+    max-width: 1440px;
     margin: 0 auto;
     padding: 24px 24px 60px;
 }

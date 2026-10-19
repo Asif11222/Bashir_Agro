@@ -40,7 +40,7 @@
 @endpush
 
 @section('content')
-<div class="page" style="max-width: 1000px;">
+<div class="page">
     <div class="head">
         <div>
             <h1>লোকেশন ও মাঠের সীমানা বিবরণ</h1>

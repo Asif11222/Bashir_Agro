@@ -3,7 +3,7 @@
 @section('title', "কৃষক বিবরণ — {$farmer->full_name}")
 
 @section('content')
-<div class="page" style="max-width: 1000px;">
+<div class="page">
     <div class="head">
         <div>
             <h1>কৃষক বিবরণ</h1>

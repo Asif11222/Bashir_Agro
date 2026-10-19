@@ -1,11 +1,50 @@
 // Admin Panel presentation JavaScript
 document.addEventListener('DOMContentLoaded', () => {
-    // Mobile menu toggle
+    // Mobile menu toggle & backdrop
     const menuBtn = document.getElementById('menu');
     const sideBar = document.getElementById('side');
+    const backdrop = document.getElementById('sidebar-backdrop');
+
+    function closeSidebar() {
+        if (sideBar) sideBar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('show');
+        document.body.classList.remove('sidebar-locked');
+    }
+
+    function openSidebar() {
+        if (sideBar) sideBar.classList.add('open');
+        if (backdrop) backdrop.classList.add('show');
+        document.body.classList.add('sidebar-locked');
+    }
+
     if (menuBtn && sideBar) {
-        menuBtn.addEventListener('click', () => {
-            sideBar.classList.toggle('open');
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (sideBar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+    }
+
+    if (backdrop) {
+        backdrop.addEventListener('click', closeSidebar);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sideBar && sideBar.classList.contains('open')) {
+            closeSidebar();
+        }
+    });
+
+    if (sideBar) {
+        sideBar.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 1024) {
+                    closeSidebar();
+                }
+            });
         });
     }
 

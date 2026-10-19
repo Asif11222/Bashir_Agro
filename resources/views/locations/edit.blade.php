@@ -120,7 +120,7 @@
 @endpush
 
 @section('content')
-<div class="page" style="max-width: 950px;">
+<div class="page">
     <div class="head">
         <div>
             <h1>লোকেশন ও সীমানা সম্পাদনা</h1>

@@ -127,7 +127,7 @@
 @endpush
 
 @section('content')
-<div class="page" style="max-width: 950px;">
+<div class="page">
     <div class="head">
         <div>
             <h1>নতুন ফার্ম ও মাঠের সীমানা যোগ করুন</h1>

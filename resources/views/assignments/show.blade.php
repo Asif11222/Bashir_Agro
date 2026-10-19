@@ -3,7 +3,7 @@
 @section('title', "কাজের বরাদ্দ বিবরণ — #{$assignment->id} — আমার ফার্ম")
 
 @section('content')
-<div class="page" style="max-width: 1000px;">
+<div class="page">
     <div class="head">
         <div>
             <h1>কাজের বরাদ্দ বিবরণ</h1>

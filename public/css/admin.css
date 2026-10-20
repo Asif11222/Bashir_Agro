@@ -28,6 +28,9 @@ html, body {
     color: var(--ink);
     font-family: 'Noto Sans Bengali', system-ui, -apple-system, sans-serif;
     font-size: 14px;
+    min-height: 100%;
+    min-height: 100dvh;
+    overflow-x: hidden;
 }
 
 button, input, select, textarea {
@@ -65,6 +68,10 @@ button {
     padding: 4px 8px 14px;
     border-bottom: 1px solid #ffffff1d;
     flex-shrink: 0;
+}
+
+.sidebar-close-btn {
+    display: none;
 }
 
 .leaf {
@@ -980,12 +987,15 @@ body.sidebar-locked {
 .sticky-actions {
     position: sticky;
     bottom: 0;
-    background: #f4f7f5e8;
-    backdrop-filter: blur(8px);
-    padding: 12px 0 2px;
+    background: rgba(244, 247, 245, 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 14px 0 6px;
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    align-items: center;
+    gap: 10px;
+    z-index: 15;
 }
 
 .modal-wrap {
@@ -1243,6 +1253,21 @@ body.sidebar-locked {
 
 /* Responsive Architecture */
 
+/* Grid and Upload helper utilities */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 20px;
+}
+
+.branding-upload-grid {
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
 /* Retina & High-Resolution Displays (MacBook Pro, 2K/4K Monitors) */
 @media (min-width: 1441px) {
     .page {
@@ -1277,14 +1302,34 @@ body.sidebar-locked {
         position: fixed;
         top: 0;
         bottom: 0;
-        left: -280px;
-        width: 260px;
-        z-index: 20;
-        transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: 0 0 35px rgba(0, 0, 0, 0.25);
+        left: -285px;
+        width: 270px;
+        z-index: 50;
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), left 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.35);
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
     }
     .sidebar.open {
         left: 0;
+    }
+    .sidebar-close-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: auto;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 0;
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.15s ease;
+    }
+    .sidebar-close-btn:hover {
+        background: rgba(255, 255, 255, 0.28);
     }
     .mobile {
         display: flex;
@@ -1295,13 +1340,18 @@ body.sidebar-locked {
         padding: 0 16px;
     }
     .crumb {
-        max-width: 190px;
+        max-width: 200px;
     }
     .date {
         display: none;
     }
     .form-layout-2col {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+    .farmer-edit-layout .form-side-col {
+        order: -1;
     }
     .cols-4 {
         grid-template-columns: repeat(2, 1fr);
@@ -1312,7 +1362,7 @@ body.sidebar-locked {
         grid-template-columns: 1fr;
     }
     .page {
-        padding: 20px 18px;
+        padding: 20px 16px;
     }
     .sticky-side-card {
         position: static;
@@ -1321,37 +1371,91 @@ body.sidebar-locked {
 
 /* Mobile & Small Tablets (<= 768px) */
 @media (max-width: 768px) {
+    /* Prevent iOS auto-zoom on input focus */
+    input, select, textarea,
+    .input, .select, .textarea {
+        font-size: 16px !important;
+    }
+
+    body {
+        font-size: 13.5px;
+    }
+
     .topbar {
+        height: 60px;
         padding: 0 12px;
-        gap: 10px;
+        gap: 8px;
+    }
+    .mobile {
+        width: 38px;
+        height: 38px;
+        font-size: 21px;
     }
     .crumb {
-        display: none;
+        display: block;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink);
+        max-width: 170px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .search {
-        width: auto;
-        flex: 1;
-        min-width: 120px;
+        display: none;
+    }
+    .top-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+    .avatar {
+        width: 34px;
+        height: 34px;
+        font-size: 13px;
     }
     .user {
         border-left: none;
-        padding-left: 4px;
+        padding-left: 2px;
         gap: 6px;
     }
-    .user-meta small {
+    .user-meta {
         display: none;
     }
+    .topbar-logout-btn {
+        padding: 7px 10px;
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .topbar-logout-btn .logout-text {
+        display: none;
+    }
+    .topbar-logout-btn .logout-icon {
+        display: inline-block;
+        font-size: 16px;
+    }
+
     .page {
-        padding: 16px 12px;
+        padding: 14px 12px 28px;
+        max-width: 100%;
+        overflow-x: hidden;
     }
     .head {
         align-items: flex-start;
         display: flex;
         flex-direction: column;
         gap: 12px;
+        margin-bottom: 14px;
     }
     .head h1 {
-        font-size: 23px;
+        font-size: 22px;
+        line-height: 1.25;
+    }
+    .head p {
+        font-size: 12px;
+        line-height: 1.4;
     }
     .head .actions {
         width: 100%;
@@ -1361,15 +1465,23 @@ body.sidebar-locked {
     }
     .head .actions .btn {
         flex: 1 1 auto;
-        min-height: 40px;
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 8px 14px;
+        font-size: 13px;
     }
     .card {
         padding: 14px;
+        border-radius: 12px;
     }
     .card-title {
         flex-direction: column;
         align-items: flex-start;
-        gap: 12px;
+        gap: 10px;
+        margin-bottom: 12px;
     }
     .card-title > div:last-child {
         width: 100%;
@@ -1382,10 +1494,12 @@ body.sidebar-locked {
     .card-title form .input {
         width: 100% !important;
         flex: 1;
+        min-width: 0;
     }
     .cols-4,
     .form-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
     .field.full {
         grid-column: auto;
@@ -1397,62 +1511,167 @@ body.sidebar-locked {
         grid-template-columns: 1fr;
     }
     .rule {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
     }
     .tabs {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         flex-wrap: nowrap;
-        padding-bottom: 4px;
+        padding-bottom: 6px;
+        gap: 6px;
+        scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar {
+        display: none;
     }
     .tab {
         flex-shrink: 0;
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+
+    /* Table Touch Scrolling */
+    .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 10px;
+        scrollbar-width: thin;
+        margin-left: -2px;
+        margin-right: -2px;
+    }
+    .table-wrap::-webkit-scrollbar {
+        height: 5px;
+    }
+    .table-wrap::-webkit-scrollbar-thumb {
+        background: #cbdcd3;
+        border-radius: 4px;
+    }
+    .table th, .table td {
+        padding: 10px 8px;
+        font-size: 12px;
+    }
+
+    /* Mobile Sticky Actions Bar (Docked gracefully at bottom with safe-area spacing) */
+    .sticky-actions {
+        position: sticky;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 25;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-top: 1px solid var(--line);
+        box-shadow: 0 -4px 18px rgba(6, 78, 47, 0.08);
+        margin-left: -12px;
+        margin-right: -12px;
+        margin-bottom: -28px;
+        padding: 12px 14px max(14px, env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: row;
+        justify-content: stretch;
+        gap: 10px;
+    }
+    .sticky-actions .btn,
+    .sticky-actions button,
+    .sticky-actions a {
+        flex: 1 1 50%;
+        min-height: 44px;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        border-radius: 10px;
+    }
+    form:has(.sticky-actions) {
+        padding-bottom: 24px;
+    }
+
+    /* Grids in Settings */
+    .settings-grid,
+    .branding-upload-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+        gap: 14px;
+    }
+
+    /* Modal as Bottom Sheet on Mobile */
+    .modal-wrap {
+        padding: 0;
+        align-items: flex-end;
+    }
+    .modal {
+        width: 100%;
+        max-width: 100%;
+        max-height: 85vh;
+        max-height: 85dvh;
+        border-radius: 18px 18px 0 0;
+        margin: 0;
     }
 }
 
 /* Small SmartPhones (<= 480px) */
 @media (max-width: 480px) {
+    .page {
+        padding: 12px 8px 24px;
+    }
     .topbar {
+        height: 56px;
         padding: 0 8px;
         gap: 6px;
     }
-    .search {
-        min-width: 80px;
-        padding: 0 8px;
-        height: 36px;
-    }
-    .search input::placeholder {
-        font-size: 11px;
-    }
-    .user-meta {
-        display: none;
-    }
-    .topbar-logout-btn .logout-text {
-        display: none;
-    }
-    .topbar-logout-btn .logout-icon {
-        display: inline-block;
-    }
-    .topbar-logout-btn {
-        padding: 6px 8px;
-    }
-    .page {
-        padding: 12px 8px;
+    .crumb {
+        font-size: 13.5px;
+        max-width: 135px;
     }
     .head h1 {
-        font-size: 21px;
+        font-size: 20px;
+    }
+    .card {
+        padding: 12px;
+        border-radius: 11px;
     }
     .cols-4 {
         grid-template-columns: 1fr;
     }
     .kpi {
         flex-wrap: wrap;
+        gap: 10px;
+    }
+    .kpi b {
+        font-size: 22px;
     }
     .kpi .trend {
         margin-left: 0;
         margin-top: 4px;
+        font-size: 10.5px;
+    }
+    .sticky-actions {
+        margin-left: -8px;
+        margin-right: -8px;
+        margin-bottom: -24px;
+        padding: 10px 10px max(12px, env(safe-area-inset-bottom));
+        gap: 8px;
+    }
+    .sticky-actions .btn,
+    .sticky-actions button,
+    .sticky-actions a {
+        padding: 10px 10px;
+        font-size: 13px;
+        min-height: 42px;
+    }
+    .auth-wrap {
+        padding: 16px 10px;
+    }
+    .auth-card {
+        padding: 24px 16px;
+        border-radius: 14px;
     }
 }
 

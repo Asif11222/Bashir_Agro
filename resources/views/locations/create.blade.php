@@ -20,6 +20,22 @@
             min-height: 480px;
             position: relative;
         }
+        @media (max-width: 768px) {
+            #field-map {
+                height: 320px;
+                min-height: 320px;
+            }
+            .map-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .map-tools {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 4px;
+            }
+        }
         .map-bar {
             display: flex;
             align-items: center;
@@ -328,9 +344,9 @@
             </section>
         @endif
 
-        <div class="sticky-actions" style="margin-top:20px;">
+        <div class="sticky-actions">
             <a href="{{ route('admin.locations.index') }}" class="btn">বাতিল</a>
-            <button type="submit" class="btn primary" style="padding:10px 24px;font-size:14px;">ফার্ম ও সীমানা সংরক্ষণ করুন</button>
+            <button type="submit" class="btn primary">ফার্ম ও সীমানা সংরক্ষণ করুন</button>
         </div>
     </form>
 </div>

@@ -28,8 +28,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const closeBtn = document.getElementById('sidebar-close-btn');
+
     if (backdrop) {
         backdrop.addEventListener('click', closeSidebar);
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeSidebar();
+        });
     }
 
     document.addEventListener('keydown', (e) => {

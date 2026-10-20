@@ -18,6 +18,7 @@
             <b>{{ $farmName }}</b>
             <small>কৃষি ব্যবস্থাপনা প্ল্যাটফর্ম</small>
         </div>
+        <button type="button" class="sidebar-close-btn" id="sidebar-close-btn" aria-label="মেনু বন্ধ করুন" title="মেনু বন্ধ করুন">✕</button>
     </div>
     <nav class="nav" id="nav">
         <a href="{{ route('admin.dashboard') }}" class="{{ $active === 'dashboard' ? 'active' : '' }}">

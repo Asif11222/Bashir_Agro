@@ -31,7 +31,7 @@
         @csrf
         @method('PUT')
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(420px, 1fr));gap:20px;">
+        <div class="settings-grid">
             
             {{-- 0. Branding & Identity Group --}}
             <section class="card" style="grid-column: 1 / -1;">
@@ -45,7 +45,7 @@
                     </div>
                 </div>
 
-                <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:24px;align-items:start;">
+                <div class="branding-upload-grid">
                     
                     {{-- Logo Upload --}}
                     <div style="border:1px solid var(--line);border-radius:12px;padding:16px;background:#fbfdfc;">
@@ -259,9 +259,9 @@
 
         </div>
 
-        <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:12px;">
-            <a href="{{ route('admin.dashboard') }}" class="btn soft">বাতিল করুন</a>
-            <button type="submit" class="btn primary" style="padding:10px 24px;font-size:14px;font-weight:600;">
+        <div class="sticky-actions">
+            <a href="{{ route('admin.dashboard') }}" class="btn">বাতিল করুন</a>
+            <button type="submit" class="btn primary">
                 💾 সেটিংস সংরক্ষণ করুন
             </button>
         </div>

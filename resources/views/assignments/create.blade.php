@@ -178,7 +178,7 @@
             </div>
         </div>
 
-        <div class="sticky-actions" style="margin-top:24px;">
+        <div class="sticky-actions">
             <a href="{{ route('admin.assignments.index') }}" class="btn">বাতিল</a>
             <button type="submit" class="btn primary">✓ কাজ বরাদ্দ সম্পন্ন করুন</button>
         </div>

@@ -200,9 +200,9 @@
             </div>
         </div>
 
-        <div class="sticky-actions" style="margin-top:24px;">
+        <div class="sticky-actions">
             <a href="{{ route('admin.tasks.index') }}" class="btn">বাতিল</a>
-            <button type="submit" class="btn primary" style="padding:10px 24px;font-size:14px;">কাজ সংরক্ষণ করুন</button>
+            <button type="submit" class="btn primary">কাজ সংরক্ষণ করুন</button>
         </div>
     </form>
 </div>

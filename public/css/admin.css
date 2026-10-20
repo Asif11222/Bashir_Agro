@@ -836,13 +836,18 @@ body.sidebar-locked {
 .personal-info-card .field > .label {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 4px;
     min-height: 20px;
     margin: 0 0 6px;
     font-size: 12px;
     font-weight: 700;
     color: var(--ink);
     white-space: nowrap;
+}
+
+.personal-info-card .field > .label .field-badge-auto {
+    margin-left: auto;
 }
 
 .field-badge-auto {
@@ -864,6 +869,7 @@ body.sidebar-locked {
 
 .req {
     color: #df4540;
+    margin-left: 2px;
 }
 
 .input, .select, .textarea {

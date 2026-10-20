@@ -3,7 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>লগইন — আমার ফার্ম অ্যাডমিন প্যানেল</title>
+    @php
+        $siteFavicon = \App\Models\Setting::get('site_favicon');
+        $siteLogo = \App\Models\Setting::get('site_logo');
+        $farmName = \App\Models\Setting::get('farm_name', 'আমার ফার্ম');
+    @endphp
+    <title>লগইন — {{ $farmName }} অ্যাডমিন প্যানেল</title>
+    @if($siteFavicon)
+        <link rel="icon" href="{{ asset('storage/' . $siteFavicon) }}">
+    @else
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
+    @endif
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
     <style>
         .password-field-wrap {
@@ -44,8 +54,14 @@
 <div class="auth-wrap">
     <div class="auth-card">
         <div class="auth-brand">
-            <div class="leaf">🌱</div>
-            <h1>আমার ফার্ম</h1>
+            @if($siteLogo)
+                <div style="width: 58px; height: 58px; border-radius: 16px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto 12px; padding: 4px; box-shadow: 0 4px 14px rgba(6,78,47,0.12); box-sizing: border-box;">
+                    <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $farmName }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
+            @else
+                <div class="leaf">🌱</div>
+            @endif
+            <h1>{{ $farmName }}</h1>
             <p>কৃষি ব্যবস্থাপনা অ্যাডমিন প্যানেলে লগইন করুন</p>
         </div>
 

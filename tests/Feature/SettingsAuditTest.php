@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Services\AuditService;
 use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SettingsAuditTest extends TestCase
@@ -252,5 +254,63 @@ class SettingsAuditTest extends TestCase
 
         // Test fallback default
         $this->assertSame('default_val', Setting::get('non_existing_key', 'default_val'));
+    }
+
+    public function test_admin_can_upload_and_remove_logo_and_favicon(): void
+    {
+        Storage::fake('public');
+        $admin = $this->createAdmin();
+
+        $logoFile = UploadedFile::fake()->image('custom_logo.png', 120, 120);
+        $faviconFile = UploadedFile::fake()->image('custom_favicon.png', 32, 32);
+
+        $payload = [
+            'farm_name' => 'আমার নিজস্ব ফার্ম',
+            'company_phone' => '01711223344',
+            'company_email' => 'admin@customfarm.com',
+            'company_address' => 'ঢাকা, বাংলাদেশ',
+            'default_task_priority' => 'normal',
+            'default_task_duration' => 60,
+            'default_geofence_radius' => 25,
+            'pagination_size' => 20,
+            'date_format' => 'Y-m-d',
+            'site_logo' => $logoFile,
+            'site_favicon' => $faviconFile,
+        ];
+
+        $response = $this->actingAs($admin)->put('/admin/settings', $payload);
+        $response->assertRedirect('/admin/settings');
+        $response->assertSessionHas('success');
+
+        $storedLogo = Setting::get('site_logo');
+        $storedFavicon = Setting::get('site_favicon');
+
+        $this->assertNotEmpty($storedLogo);
+        $this->assertNotEmpty($storedFavicon);
+        Storage::disk('public')->assertExists($storedLogo);
+        Storage::disk('public')->assertExists($storedFavicon);
+
+        // Test Removal
+        $removePayload = [
+            'farm_name' => 'আমার নিজস্ব ফার্ম',
+            'company_phone' => '01711223344',
+            'company_email' => 'admin@customfarm.com',
+            'company_address' => 'ঢাকা, বাংলাদেশ',
+            'default_task_priority' => 'normal',
+            'default_task_duration' => 60,
+            'default_geofence_radius' => 25,
+            'pagination_size' => 20,
+            'date_format' => 'Y-m-d',
+            'remove_site_logo' => '1',
+            'remove_site_favicon' => '1',
+        ];
+
+        $removeResponse = $this->actingAs($admin)->put('/admin/settings', $removePayload);
+        $removeResponse->assertRedirect('/admin/settings');
+
+        $this->assertEmpty(Setting::get('site_logo'));
+        $this->assertEmpty(Setting::get('site_favicon'));
+        Storage::disk('public')->assertMissing($storedLogo);
+        Storage::disk('public')->assertMissing($storedFavicon);
     }
 }

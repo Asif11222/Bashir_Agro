@@ -66,6 +66,18 @@ class SettingsService
             'group' => 'system',
             'description' => 'সিস্টেম তারিখ প্রদর্শনের ফরম্যাট',
         ],
+        'site_logo' => [
+            'value' => '',
+            'type' => 'string',
+            'group' => 'branding',
+            'description' => 'অ্যাডমিন সাইটের প্রধান লোগো',
+        ],
+        'site_favicon' => [
+            'value' => '',
+            'type' => 'string',
+            'group' => 'branding',
+            'description' => 'ব্রাউজার ট্যাবে প্রদর্শিত ফেভিকন',
+        ],
     ];
 
     /**

@@ -27,12 +27,97 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.settings.update') }}">
+    <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(420px, 1fr));gap:20px;">
             
+            {{-- 0. Branding & Identity Group --}}
+            <section class="card" style="grid-column: 1 / -1;">
+                <div class="card-title">
+                    <div class="title-left">
+                        <span class="iconbox" style="background:#e8f5e9;color:#2e7d32;">🎨</span>
+                        <div>
+                            <h2>ব্র্যান্ডিং ও ভিজ্যুয়াল পরিচয় (Branding & Identity)</h2>
+                            <div class="sub">অ্যাডমিন প্যানেলের প্রধান সাইট লোগো ও ব্রাউজার ট্যাবের ফেভিকন আপলোড ও পরিবর্তন করুন</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:24px;align-items:start;">
+                    
+                    {{-- Logo Upload --}}
+                    <div style="border:1px solid var(--line);border-radius:12px;padding:16px;background:#fbfdfc;">
+                        <label class="label" style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+                            <span>সাইট লোগো (Site Logo)</span>
+                            <span class="pill" style="font-size:10px;padding:2px 8px;">প্রস্তাবিত: PNG / SVG / WebP</span>
+                        </label>
+
+                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+                            <div id="logo-preview-box" style="width:72px;height:72px;border-radius:14px;border:2px dashed #b9d8c6;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+                                @php $currentLogo = \App\Models\Setting::get('site_logo'); @endphp
+                                @if($currentLogo)
+                                    <img src="{{ asset('storage/' . $currentLogo) }}" id="logo-preview-img" alt="লোগো" style="max-width:100%;max-height:100%;object-fit:contain;padding:4px;">
+                                @else
+                                    <span id="logo-default-icon" style="font-size:32px;">🌱</span>
+                                    <img src="" id="logo-preview-img" alt="লোগো" style="display:none;max-width:100%;max-height:100%;object-fit:contain;padding:4px;">
+                                @endif
+                            </div>
+
+                            <div style="flex:1;">
+                                <input type="file" id="site_logo" name="site_logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="input" style="padding:6px 10px;font-size:12px;width:100%;" onchange="previewBrandingImage(this, 'logo-preview-img', 'logo-default-icon')">
+                                <small style="color:var(--muted);display:block;margin-top:4px;font-size:11px;">
+                                    সাইডবার ও লগইন পেজে প্রদর্শিত হবে। সর্বোচ্চ সাইজ: 2MB
+                                </small>
+                            </div>
+                        </div>
+
+                        @if($currentLogo)
+                            <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--red);cursor:pointer;margin-top:4px;">
+                                <input type="checkbox" name="remove_site_logo" value="1">
+                                <span>বর্তমান লোগো মুছে ডিফল্ট আইকন (🌱) ব্যবহার করুন</span>
+                            </label>
+                        @endif
+                    </div>
+
+                    {{-- Favicon Upload --}}
+                    <div style="border:1px solid var(--line);border-radius:12px;padding:16px;background:#fbfdfc;">
+                        <label class="label" style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+                            <span>ফেভিকন (Favicon)</span>
+                            <span class="pill" style="font-size:10px;padding:2px 8px;">প্রস্তাবিত: ICO / PNG (32x32)</span>
+                        </label>
+
+                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+                            <div id="favicon-preview-box" style="width:72px;height:72px;border-radius:14px;border:2px dashed #b9d8c6;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+                                @php $currentFavicon = \App\Models\Setting::get('site_favicon'); @endphp
+                                @if($currentFavicon)
+                                    <img src="{{ asset('storage/' . $currentFavicon) }}" id="favicon-preview-img" alt="ফেভিকন" style="width:36px;height:36px;object-fit:contain;">
+                                @else
+                                    <span id="favicon-default-icon" style="font-size:28px;">🌱</span>
+                                    <img src="" id="favicon-preview-img" alt="ফেভিকন" style="display:none;width:36px;height:36px;object-fit:contain;">
+                                @endif
+                            </div>
+
+                            <div style="flex:1;">
+                                <input type="file" id="site_favicon" name="site_favicon" accept=".ico,image/x-icon,image/png,image/svg+xml,image/webp,image/jpeg" class="input" style="padding:6px 10px;font-size:12px;width:100%;" onchange="previewBrandingImage(this, 'favicon-preview-img', 'favicon-default-icon')">
+                                <small style="color:var(--muted);display:block;margin-top:4px;font-size:11px;">
+                                    ব্রাউজার ট্যাব ও বুকমার্কে প্রদর্শিত ছোট আইকন। সর্বোচ্চ সাইজ: 1MB
+                                </small>
+                            </div>
+                        </div>
+
+                        @if($currentFavicon)
+                            <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--red);cursor:pointer;margin-top:4px;">
+                                <input type="checkbox" name="remove_site_favicon" value="1">
+                                <span>বর্তমান ফেভিকন মুছে ডিফল্ট ফেভিকন ব্যবহার করুন</span>
+                            </label>
+                        @endif
+                    </div>
+
+                </div>
+            </section>
+
             {{-- 1. General Settings Group --}}
             <section class="card">
                 <div class="card-title">
@@ -183,3 +268,26 @@
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function previewBrandingImage(input, previewImgId, defaultIconId) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewImg = document.getElementById(previewImgId);
+            const defaultIcon = document.getElementById(defaultIconId);
+            if (previewImg) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+            }
+            if (defaultIcon) {
+                defaultIcon.style.display = 'none';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+</script>
+@endpush

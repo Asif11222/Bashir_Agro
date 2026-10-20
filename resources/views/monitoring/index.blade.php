@@ -2,33 +2,7 @@
 
 @section('title', 'কার্যক্রম পর্যবেক্ষণ — আমার ফার্ম')
 
-@push('styles')
-<style>
-.recent-activities-timeline {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px 24px;
-    max-height: 280px;
-    overflow-y: auto;
-    padding-right: 6px;
-}
-@media (max-width: 900px) {
-    .recent-activities-timeline {
-        grid-template-columns: 1fr;
-    }
-}
-.recent-activities-timeline::-webkit-scrollbar {
-    width: 5px;
-}
-.recent-activities-timeline::-webkit-scrollbar-thumb {
-    background: #c3d9cc;
-    border-radius: 4px;
-}
-.recent-activities-timeline::-webkit-scrollbar-thumb:hover {
-    background: #9abfa9;
-}
-</style>
-@endpush
+
 
 @section('content')
 <div class="page">

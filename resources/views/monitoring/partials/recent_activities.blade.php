@@ -3,18 +3,16 @@
         <div class="title-left">
             <span class="iconbox">◉</span>
             <div>
-                <h2>সাম্প্রতিক অপারেশনাল কার্যক্রম</h2>
-                <div class="sub">রিয়েল-টাইম সিস্টেম অ্যাক্টিভিটি স্ট্রিম</div>
+                <h2>সাম্প্রতিক কার্যক্রম</h2>
+                <div class="sub">শেষ আপডেটগুলো (অ্যাক্টিভিটি লগ)</div>
             </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-            <span class="pill" style="font-size:11px;color:var(--g700);background:#e8f5e9;">
-                <span class="dot" style="background:#2e7d32"></span>সর্বশেষ ১০টি রেকর্ড
-            </span>
-        </div>
+        <a href="{{ Route::has('admin.audit') ? route('admin.audit') : route('admin.dashboard') }}" class="btn soft" style="font-size:12px;padding:6px 12px;">
+            সব দেখুন →
+        </a>
     </div>
 
-    <div class="timeline recent-activities-timeline">
+    <div class="timeline">
         @forelse($recentActivities as $activity)
             <div class="event">
                 <p>

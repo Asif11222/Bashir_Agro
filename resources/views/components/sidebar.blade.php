@@ -1,13 +1,21 @@
 @php
     $unreadNotifications = auth()->check() ? auth()->user()->unreadNotifications()->count() : 0;
     $active = $active ?? 'dashboard';
+    $siteLogo = \App\Models\Setting::get('site_logo');
+    $farmName = \App\Models\Setting::get('farm_name', 'আমার ফার্ম');
 @endphp
 
 <aside class="sidebar" id="side">
     <div class="brand">
-        <div class="leaf">🌱</div>
+        @if($siteLogo)
+            <div class="brand-logo-wrap" style="width: 44px; height: 44px; border-radius: 14px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; padding: 4px; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $farmName }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+            </div>
+        @else
+            <div class="leaf">🌱</div>
+        @endif
         <div>
-            <b>আমার ফার্ম</b>
+            <b>{{ $farmName }}</b>
             <small>কৃষি ব্যবস্থাপনা প্ল্যাটফর্ম</small>
         </div>
     </div>

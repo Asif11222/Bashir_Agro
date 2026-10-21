@@ -23,6 +23,8 @@ class AssignmentResource extends JsonResource
             'scheduled_date' => $this->scheduled_date?->toDateString(),
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
+            'formatted_time_range' => $this->formatted_time_range,
+            'is_past_deadline' => $this->is_past_deadline,
             'priority' => $this->priority,
             'status' => $this->status,
             'notes' => $this->notes,

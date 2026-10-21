@@ -52,7 +52,10 @@
                 </div>
                 <div>
                     <span class="label">সময়সীমা</span>
-                    <b>{{ substr($assignment->start_time, 0, 5) }} {{ $assignment->end_time ? 'থেকে ' . substr($assignment->end_time, 0, 5) : '' }}</b>
+                    <b style="font-size:14px;color:var(--ink);">{{ $assignment->formatted_time_range }}</b>
+                    @if($assignment->is_past_deadline && !in_array($assignment->status, ['completed', 'cancelled']))
+                        <span class="pill red" style="margin-top:4px;display:inline-flex;font-size:11px"><span class="dot"></span>সময় অতিক্রান্ত (বিলম্বিত জমা সম্ভব)</span>
+                    @endif
                 </div>
                 <div>
                     <span class="label">বরাদ্দকারী (অ্যাডমিন)</span>

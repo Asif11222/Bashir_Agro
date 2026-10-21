@@ -125,7 +125,10 @@
                                     </td>
                                     <td>
                                         <b>{{ $assignment->scheduled_date ? $assignment->scheduled_date->format('d M, Y') : '—' }}</b>
-                                        <br><small style="color:var(--muted)">{{ substr($assignment->start_time, 0, 5) }} {{ $assignment->end_time ? ' - ' . substr($assignment->end_time, 0, 5) : '' }}</small>
+                                        <br><small style="color:var(--muted)">{{ $assignment->formatted_time_range }}</small>
+                                        @if($assignment->is_past_deadline && !in_array($assignment->status, ['completed', 'cancelled']))
+                                            <br><span style="font-size:10px;color:var(--red)">● সময় অতিক্রান্ত</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <span class="pill {{ $assignment->priority_badge_class }}">

@@ -107,7 +107,7 @@ class SubmissionController extends Controller
                     'accuracy' => $validated['accuracy'] ?? null,
                     'geofence_passed' => $geofenceResult['is_within'],
                     'distance_meters' => $geofenceResult['distance_meters'],
-                    'is_late' => $assignment->scheduled_date && $assignment->scheduled_date->isPast(),
+                    'is_late' => $assignment->is_past_deadline,
                     'status' => 'submitted',
                     'verification_status' => 'pending',
                     'validation_status' => 'pending',

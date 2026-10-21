@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 class TaskAssignment extends Model
 {
@@ -136,5 +137,71 @@ class TaskAssignment extends Model
             'assigned', 'pending' => 'blue',
             default => '',
         };
+    }
+
+    /**
+     * Format a time string (e.g. 08:00 or 22:00) with Bengali period and 12-hour AM/PM format.
+     */
+    public static function formatTimePeriod(?string $timeStr): ?string
+    {
+        if (! $timeStr) {
+            return null;
+        }
+
+        try {
+            $carbon = Carbon::parse($timeStr);
+            $hour = (int) $carbon->format('G');
+            $period = match (true) {
+                $hour >= 5 && $hour < 12 => 'সকাল',
+                $hour >= 12 && $hour < 15 => 'দুপুর',
+                $hour >= 15 && $hour < 18 => 'বিকাল',
+                $hour >= 18 && $hour < 20 => 'সন্ধ্যা',
+                default => 'রাত',
+            };
+
+            return "{$period} ".$carbon->format('h:i A');
+        } catch (\Throwable) {
+            return substr($timeStr, 0, 5);
+        }
+    }
+
+    /**
+     * Human-readable Bengali time range with 12-hour AM/PM format.
+     * e.g. "সকাল 08:00 AM থেকে রাত 10:00 PM"
+     */
+    public function getFormattedTimeRangeAttribute(): string
+    {
+        $start = static::formatTimePeriod($this->start_time);
+        $end = static::formatTimePeriod($this->end_time);
+
+        if ($start && $end) {
+            return "{$start} থেকে {$end}";
+        }
+
+        return $start ?? 'সারাদিন';
+    }
+
+    /**
+     * Absolute deadline Carbon instance combining scheduled date and end time.
+     */
+    public function getDeadlineDateTimeAttribute(): ?Carbon
+    {
+        if (! $this->scheduled_date) {
+            return null;
+        }
+
+        $endTime = $this->end_time ?: '23:59:59';
+
+        return Carbon::parse($this->scheduled_date->format('Y-m-d').' '.$endTime);
+    }
+
+    /**
+     * Determine if current time has passed the scheduled assignment deadline.
+     */
+    public function getIsPastDeadlineAttribute(): bool
+    {
+        $deadline = $this->deadline_date_time;
+
+        return $deadline ? now()->isAfter($deadline) : false;
     }
 }

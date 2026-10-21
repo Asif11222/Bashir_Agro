@@ -26,11 +26,11 @@
                         <span>{{ $assignment->location->name ?? '—' }}</span>
                     </td>
                     <td>
-                        <b>{{ substr($assignment->start_time, 0, 5) }}</b>
-                        @if($assignment->end_time)
-                            - {{ substr($assignment->end_time, 0, 5) }}
-                        @endif
+                        <b style="font-size:12px">{{ $assignment->formatted_time_range }}</b>
                         <br><small style="color:var(--muted)">{{ $assignment->scheduled_date ? $assignment->scheduled_date->format('d/m/Y') : '' }}</small>
+                        @if($assignment->is_past_deadline && !in_array($assignment->status, ['completed', 'cancelled']))
+                            <br><span style="font-size:10px;color:var(--red)">● সময় অতিক্রান্ত</span>
+                        @endif
                     </td>
                     <td>
                         <span class="pill {{ $assignment->priority_badge_class }}">

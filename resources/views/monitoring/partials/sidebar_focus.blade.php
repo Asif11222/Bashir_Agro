@@ -28,7 +28,7 @@
             </div>
             <div>
                 <span class="label">নির্ধারিত সময়সূচি</span>
-                <b>{{ substr($activeAssignment->start_time, 0, 5) }} - {{ $activeAssignment->end_time ? substr($activeAssignment->end_time, 0, 5) : '—' }}</b>
+                <b>{{ $activeAssignment->formatted_time_range }}</b>
             </div>
             <div>
                 <span class="label">বর্তমান অবস্থা</span>

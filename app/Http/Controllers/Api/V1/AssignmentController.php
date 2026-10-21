@@ -35,9 +35,20 @@ class AssignmentController extends Controller
             $query->where('status', $request->query('status'));
         }
 
-        // Date filter
+        // Date filter: single date, range, or period filter
         if ($request->filled('date')) {
             $query->whereDate('scheduled_date', $request->query('date'));
+        } elseif ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('scheduled_date', [$request->query('start_date'), $request->query('end_date')]);
+        } elseif ($request->filled('filter')) {
+            $filter = $request->query('filter');
+            if ($filter === 'today') {
+                $query->whereDate('scheduled_date', today());
+            } elseif ($filter === 'week' || $filter === '1_week') {
+                $query->whereBetween('scheduled_date', [now()->startOfWeek()->toDateString(), now()->endOfWeek()->toDateString()]);
+            } elseif ($filter === 'month' || $filter === '1_month') {
+                $query->whereBetween('scheduled_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()]);
+            }
         }
 
         // Location filter

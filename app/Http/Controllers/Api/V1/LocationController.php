@@ -15,7 +15,8 @@ class LocationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $locations = FarmLocation::where('status', 'active')
+        $locations = FarmLocation::withCount(['farmers', 'taskAssignments'])
+            ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
@@ -30,6 +31,8 @@ class LocationController extends Controller
      */
     public function show(FarmLocation $location): JsonResponse
     {
+        $location->loadCount(['farmers', 'taskAssignments']);
+
         return response()->json([
             'success' => true,
             'data' => new LocationResource($location),

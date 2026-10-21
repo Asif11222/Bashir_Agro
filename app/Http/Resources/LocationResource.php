@@ -31,6 +31,8 @@ class LocationResource extends JsonResource
                 'longitude' => $this->longitude ? (float) $this->longitude : null,
             ],
             'farmer_id' => $this->farmer_id,
+            'farmers_count' => (int) ($this->farmers_count ?? 0),
+            'tasks_count' => (int) ($this->task_assignments_count ?? 0),
             'boundary' => $this->getEffectiveBoundaryGeoJson(),
             'geofence_radius_meters' => (int) $this->geofence_radius_meters,
             'status' => $this->status,

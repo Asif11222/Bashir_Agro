@@ -45,43 +45,56 @@ class DashboardApiController extends Controller
             ? (int) round(($completedTasksCount / $todayTasksCount) * 100)
             : 0;
 
-        $farmers = $farmersQuery->get()->map(function (Farmer $farmer) use ($dateParam, $locationId): array {
-            $farmerTasksQuery = TaskAssignment::where('farmer_id', $farmer->id);
-            if ($dateParam) {
-                $farmerTasksQuery->whereDate('scheduled_date', $dateParam);
-            }
-            if ($locationId) {
-                $farmerTasksQuery->where('farm_location_id', $locationId);
-            }
+        $farmers = $farmersQuery
+            ->withCount([
+                'taskAssignments as total_tasks' => function ($q) use ($dateParam, $locationId) {
+                    if ($dateParam) {
+                        $q->whereDate('scheduled_date', $dateParam);
+                    }
+                    if ($locationId) {
+                        $q->where('farm_location_id', $locationId);
+                    }
+                },
+                'taskAssignments as completed_tasks' => function ($q) use ($dateParam, $locationId) {
+                    $q->where('status', 'completed');
+                    if ($dateParam) {
+                        $q->whereDate('scheduled_date', $dateParam);
+                    }
+                    if ($locationId) {
+                        $q->where('farm_location_id', $locationId);
+                    }
+                },
+            ])
+            ->get()
+            ->map(function (Farmer $farmer): array {
+                $assignedCount = (int) $farmer->total_tasks;
+                $completedCount = (int) $farmer->completed_tasks;
 
-            $assignedCount = (clone $farmerTasksQuery)->count();
-            $completedCount = (clone $farmerTasksQuery)->where('status', 'completed')->count();
+                $progressPercent = $assignedCount > 0
+                    ? (int) round(($completedCount / $assignedCount) * 100)
+                    : ($completedCount > 0 ? 100 : 0);
 
-            $progressPercent = $assignedCount > 0
-                ? (int) round(($completedCount / $assignedCount) * 100)
-                : ($completedCount > 0 ? 100 : 0);
+                $primaryLocation = $farmer->farmLocations->first();
+                $categories = $farmer->farmLocations->pluck('type')->filter()->unique()->values()->all();
+                if (empty($categories) && $farmer->primary_activity) {
+                    $categories = [$farmer->primary_activity];
+                }
 
-            $primaryLocation = $farmer->farmLocations->first();
-            $categories = $farmer->farmLocations->pluck('type')->filter()->unique()->values()->all();
-            if (empty($categories) && $farmer->primary_activity) {
-                $categories = [$farmer->primary_activity];
-            }
-
-            return [
-                'id' => (string) $farmer->id,
-                'farmer_code' => $farmer->farmer_code,
-                'name' => $farmer->full_name,
-                'phone' => $farmer->phone,
-                'region' => $primaryLocation?->name ?? ($farmer->address ?: 'বাংলাদেশ'),
-                'farm_type' => $farmer->primary_activity ?: 'কৃষি চাষ',
-                'progress_percent' => $progressPercent,
-                'is_assigned' => $assignedCount > 0,
-                'land_area' => (float) ($farmer->farmLocations->sum('area') ?: 4.0),
-                'farming_categories' => ! empty($categories) ? $categories : ['সবজি'],
-                'total_tasks' => $assignedCount,
-                'completed_tasks' => $completedCount,
-            ];
-        });
+                return [
+                    'id' => (string) $farmer->id,
+                    'farmer_code' => $farmer->farmer_code,
+                    'name' => $farmer->full_name,
+                    'phone' => $farmer->phone,
+                    'region' => $primaryLocation?->name ?? ($farmer->address ?: 'বাংলাদেশ'),
+                    'farm_type' => $farmer->primary_activity ?: 'কৃষি চাষ',
+                    'progress_percent' => $progressPercent,
+                    'is_assigned' => $assignedCount > 0,
+                    'land_area' => (float) ($farmer->farmLocations->sum('area') ?: 4.0),
+                    'farming_categories' => ! empty($categories) ? $categories : ['সবজি'],
+                    'total_tasks' => $assignedCount,
+                    'completed_tasks' => $completedCount,
+                ];
+            });
 
         $activeLocations = FarmLocation::where('status', 'active')
             ->orderBy('name')

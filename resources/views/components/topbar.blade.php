@@ -9,15 +9,15 @@
     <button class="mobile" id="menu" type="button" aria-label="মেনু খুলুন">☰</button>
     <div class="crumb" id="crumb" title="{{ $title ?? 'ড্যাশবোর্ড' }}">{{ $title ?? 'ড্যাশবোর্ড' }}</div>
     <div class="spacer"></div>
-    <select class="date" aria-label="সময় নির্বাচন">
-        <option>এই মাস</option>
-        <option>গত ৭ দিন</option>
-        <option>গত ৩০ দিন</option>
-    </select>
-    <label class="search">
-        <span class="search-icon" aria-hidden="true">⌕</span>
-        <input id="search" placeholder="কৃষক, লোকেশন বা কাজ খুঁজুন..." autocomplete="off">
-    </label>
+    <div class="search-wrap" id="global-search-wrap">
+        <label class="search" for="global-search-input">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="global-search-input" type="text" placeholder="কৃষক, লোকেশন বা কাজ খুঁজুন..." autocomplete="off" spellcheck="false" data-search-url="{{ route('admin.global-search') }}">
+            <kbd class="search-kbd" title="কীবোর্ড শর্টকাট: Ctrl + K">Ctrl K</kbd>
+            <button type="button" class="search-clear-btn" id="global-search-clear" aria-label="সার্চ মুছুন" style="display:none;">✕</button>
+        </label>
+        <div class="search-dropdown" id="global-search-dropdown" style="display:none;" role="listbox"></div>
+    </div>
     <a href="{{ Route::has('admin.notifications') ? route('admin.notifications') : '#' }}" class="top-icon" aria-label="নোটিফিকেশন">
         ♧
         @if($unreadNotifications > 0)

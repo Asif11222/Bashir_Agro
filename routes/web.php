@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FarmerController;
 use App\Http\Controllers\Admin\FarmLocationController;
+use App\Http\Controllers\Admin\GlobalSearchController;
 use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\ReportController;
@@ -52,6 +53,7 @@ Route::prefix('admin')
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
         Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::get('/audit', [AuditController::class, 'index'])->name('audit');
+        Route::get('/global-search', [GlobalSearchController::class, 'search'])->name('global-search');
         Route::post('/session/keep-alive', function () {
             return response()->json(['status' => 'active', 'timestamp' => now()->timestamp]);
         })->name('session.keep-alive');

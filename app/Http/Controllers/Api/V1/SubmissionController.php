@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AssignmentResource;
 use App\Http\Resources\SubmissionResource;
 use App\Models\EvidencePhoto;
+use App\Models\FarmLocation;
 use App\Models\TaskAssignment;
 use App\Models\TaskSubmission;
+use App\Models\TaskTemplate;
 use App\Services\GeofenceService;
 use App\Services\TaskAssignmentService;
 use Illuminate\Http\JsonResponse;
@@ -183,5 +186,109 @@ class SubmissionController extends Controller
             'success' => true,
             'data' => new SubmissionResource($submission),
         ]);
+    }
+
+    /**
+     * Create and submit a farmer self-reported completed task (e.g. from voice or text input).
+     */
+    public function selfReport(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user->isFarmer() || ! $user->farmerProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'শুধুমাত্র কৃষকরা নতুন কাজ রিপোর্ট করতে পারবেন।',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'description' => ['required', 'string', 'max:2000'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'accuracy' => ['nullable', 'numeric', 'min:0'],
+            'farm_location_id' => ['nullable', 'exists:farm_locations,id'],
+            'photos' => ['nullable', 'array'],
+            'photos.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+        ]);
+
+        $farmerId = $user->farmerProfile->id;
+
+        // Find or fallback to a general task template
+        $template = TaskTemplate::where('name', 'LIKE', '%স্ব-প্রতিবেদিত%')
+            ->orWhere('name', 'LIKE', '%অন্যান্য%')
+            ->first() ?? TaskTemplate::first();
+
+        $locationId = $validated['farm_location_id'] ?? null;
+        if (! $locationId) {
+            $location = FarmLocation::first();
+            $locationId = $location?->id;
+        }
+
+        $now = now();
+        $lat = $validated['latitude'] ?? 23.8103;
+        $lng = $validated['longitude'] ?? 90.4125;
+        $accuracy = $validated['accuracy'] ?? 10.0;
+
+        $assignment = DB::transaction(function () use ($farmerId, $template, $locationId, $now, $validated, $lat, $lng, $accuracy, $request) {
+            $taskAssignment = TaskAssignment::create([
+                'task_template_id' => $template?->id,
+                'farmer_id' => $farmerId,
+                'farm_location_id' => $locationId,
+                'scheduled_date' => $now->toDateString(),
+                'start_time' => $now->copy()->subHours(1)->format('H:i:s'),
+                'end_time' => $now->format('H:i:s'),
+                'priority' => 'normal',
+                'notes' => $validated['description'],
+                'status' => 'completed',
+                'assigned_by' => null,
+                'assigned_at' => $now,
+                'started_at' => $now->copy()->subMinutes(30),
+                'completed_at' => $now,
+            ]);
+
+            $taskSubmission = TaskSubmission::create([
+                'task_assignment_id' => $taskAssignment->id,
+                'farmer_id' => $farmerId,
+                'submitted_at' => $now,
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'accuracy' => $accuracy,
+                'geofence_passed' => true,
+                'distance_meters' => 0,
+                'is_late' => false,
+                'status' => 'completed',
+                'verification_status' => 'verified',
+                'validation_status' => 'verified',
+                'notes' => $validated['description'],
+                'farmer_note' => $validated['description'],
+            ]);
+
+            $uploadedFiles = $request->file('photos', []);
+            if (! empty($uploadedFiles)) {
+                foreach ($uploadedFiles as $photo) {
+                    $path = $photo->store('submissions/'.$taskSubmission->id, 'public');
+                    EvidencePhoto::create([
+                        'task_submission_id' => $taskSubmission->id,
+                        'file_path' => $path,
+                        'captured_at' => $now,
+                        'latitude' => $lat,
+                        'longitude' => $lng,
+                        'accuracy' => $accuracy,
+                        'mime_type' => $photo->getClientMimeType(),
+                        'file_size' => $photo->getSize(),
+                    ]);
+                }
+            }
+
+            return $taskAssignment;
+        });
+
+        $assignment->load(['taskTemplate', 'location', 'farmer', 'submission.evidencePhotos']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'কাজটি সফলভাবে সম্পন্ন হিসেবে যুক্ত করা হয়েছে।',
+            'data' => new AssignmentResource($assignment),
+        ], 201);
     }
 }

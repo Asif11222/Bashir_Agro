@@ -51,6 +51,7 @@ Route::prefix('v1')->group(function () {
         // Submissions & Evidence Upload
         Route::post('/assignments/{assignment}/submit', [SubmissionController::class, 'submit'])->name('api.v1.submissions.submit');
         Route::get('/assignments/{assignment}/submission', [SubmissionController::class, 'show'])->name('api.v1.submissions.show');
+        Route::post('/farmer/self-report-task', [SubmissionController::class, 'selfReport'])->name('api.v1.farmer.self-report');
 
         // Farm Locations
         Route::get('/locations', [LocationController::class, 'index'])->name('api.v1.locations.index');

@@ -21,7 +21,7 @@ class AssignmentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $query = TaskAssignment::with(['taskTemplate', 'location', 'farmer'])->latest('scheduled_date');
+        $query = TaskAssignment::with(['taskTemplate', 'location', 'farmer', 'submission.evidencePhotos'])->latest('scheduled_date');
 
         // Scope to farmer if requester is a farmer
         if ($user->isFarmer() && $user->farmerProfile) {

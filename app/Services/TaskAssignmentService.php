@@ -86,8 +86,13 @@ class TaskAssignmentService
                 $updateData['started_at'] = now();
             }
 
-            if ($prevStatus !== 'completed' && $newStatus === 'completed' && ! $assignment->completed_at) {
-                $updateData['completed_at'] = now();
+            if ($prevStatus !== 'completed' && $newStatus === 'completed') {
+                if (! $assignment->started_at) {
+                    $updateData['started_at'] = now();
+                }
+                if (! $assignment->completed_at) {
+                    $updateData['completed_at'] = now();
+                }
             }
 
             $assignment->update($updateData);

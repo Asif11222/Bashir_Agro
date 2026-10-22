@@ -42,6 +42,7 @@ class SubmissionController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
             'photos' => ['nullable', 'array'],
             'photos.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
+            'override_geofence' => ['nullable'],
         ]);
 
         $assignment->load(['taskTemplate', 'location', 'farmer']);
@@ -59,8 +60,13 @@ class SubmissionController extends Controller
             ?? $assignment->taskTemplate->require_geofence
             ?? true);
 
-        // Strict Geofence / Boundary Check: reject if outside boundary/radius and required
-        if ($requiresGeofence && ! $geofenceResult['is_within']) {
+        $overrideGeofence = $request->boolean('override_geofence')
+            || $request->input('override_geofence') === '1'
+            || $request->input('override_geofence') === 1
+            || filter_var($request->input('override_geofence'), FILTER_VALIDATE_BOOLEAN);
+
+        // Strict Geofence / Boundary Check: reject if outside boundary/radius and required unless farmer confirmed override
+        if ($requiresGeofence && ! $geofenceResult['is_within'] && ! $overrideGeofence) {
             $dist = $geofenceResult['distance_meters'];
             $radius = $geofenceResult['radius_meters'];
             $isPolygon = ! empty($geofenceResult['polygon_validated']);
@@ -94,8 +100,14 @@ class SubmissionController extends Controller
             ], 422);
         }
 
-        $submission = DB::transaction(function () use ($validated, $assignment, $geofenceResult, $uploadedFiles, $user) {
+        $submission = DB::transaction(function () use ($validated, $assignment, $geofenceResult, $uploadedFiles, $user, $overrideGeofence) {
             $photoPaths = [];
+
+            $farmerNote = $validated['notes'] ?? null;
+            if ($overrideGeofence && ! $geofenceResult['is_within']) {
+                $tag = '[মাঠের বাইরে থেকে জমা দেওয়া]';
+                $farmerNote = $farmerNote ? "{$farmerNote} {$tag}" : $tag;
+            }
 
             $taskSubmission = TaskSubmission::updateOrCreate(
                 ['task_assignment_id' => $assignment->id],
@@ -109,10 +121,10 @@ class SubmissionController extends Controller
                     'distance_meters' => $geofenceResult['distance_meters'],
                     'is_late' => $assignment->is_past_deadline,
                     'status' => 'submitted',
-                    'verification_status' => 'pending',
-                    'validation_status' => 'pending',
-                    'notes' => $validated['notes'] ?? null,
-                    'farmer_note' => $validated['notes'] ?? null,
+                    'verification_status' => $geofenceResult['is_within'] ? 'pending' : 'flagged',
+                    'validation_status' => $geofenceResult['is_within'] ? 'pending' : 'flagged',
+                    'notes' => $farmerNote,
+                    'farmer_note' => $farmerNote,
                 ]
             );
 

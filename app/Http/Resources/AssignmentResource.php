@@ -31,6 +31,7 @@ class AssignmentResource extends JsonResource
             'assigned_at' => $this->assigned_at?->toIso8601String(),
             'started_at' => $this->started_at?->toIso8601String(),
             'completed_at' => $this->completed_at?->toIso8601String(),
+            'work_duration' => $this->work_duration,
             'task' => new TaskResource($this->whenLoaded('taskTemplate')),
             'farmer' => new FarmerResource($this->whenLoaded('farmer')),
             'location' => new LocationResource($this->whenLoaded('location')),

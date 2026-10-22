@@ -204,4 +204,32 @@ class TaskAssignment extends Model
 
         return $deadline ? now()->isAfter($deadline) : false;
     }
+
+    /**
+     * Total work duration in human-readable Bengali format.
+     */
+    public function getWorkDurationAttribute(): ?string
+    {
+        if (! $this->started_at) {
+            return null;
+        }
+
+        $endTime = $this->completed_at ?? now();
+        $diffMinutes = (int) $this->started_at->diffInMinutes($endTime);
+
+        if ($diffMinutes < 1) {
+            return '১ মিনিটের কম';
+        }
+
+        $hours = intdiv($diffMinutes, 60);
+        $minutes = $diffMinutes % 60;
+
+        if ($hours > 0 && $minutes > 0) {
+            return "{$hours} ঘণ্টা {$minutes} মিনিট";
+        } elseif ($hours > 0) {
+            return "{$hours} ঘণ্টা";
+        }
+
+        return "{$minutes} মিনিট";
+    }
 }

@@ -197,6 +197,74 @@ class FieldBoundaryValidationTest extends TestCase
         $this->assertEquals('in_progress', $assignment->fresh()->status);
     }
 
+    public function test_outside_boundary_submission_allowed_when_override_geofence_confirmed(): void
+    {
+        $token = $this->farmerUser->createToken('phone')->plainTextToken;
+
+        $coords = [
+            [89.0000, 24.0000],
+            [89.0100, 24.0000],
+            [89.0100, 24.0100],
+            [89.0000, 24.0100],
+            [89.0000, 24.0000],
+        ];
+
+        $location = FarmLocation::create([
+            'location_code' => 'LOC-002002',
+            'name' => 'নাটোর ব্লক খামার B',
+            'type' => 'ধানের জমি',
+            'address' => 'নাটোর',
+            'latitude' => 24.005000,
+            'longitude' => 89.005000,
+            'geofence_radius_meters' => 20,
+            'boundary_geojson' => [
+                'type' => 'Polygon',
+                'coordinates' => [$coords],
+            ],
+            'status' => 'active',
+        ]);
+
+        $task = TaskTemplate::create([
+            'task_code' => 'FB-VAL-02',
+            'name' => 'কীটনাশক ছিটানো',
+            'category' => 'বালাই ব্যবস্থাপনা',
+            'instructions' => 'কীটনাশক সঠিকভাবে স্প্রে করুন',
+            'requires_geofence_validation' => true,
+            'status' => 'active',
+        ]);
+
+        $assignment = TaskAssignment::create([
+            'task_template_id' => $task->id,
+            'farmer_id' => $this->farmer->id,
+            'farm_location_id' => $location->id,
+            'scheduled_date' => today(),
+            'start_time' => '09:00',
+            'status' => 'in_progress',
+        ]);
+
+        // Submit from outside boundary (~1.5km away) with override_geofence = true
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/v1/assignments/{$assignment->id}/submit", [
+                'latitude' => 24.025000,
+                'longitude' => 89.005000,
+                'accuracy' => 5.0,
+                'notes' => 'জরুরি প্রয়োজনে বাইরে থেকে সাবমিট',
+                'override_geofence' => true,
+            ]);
+
+        $response->assertStatus(201);
+        $response->assertJson([
+            'success' => true,
+        ]);
+
+        $assignment->refresh();
+        $this->assertEquals('completed', $assignment->status);
+        $this->assertNotNull($assignment->submission);
+        $this->assertFalse($assignment->submission->geofence_passed);
+        $this->assertEquals('flagged', $assignment->submission->verification_status);
+        $this->assertStringContainsString('মাঠের বাইরে থেকে জমা দেওয়া', $assignment->submission->farmer_note);
+    }
+
     public function test_spatial_validation_service_calculations(): void
     {
         $service = new SpatialValidationService;

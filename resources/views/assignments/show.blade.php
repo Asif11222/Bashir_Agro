@@ -73,6 +73,10 @@
                     <span class="label">কাজ সমাপ্তির সময়</span>
                     <small>{{ $assignment->completed_at ? $assignment->completed_at->format('d/m/Y h:i A') : 'সমাপ্ত হয়নি' }}</small>
                 </div>
+                <div>
+                    <span class="label">মোট কাজের সময় (Duration)</span>
+                    <b style="font-size:13.5px;color:var(--ink);">{{ $assignment->work_duration ?? '—' }}</b>
+                </div>
                 @if($assignment->notes)
                 <div class="field full">
                     <span class="label">অ্যাডমিনের বিশেষ নোট</span>

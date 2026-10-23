@@ -29,16 +29,7 @@ class FarmerController extends Controller
             ], 404);
         }
 
-        $farmer->load(['emergencyContact', 'farmLocations'])->loadCount([
-            'taskAssignments as total_tasks',
-            'taskAssignments as completed_tasks' => function ($q) {
-                $q->where('status', 'completed');
-            },
-            'taskAssignments as active_tasks' => function ($q) {
-                $q->whereIn('status', ['assigned', 'pending', 'in_progress', 'late']);
-            },
-            'farmLocations as locations_count',
-        ]);
+        $farmer->load(['emergencyContact', 'farmLocations']);
 
         return response()->json([
             'success' => true,
@@ -51,17 +42,9 @@ class FarmerController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Farmer::with(['farmLocations', 'emergencyContact'])
-            ->withCount([
-                'taskAssignments as total_tasks',
-                'taskAssignments as completed_tasks' => function ($q) {
-                    $q->where('status', 'completed');
-                },
-                'taskAssignments as active_tasks' => function ($q) {
-                    $q->whereIn('status', ['assigned', 'pending', 'in_progress', 'late']);
-                },
-                'farmLocations as locations_count',
-            ]);
+        $params = $request->validate(['date' => ['sometimes', 'date_format:Y-m-d']]);
+        $date = $params['date'] ?? today()->toDateString();
+        $query = Farmer::with(['farmLocations', 'emergencyContact'])->withTaskProgress($date);
 
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
@@ -91,16 +74,7 @@ class FarmerController extends Controller
      */
     public function show(Farmer $farmer): JsonResponse
     {
-        $farmer->load(['emergencyContact', 'farmLocations'])->loadCount([
-            'taskAssignments as total_tasks',
-            'taskAssignments as completed_tasks' => function ($q) {
-                $q->where('status', 'completed');
-            },
-            'taskAssignments as active_tasks' => function ($q) {
-                $q->whereIn('status', ['assigned', 'pending', 'in_progress', 'late']);
-            },
-            'farmLocations as locations_count',
-        ]);
+        $farmer->load(['emergencyContact', 'farmLocations']);
 
         return response()->json([
             'success' => true,

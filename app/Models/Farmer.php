@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -75,7 +75,7 @@ class Farmer extends Model
         $scope = static function (Builder $assignments) use ($date, $locationId): void {
             $assignments->where('status', '!=', 'cancelled');
             if ($date !== null) {
-                $assignments->where('scheduled_date', $date);
+                $assignments->whereDate('scheduled_date', $date);
             }
             if ($locationId !== null) {
                 $assignments->where('farm_location_id', $locationId);

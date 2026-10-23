@@ -25,6 +25,22 @@ class FarmerResource extends JsonResource
             $categories = [$this->primary_activity];
         }
 
+        $landArea = (float) $locations->sum('area');
+        if ($landArea <= 0 && array_key_exists('land_area', $this->resource->getAttributes())) {
+            $landArea = (float) $this->resource->getAttribute('land_area');
+        }
+        if ($landArea <= 0) {
+            $landArea = 4.0;
+        }
+
+        $isAssigned = $hasProgress
+            ? ($totalTasks > 0)
+            : (($activeTasks > 0) || ($totalTasks > 0) || ($locationsCount > 0));
+
+        $progressPercent = $hasProgress
+            ? $this->taskProgressPercent()
+            : ($totalTasks > 0 ? (int) round(($completedTasks / $totalTasks) * 100) : ($completedTasks > 0 ? 100 : 0));
+
         return [
             'id' => $this->id,
             'farmer_code' => $this->farmer_code,
@@ -32,12 +48,8 @@ class FarmerResource extends JsonResource
             'name' => $this->full_name,
             'region' => $locations->first()?->name ?? ($this->address ?: 'বাংলাদেশ'),
             'farm_type' => $this->primary_activity ?: 'কৃষি চাষ',
-            'farming_categories' => $categories,
-            'land_area' => (float) $locations->sum('area'),
-            'total_tasks' => $this->when($hasProgress, fn () => (int) $this->total_tasks),
-            'completed_tasks' => $this->when($hasProgress, fn () => (int) $this->completed_tasks),
-            'progress_percent' => $this->when($hasProgress, fn () => $this->taskProgressPercent()),
-            'is_assigned' => $this->when($hasProgress, fn () => (int) $this->total_tasks > 0),
+            'farming_categories' => ! empty($categories) ? $categories : ['সবজি'],
+            'land_area' => $landArea,
             'phone' => $this->phone,
             'nid' => $this->nid,
             'gender' => $this->gender,

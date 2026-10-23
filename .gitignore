@@ -88,3 +88,9 @@ build/
 
 # Operating system
 .DS_Store
+
+# Documents & Artifacts
+*.pdf
+*.xlsx
+/public/storage
+

@@ -18,7 +18,6 @@ class FarmerResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $hasProgress = array_key_exists('total_tasks', $this->resource->getAttributes());
         $locations = $this->relationLoaded('farmLocations') ? $this->farmLocations : collect();
         $categories = $locations->pluck('type')->filter()->unique()->values()->all();
         if (empty($categories) && $this->primary_activity) {
@@ -32,14 +31,6 @@ class FarmerResource extends JsonResource
         if ($landArea <= 0) {
             $landArea = 4.0;
         }
-
-        $isAssigned = $hasProgress
-            ? ($totalTasks > 0)
-            : (($activeTasks > 0) || ($totalTasks > 0) || ($locationsCount > 0));
-
-        $progressPercent = $hasProgress
-            ? $this->taskProgressPercent()
-            : ($totalTasks > 0 ? (int) round(($completedTasks / $totalTasks) * 100) : ($completedTasks > 0 ? 100 : 0));
 
         return [
             'id' => $this->id,

@@ -68,3 +68,23 @@ build/
 .idea/
 .vscode/
 .DS_Store
+
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# PHPUnit
+.phpunit.result.cache
+
+# Dependencies
+vendor/
+node_modules/
+
+# Flutter generated files
+.dart_tool/
+build/
+
+# Operating system
+.DS_Store

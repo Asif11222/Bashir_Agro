@@ -51,14 +51,20 @@ class FarmerController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $date = $request->query('date');
+        $locationId = $request->filled('location_id') ? (int) $request->query('location_id') : null;
+
         $query = Farmer::with(['farmLocations', 'emergencyContact'])
+            ->withTaskProgress($date, $locationId)
             ->withCount([
-                'taskAssignments as total_tasks',
-                'taskAssignments as completed_tasks' => function ($q) {
-                    $q->where('status', 'completed');
-                },
-                'taskAssignments as active_tasks' => function ($q) {
+                'taskAssignments as active_tasks' => function ($q) use ($date, $locationId) {
                     $q->whereIn('status', ['assigned', 'pending', 'in_progress', 'late']);
+                    if ($date !== null) {
+                        $q->whereDate('scheduled_date', $date);
+                    }
+                    if ($locationId !== null) {
+                        $q->where('farm_location_id', $locationId);
+                    }
                 },
                 'farmLocations as locations_count',
             ]);

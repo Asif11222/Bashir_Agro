@@ -34,7 +34,7 @@ class DashboardApiController extends Controller
 
         $tasksBaseQuery = TaskAssignment::where('status', '!=', 'cancelled');
         if ($dateParam) {
-            $tasksBaseQuery->where('scheduled_date', $dateParam);
+            $tasksBaseQuery->whereDate('scheduled_date', $dateParam);
         }
         if ($locationId) {
             $tasksBaseQuery->where('farm_location_id', $locationId);

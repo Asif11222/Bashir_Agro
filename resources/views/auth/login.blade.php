@@ -62,7 +62,7 @@
                 <div class="leaf">🌱</div>
             @endif
             <h1>{{ $farmName }}</h1>
-            <p>কৃষি ব্যবস্থাপনা অ্যাডমিন প্যানেলে লগইন করুন</p>
+            <p>{{ \App\Models\Setting::get('brand_tagline', 'কৃষি ব্যবস্থাপনা প্ল্যাটফর্ম') }}</p>
         </div>
 
         @if (request()->query('reason') === 'idle')

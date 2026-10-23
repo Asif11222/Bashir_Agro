@@ -25,7 +25,13 @@
         @endif
     </a>
     <div class="user">
-        <div class="avatar" title="{{ $user->name ?? 'ব্যবহারকারী' }}">{{ $avatarLetter }}</div>
+        <div class="avatar" title="{{ $user->name ?? 'ব্যবহারকারী' }}" style="overflow:hidden;display:flex;align-items:center;justify-content:center;">
+            @if($user?->profile_photo_path)
+                <img src="{{ asset('storage/'.$user->profile_photo_path) }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+            @else
+                {{ $avatarLetter }}
+            @endif
+        </div>
         <div class="user-meta">
             <b>{{ $user->name ?? 'আব্দুল রহমান' }}</b>
             <small>{{ $roleName }}</small>

@@ -16,7 +16,7 @@
         @endif
         <div>
             <b>{{ $farmName }}</b>
-            <small>কৃষি ব্যবস্থাপনা প্ল্যাটফর্ম</small>
+            <small>{{ \App\Models\Setting::get('brand_tagline', 'কৃষি ব্যবস্থাপনা প্ল্যাটফর্ম') }}</small>
         </div>
         <button type="button" class="sidebar-close-btn" id="sidebar-close-btn" aria-label="মেনু বন্ধ করুন" title="মেনু বন্ধ করুন">✕</button>
     </div>
@@ -57,6 +57,6 @@
     </nav>
     <div class="sidebar-foot">
         <b>টেকসই কৃষি<br>সমৃদ্ধ বাংলাদেশ</b><br>
-        <span style="opacity:.75">Bashir Agro Admin</span>
+        <span style="opacity:.75">{{ $farmName }}</span>
     </div>
 </aside>

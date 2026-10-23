@@ -66,6 +66,12 @@ class SettingsService
             'group' => 'system',
             'description' => 'সিস্টেম তারিখ প্রদর্শনের ফরম্যাট',
         ],
+        'brand_tagline' => [
+            'value' => 'কৃষি ব্যবস্থাপনা প্ল্যাটফর্ম',
+            'type' => 'string',
+            'group' => 'branding',
+            'description' => 'প্রধান ব্র্যান্ড ট্যাগলাইন',
+        ],
         'site_logo' => [
             'value' => '',
             'type' => 'string',

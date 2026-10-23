@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AppHeaderController;
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FarmerController;
@@ -52,6 +53,7 @@ Route::prefix('admin')
         Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
         Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::put('/settings/mobile-headers/{screen}', [AppHeaderController::class, 'update'])->name('settings.mobile-headers.update');
         Route::get('/audit', [AuditController::class, 'index'])->name('audit');
         Route::get('/global-search', [GlobalSearchController::class, 'search'])->name('global-search');
         Route::post('/session/keep-alive', function () {

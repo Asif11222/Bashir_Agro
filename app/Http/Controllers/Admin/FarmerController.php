@@ -228,13 +228,16 @@ class FarmerController extends Controller
         $validated = $request->validated();
         $oldValues = $farmer->toArray();
 
-        DB::transaction(function () use ($request, $farmer, $validated, $oldValues) {
-            if ($request->hasFile('profile_photo')) {
-                if ($farmer->profile_photo_path && Storage::disk('public')->exists($farmer->profile_photo_path)) {
-                    Storage::disk('public')->delete($farmer->profile_photo_path);
+        $previousPhoto = $farmer->profile_photo_path;
+        $newPhoto = $request->hasFile('profile_photo')
+            ? $request->file('profile_photo')->store('farmers/photos', 'public')
+            : null;
+        abort_if($request->hasFile('profile_photo') && ! $newPhoto, 500, 'প্রোফাইল ছবি সংরক্ষণ করা যায়নি।');
+        try {
+            DB::transaction(function () use ($request, $farmer, $validated, $oldValues, $newPhoto) {
+                if ($newPhoto) {
+                    $farmer->profile_photo_path = $newPhoto;
                 }
-                $farmer->profile_photo_path = $request->file('profile_photo')->store('farmers/photos', 'public');
-            }
 
             $isDeactivated = ($farmer->status === 'active' && $validated['status'] === 'inactive');
             $appAccess = $request->boolean('app_access_enabled', true);
@@ -308,7 +311,14 @@ class FarmerController extends Controller
                 oldValues: $oldValues,
                 newValues: $farmer->toArray()
             );
-        });
+            });
+        } catch (\Throwable $e) {
+            if ($newPhoto) Storage::disk('public')->delete($newPhoto);
+            throw $e;
+        }
+        if ($newPhoto && $previousPhoto) {
+            Storage::disk('public')->delete($previousPhoto);
+        }
 
         DashboardService::clearKpiCache();
 

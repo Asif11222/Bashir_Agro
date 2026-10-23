@@ -50,6 +50,11 @@ class FarmerResource extends JsonResource
             'profile_photo_url' => $this->profile_photo_path ? asset('storage/'.$this->profile_photo_path) : null,
             'app_access_enabled' => (bool) $this->app_access_enabled,
             'status' => $this->status,
+            'is_assigned' => (int) ($this->active_tasks ?? 0) > 0,
+            'active_tasks' => (int) ($this->active_tasks ?? 0),
+            'total_tasks' => (int) ($this->total_tasks ?? 0),
+            'completed_tasks' => (int) ($this->completed_tasks ?? 0),
+            'progress_percent' => $this->resource->taskProgressPercent(),
             'emergency_contact' => $this->whenLoaded('emergencyContact', function () {
                 return [
                     'name' => $this->emergencyContact?->name,

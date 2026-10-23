@@ -30,6 +30,7 @@ class FarmerController extends Controller
         }
 
         $farmer->load(['emergencyContact', 'farmLocations']);
+        $farmer->loadTaskProgress(today()->toDateString());
 
         return response()->json([
             'success' => true,
@@ -75,6 +76,7 @@ class FarmerController extends Controller
     public function show(Farmer $farmer): JsonResponse
     {
         $farmer->load(['emergencyContact', 'farmLocations']);
+        $farmer->loadTaskProgress(today()->toDateString());
 
         return response()->json([
             'success' => true,

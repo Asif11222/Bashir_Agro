@@ -77,8 +77,8 @@ class DashboardApiController extends Controller
                     'farm_type' => $farmer->primary_activity ?: 'কৃষি চাষ',
                     'progress_percent' => $progressPercent,
                     'is_assigned' => $assignedCount > 0,
-                    'land_area' => (float) ($farmer->farmLocations->sum('area') ?: 4.0),
-                    'farming_categories' => ! empty($categories) ? $categories : ['সবজি'],
+                    'land_area' => (float) $farmer->farmLocations->sum('area'),
+                    'farming_categories' => $categories,
                     'total_tasks' => $assignedCount,
                     'completed_tasks' => $completedCount,
                 ];

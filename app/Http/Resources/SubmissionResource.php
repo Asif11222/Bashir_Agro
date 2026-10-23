@@ -29,12 +29,12 @@ class SubmissionResource extends JsonResource
                 'accuracy' => $this->accuracy ? (float) $this->accuracy : null,
             ],
             'geofence' => [
-                'passed' => (bool) $this->geofence_passed,
+                'passed' => $this->geofence_passed === null ? null : (bool) $this->geofence_passed,
                 'distance_meters' => $this->distance_meters ? (float) $this->distance_meters : null,
             ],
             'status' => $this->status,
             'verification_status' => $this->verification_status ?? $this->validation_status,
-            'is_late' => (bool) $this->is_late,
+            'is_late' => $this->is_late === null ? null : (bool) $this->is_late,
             'submitted_at' => $this->submitted_at?->toIso8601String(),
             'photos' => $this->photos ?? [],
             'evidence_photos' => $this->whenLoaded('evidencePhotos', function () {

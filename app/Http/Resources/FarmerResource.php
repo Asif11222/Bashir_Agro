@@ -32,7 +32,7 @@ class FarmerResource extends JsonResource
             'name' => $this->full_name,
             'region' => $locations->first()?->name ?? ($this->address ?: 'বাংলাদেশ'),
             'farm_type' => $this->primary_activity ?: 'কৃষি চাষ',
-            'farming_categories' => $categories ?: ['সবজি'],
+            'farming_categories' => $categories,
             'land_area' => (float) $locations->sum('area'),
             'total_tasks' => $this->when($hasProgress, fn () => (int) $this->total_tasks),
             'completed_tasks' => $this->when($hasProgress, fn () => (int) $this->completed_tasks),

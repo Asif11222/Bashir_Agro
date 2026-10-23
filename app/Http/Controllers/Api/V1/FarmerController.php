@@ -42,7 +42,9 @@ class FarmerController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Farmer::with(['farmLocations', 'emergencyContact']);
+        $params = $request->validate(['date' => ['sometimes', 'date_format:Y-m-d']]);
+        $date = $params['date'] ?? today()->toDateString();
+        $query = Farmer::with(['farmLocations', 'emergencyContact'])->withTaskProgress($date);
 
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));

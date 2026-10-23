@@ -57,13 +57,22 @@ class DashboardService
 
         $activeTaskTemplates = TaskTemplate::where('status', 'active')->count();
 
-        $todaysBaseQuery = TaskAssignment::whereDate('scheduled_date', today());
-        $todaysTasksCount = (clone $todaysBaseQuery)->count();
-        $todaysAssignedCount = (clone $todaysBaseQuery)->where('status', 'assigned')->count();
-        $todaysInProgressCount = (clone $todaysBaseQuery)->where('status', 'in_progress')->count();
-        $todaysCompletedCount = (clone $todaysBaseQuery)->where('status', 'completed')->count();
-        $todaysLateCount = (clone $todaysBaseQuery)->where('status', 'late')->count();
-        $todaysCancelledCount = (clone $todaysBaseQuery)->where('status', 'cancelled')->count();
+        // One aggregate query feeds all web-dashboard status counters.
+        $todayCounts = TaskAssignment::whereDate('scheduled_date', today())->selectRaw(
+            'COUNT(*) AS total, '
+            .'SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) AS assigned, '
+            .'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS in_progress, '
+            .'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS completed, '
+            .'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS late, '
+            .'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS cancelled',
+            ['assigned', 'pending', 'in_progress', 'completed', 'late', 'cancelled']
+        )->first();
+        $todaysCancelledCount = (int) $todayCounts->cancelled;
+        $todaysTasksCount = (int) $todayCounts->total - $todaysCancelledCount;
+        $todaysAssignedCount = (int) $todayCounts->assigned;
+        $todaysInProgressCount = (int) $todayCounts->in_progress;
+        $todaysCompletedCount = (int) $todayCounts->completed;
+        $todaysLateCount = (int) $todayCounts->late;
 
         $attentionNeeded = TaskAssignment::where('status', 'late')
             ->orWhere(function ($query) {
@@ -96,13 +105,15 @@ class DashboardService
      */
     public function getTodaysAssignments(?string $statusFilter = null): Collection
     {
-        $query = TaskAssignment::with(['farmer', 'taskTemplate', 'location', 'assigner'])
+        $query = TaskAssignment::with(['farmer', 'taskTemplate', 'location', 'assigner', 'submission'])
             ->whereDate('scheduled_date', today())
             ->orderBy('start_time', 'asc')
             ->orderBy('id', 'desc');
 
         if ($statusFilter && in_array($statusFilter, ['assigned', 'in_progress', 'completed', 'cancelled', 'late'])) {
             $query->where('status', $statusFilter);
+        } else {
+            $query->where('status', '!=', 'cancelled');
         }
 
         return $query->get();

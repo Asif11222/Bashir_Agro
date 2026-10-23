@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -63,6 +64,38 @@ class Farmer extends Model
     public function taskAssignments(): HasMany
     {
         return $this->hasMany(TaskAssignment::class);
+    }
+
+    /**
+     * Consistent task-progress counters across mobile and web admin.
+     * Cancelled assignments do not count as work due.
+     */
+    public function scopeWithTaskProgress(Builder $query, ?string $date = null, ?int $locationId = null): Builder
+    {
+        $scope = static function (Builder $assignments) use ($date, $locationId): void {
+            $assignments->where('status', '!=', 'cancelled');
+            if ($date !== null) {
+                $assignments->where('scheduled_date', $date);
+            }
+            if ($locationId !== null) {
+                $assignments->where('farm_location_id', $locationId);
+            }
+        };
+
+        return $query->withCount([
+            'taskAssignments as total_tasks' => $scope,
+            'taskAssignments as completed_tasks' => static function (Builder $assignments) use ($scope): void {
+                $scope($assignments);
+                $assignments->where('status', 'completed');
+            },
+        ]);
+    }
+
+    public function taskProgressPercent(): int
+    {
+        $total = (int) ($this->total_tasks ?? 0);
+
+        return $total > 0 ? (int) round(100 * (int) ($this->completed_tasks ?? 0) / $total) : 0;
     }
 
     public function creator(): BelongsTo

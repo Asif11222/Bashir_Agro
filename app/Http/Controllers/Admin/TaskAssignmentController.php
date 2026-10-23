@@ -13,6 +13,7 @@ use App\Models\TaskTemplate;
 use App\Notifications\SystemNotification;
 use App\Notifications\TaskCancelledNotification;
 use App\Services\TaskAssignmentService;
+use App\Services\DashboardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class TaskAssignmentController extends Controller
         $dateFilter = $request->query('date_filter');
         $customDate = $request->query('date');
 
-        $query = TaskAssignment::with(['farmer', 'taskTemplate', 'location', 'assigner']);
+        $query = TaskAssignment::with(['farmer', 'taskTemplate', 'location', 'assigner', 'submission']);
 
         // Driver-aware search for PostgreSQL and SQLite
         if ($search !== '') {
@@ -228,6 +229,8 @@ class TaskAssignmentController extends Controller
                 oldValues: $oldValues
             );
         });
+
+        DashboardService::clearKpiCache();
 
         return redirect()->route('admin.assignments.index')
             ->with('success', 'কাজের বরাদ্দটি সফলভাবে মুছে ফেলা হয়েছে (সফট ডিলিট)।');

@@ -11,6 +11,7 @@ use App\Models\TaskAssignment;
 use App\Models\TaskSubmission;
 use App\Models\TaskTemplate;
 use App\Services\GeofenceService;
+use App\Services\DashboardService;
 use App\Services\TaskAssignmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -283,6 +284,7 @@ class SubmissionController extends Controller
             return $taskAssignment;
         });
 
+        DashboardService::clearKpiCache();
         $assignment->load(['taskTemplate', 'location', 'farmer', 'submission.evidencePhotos']);
 
         return response()->json([

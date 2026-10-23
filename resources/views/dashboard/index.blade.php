@@ -110,7 +110,7 @@
                                         <b>{{ $assignment->taskTemplate->name ?? 'অজ্ঞাত কাজ' }}</b>
                                         <br><small style="color:var(--muted)">{{ $assignment->taskTemplate->task_code ?? '' }}</small>
                                     </td>
-                                    <td>{{ $assignment->farmLocation->name ?? 'অজ্ঞাত লোকেশন' }}</td>
+                                    <td>{{ $assignment->location->name ?? 'অজ্ঞাত লোকেশন' }}</td>
                                     <td>
                                         {{ \Carbon\Carbon::parse($assignment->start_time)->format('H:i') }}
                                         @if($assignment->end_time)
@@ -121,6 +121,7 @@
                                         @include('components.status-pill', [
                                             'status' => $assignment->status
                                         ])
+                                        @include('components.submission-health', ['assignment' => $assignment])
                                     </td>
                                     <td>
                                         <a href="{{ route('admin.assignments.show', $assignment) }}" class="btn">

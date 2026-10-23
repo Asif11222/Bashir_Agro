@@ -6,13 +6,14 @@ use App\Models\ActivityLog;
 use App\Models\Farmer;
 use App\Models\FarmerEmergencyContact;
 use App\Models\FarmLocation;
-use App\Models\Notification;
+use App\Notifications\SystemNotification;
 use App\Models\Setting;
 use App\Models\TaskAssignment;
 use App\Models\TaskTemplate;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Ramsey\Uuid\Uuid;
 
 class DatabaseSeeder extends Seeder
 {
@@ -305,33 +306,50 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 7. Notifications
-        Notification::firstOrCreate(
-            ['title' => 'Late submission: পুকুরে খাবার প্রদান'],
+        // 7. Demo notifications (Laravel database notification schema)
+        // Stable UUIDs make repeated seeding safe and avoid duplicate notifications.
+        $demoNotifications = [
             [
+                'key' => 'late-submission',
+                'title' => 'Late submission: পুকুরে খাবার প্রদান',
                 'message' => 'মোঃ রফিকুল ইসলাম নির্ধারিত সময় শেষে সাবমিট করেছেন।',
-                'type' => 'warning',
-                'is_read' => false,
-            ]
-        );
-
-        Notification::firstOrCreate(
-            ['title' => 'GPS validation failed: সার প্রয়োগ'],
+                'severity' => 'warning',
+            ],
             [
+                'key' => 'geofence-validation',
+                'title' => 'GPS validation failed: সার প্রয়োগ',
                 'message' => 'উত্তর মাঠের জিও-ফেন্স সীমানার বাইরে থাকার কারণে সাবমিশন আটকে দেওয়া হয়েছিল।',
-                'type' => 'danger',
-                'is_read' => false,
-            ]
-        );
-
-        Notification::firstOrCreate(
-            ['title' => 'কাজ সম্পন্ন: ফসল পর্যবেক্ষণ'],
+                'severity' => 'danger',
+            ],
             [
+                'key' => 'task-completed',
+                'title' => 'কাজ সম্পন্ন: ফসল পর্যবেক্ষণ',
                 'message' => 'মোঃ কামাল উদ্দিন সফলভাবে আজকের কাজ ও প্রমাণ ছবি আপলোড করেছেন।',
-                'type' => 'success',
-                'is_read' => false,
-            ]
-        );
+                'severity' => 'success',
+            ],
+        ];
+
+        foreach ($demoNotifications as $demoNotification) {
+            $notification = new SystemNotification(
+                $demoNotification['title'],
+                $demoNotification['message'],
+                'system',
+                additionalInfo: ['severity' => $demoNotification['severity']],
+            );
+
+            $admin->notifications()->firstOrCreate(
+                [
+                    'id' => Uuid::uuid5(
+                        Uuid::NAMESPACE_URL,
+                        'https://bashiragro.local/seed/notifications/'.$demoNotification['key'],
+                    )->toString(),
+                ],
+                [
+                    'type' => SystemNotification::class,
+                    'data' => $notification->toArray($admin),
+                ],
+            );
+        }
 
         // 8. Activity Logs
         ActivityLog::create([

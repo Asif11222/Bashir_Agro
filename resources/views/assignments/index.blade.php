@@ -139,6 +139,7 @@
                                         @php
                                             $statusMap = [
                                                 'assigned' => ['label' => 'বরাদ্দকৃত', 'class' => 'blue'],
+                                                'pending' => ['label' => 'বরাদ্দকৃত', 'class' => 'blue'],
                                                 'in_progress' => ['label' => 'চলমান', 'class' => 'blue'],
                                                 'completed' => ['label' => 'সম্পন্ন', 'class' => ''],
                                                 'cancelled' => ['label' => 'বাতিল', 'class' => 'red'],
@@ -149,6 +150,7 @@
                                         <span class="pill {{ $stInfo['class'] }}">
                                             <span class="dot"></span>{{ $stInfo['label'] }}
                                         </span>
+                                        @include('components.submission-health', ['assignment' => $assignment])
                                     </td>
                                     <td>
                                         <small>{{ $assignment->assigner->name ?? 'অ্যাডমিন' }}</small>

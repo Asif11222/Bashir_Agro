@@ -83,7 +83,7 @@ class MonitoringController extends Controller
         $globalInProgressCount = TaskAssignment::where('status', 'in_progress')->count();
 
         // Paginated query with status filter applied
-        $query = (clone $baseQuery)->with(['farmer', 'taskTemplate', 'location', 'assigner']);
+        $query = (clone $baseQuery)->with(['farmer', 'taskTemplate', 'location', 'assigner', 'submission']);
 
         if ($status && in_array($status, ['assigned', 'in_progress', 'completed', 'cancelled', 'late'])) {
             if ($status === 'assigned') {

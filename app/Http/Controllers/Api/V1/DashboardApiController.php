@@ -16,8 +16,12 @@ class DashboardApiController extends Controller
      */
     public function summary(Request $request): JsonResponse
     {
-        $dateParam = $request->query('date');
-        $locationId = $request->query('location_id');
+        $params = $request->validate([
+            'date' => ['sometimes', 'date_format:Y-m-d'],
+            'location_id' => ['sometimes', 'integer', 'min:1'],
+        ]);
+        $dateParam = $params['date'] ?? today()->toDateString();
+        $locationId = isset($params['location_id']) ? (int) $params['location_id'] : null;
 
         $farmersQuery = Farmer::with('farmLocations')->where('status', 'active');
         if ($locationId) {
@@ -26,53 +30,37 @@ class DashboardApiController extends Controller
             });
         }
 
-        $totalFarmers = (clone $farmersQuery)->count();
         $newFarmersThisMonth = Farmer::where('created_at', '>=', now()->startOfMonth())->count();
 
-        $tasksBaseQuery = TaskAssignment::query();
+        $tasksBaseQuery = TaskAssignment::where('status', '!=', 'cancelled');
         if ($dateParam) {
-            $tasksBaseQuery->whereDate('scheduled_date', $dateParam);
+            $tasksBaseQuery->where('scheduled_date', $dateParam);
         }
         if ($locationId) {
             $tasksBaseQuery->where('farm_location_id', $locationId);
         }
 
-        $todayTasksCount = (clone $tasksBaseQuery)->count();
-        $completedTasksCount = (clone $tasksBaseQuery)->where('status', 'completed')->count();
-        $pendingTasksCount = (clone $tasksBaseQuery)->whereIn('status', ['assigned', 'pending', 'in_progress', 'late'])->count();
+        $totals = $tasksBaseQuery->selectRaw(
+            'COUNT(*) AS total, '
+            .'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS completed, '
+            .'SUM(CASE WHEN status IN (?, ?, ?, ?) THEN 1 ELSE 0 END) AS pending',
+            ['completed', 'assigned', 'pending', 'in_progress', 'late']
+        )->first();
+        $todayTasksCount = (int) $totals->total;
+        $completedTasksCount = (int) $totals->completed;
+        $pendingTasksCount = (int) $totals->pending;
 
         $completionPercent = $todayTasksCount > 0
             ? (int) round(($completedTasksCount / $todayTasksCount) * 100)
             : 0;
 
         $farmers = $farmersQuery
-            ->withCount([
-                'taskAssignments as total_tasks' => function ($q) use ($dateParam, $locationId) {
-                    if ($dateParam) {
-                        $q->whereDate('scheduled_date', $dateParam);
-                    }
-                    if ($locationId) {
-                        $q->where('farm_location_id', $locationId);
-                    }
-                },
-                'taskAssignments as completed_tasks' => function ($q) use ($dateParam, $locationId) {
-                    $q->where('status', 'completed');
-                    if ($dateParam) {
-                        $q->whereDate('scheduled_date', $dateParam);
-                    }
-                    if ($locationId) {
-                        $q->where('farm_location_id', $locationId);
-                    }
-                },
-            ])
+            ->withTaskProgress($dateParam, $locationId)
             ->get()
             ->map(function (Farmer $farmer): array {
                 $assignedCount = (int) $farmer->total_tasks;
                 $completedCount = (int) $farmer->completed_tasks;
-
-                $progressPercent = $assignedCount > 0
-                    ? (int) round(($completedCount / $assignedCount) * 100)
-                    : ($completedCount > 0 ? 100 : 0);
+                $progressPercent = $farmer->taskProgressPercent();
 
                 $primaryLocation = $farmer->farmLocations->first();
                 $categories = $farmer->farmLocations->pluck('type')->filter()->unique()->values()->all();
@@ -89,12 +77,14 @@ class DashboardApiController extends Controller
                     'farm_type' => $farmer->primary_activity ?: 'কৃষি চাষ',
                     'progress_percent' => $progressPercent,
                     'is_assigned' => $assignedCount > 0,
-                    'land_area' => (float) ($farmer->farmLocations->sum('area') ?: 4.0),
-                    'farming_categories' => ! empty($categories) ? $categories : ['সবজি'],
+                    'land_area' => (float) $farmer->farmLocations->sum('area'),
+                    'farming_categories' => $categories,
                     'total_tasks' => $assignedCount,
                     'completed_tasks' => $completedCount,
                 ];
             });
+
+        $totalFarmers = $farmers->count();
 
         $activeLocations = FarmLocation::where('status', 'active')
             ->orderBy('name')

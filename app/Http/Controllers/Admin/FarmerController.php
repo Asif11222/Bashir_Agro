@@ -11,6 +11,7 @@ use App\Models\FarmLocation;
 use App\Models\TaskAssignment;
 use App\Models\TaskTemplate;
 use App\Models\User;
+use App\Services\DashboardService;
 use App\Notifications\FarmerCreatedNotification;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
@@ -34,12 +35,8 @@ class FarmerController extends Controller
         $inactiveFarmersCount = Farmer::where('status', 'inactive')->count();
 
         $farmersQuery = Farmer::with(['emergencyContact'])
-            ->withCount([
-                'farmLocations',
-                'taskAssignments as active_tasks_count' => function ($query) {
-                    $query->whereIn('status', ['pending', 'in_progress']);
-                },
-            ]);
+            ->withTaskProgress(today()->toDateString())
+            ->withCount('farmLocations');
 
         if ($search) {
             $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
@@ -182,6 +179,8 @@ class FarmerController extends Controller
             return $farmer;
         });
 
+        DashboardService::clearKpiCache();
+
         return redirect()->route('admin.farmers.index')->with('success', "কৃষক {$farmer->full_name} ({$farmer->farmer_code}) সফলভাবে সংরক্ষিত হয়েছে। মোবাইল অ্যাপে লগইনের জন্য পাসওয়ার্ড সক্রিয় করা হয়েছে।");
     }
 
@@ -311,6 +310,8 @@ class FarmerController extends Controller
             );
         });
 
+        DashboardService::clearKpiCache();
+
         return redirect()->route('admin.farmers.index')->with('success', "কৃষক {$farmer->full_name}-এর তথ্য সফলভাবে আপডেট করা হয়েছে।");
     }
 
@@ -390,6 +391,8 @@ class FarmerController extends Controller
             // 8. Permanently delete the farmer
             $farmer->forceDelete();
         });
+
+        DashboardService::clearKpiCache();
 
         return redirect()->route('admin.farmers.index')->with('success', "কৃষক {$farmerName} ({$farmerCode}) সফলভাবে ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।");
     }

@@ -84,7 +84,10 @@
                             <td><span style="font-weight:600;color:var(--g800)">{{ $farmer->farmer_code }}</span></td>
                             <td>{{ $farmer->primary_activity }}</td>
                             <td>{{ $farmer->farm_locations_count }}</td>
-                            <td>{{ $farmer->active_tasks_count }}</td>
+                            <td>
+                                {{ $farmer->total_tasks - $farmer->completed_tasks }}
+                                <br><small style="color:var(--muted)">অগ্রগতি: {{ $farmer->taskProgressPercent() }}%</small>
+                            </td>
                             <td>
                                 @if ($farmer->app_access_enabled)
                                     <span class="pill"><span class="dot"></span>সক্রিয়</span>

@@ -49,6 +49,7 @@
                         <span class="pill {{ $stClass }}">
                             <span class="dot"></span>{{ $assignment->status_label }}
                         </span>
+                        @include('components.submission-health', ['assignment' => $assignment])
                     </td>
                     <td style="text-align:right">
                         <a href="{{ route('admin.assignments.show', $assignment) }}" class="btn" style="padding:4px 8px;font-size:11px">

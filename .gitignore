@@ -48,3 +48,23 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+
+# Laravel
+/vendor/
+/node_modules/
+/.env
+/bootstrap/cache/*.php
+/storage/logs/*.log
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store

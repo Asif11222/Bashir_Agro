@@ -67,10 +67,20 @@ class Farmer extends Model
     }
 
     /**
+     * Work currently requiring action, regardless of the selected reporting date.
+     * Completed/cancelled (and soft-deleted) assignments never keep a farmer engaged.
+     */
+    public function unfinishedTaskAssignments(): HasMany
+    {
+        return $this->taskAssignments()->whereNotIn('status', ['completed', 'cancelled']);
+    }
+
+    /**
      * Consistent task-progress counters across mobile and web admin.
      * Cancelled assignments do not count as work due.
      */
-    public function scopeWithTaskProgress(Builder $query, ?string $date = null, ?int $locationId = null): Builder
+    /** The same count subqueries work for both lists and individual profiles. */
+    private function taskProgressCountRelations(?string $date, ?int $locationId): array
     {
         $scope = static function (Builder $assignments) use ($date, $locationId): void {
             $assignments->where('status', '!=', 'cancelled');
@@ -82,13 +92,27 @@ class Farmer extends Model
             }
         };
 
-        return $query->withCount([
+        return [
+            // Engagement is global; progress totals alone are date/location scoped.
+            'unfinishedTaskAssignments as active_tasks',
             'taskAssignments as total_tasks' => $scope,
             'taskAssignments as completed_tasks' => static function (Builder $assignments) use ($scope): void {
                 $scope($assignments);
                 $assignments->where('status', 'completed');
             },
-        ]);
+        ];
+    }
+
+    public function scopeWithTaskProgress(Builder $query, ?string $date = null, ?int $locationId = null): Builder
+    {
+        return $query->withCount($this->taskProgressCountRelations($date, $locationId));
+    }
+
+    public function loadTaskProgress(?string $date = null, ?int $locationId = null): static
+    {
+        $this->loadCount($this->taskProgressCountRelations($date, $locationId));
+
+        return $this;
     }
 
     public function taskProgressPercent(): int

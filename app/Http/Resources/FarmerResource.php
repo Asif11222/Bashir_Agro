@@ -19,12 +19,6 @@ class FarmerResource extends JsonResource
     public function toArray(Request $request): array
     {
         $hasProgress = array_key_exists('total_tasks', $this->resource->getAttributes());
-
-        $totalTasks = (int) ($this->total_tasks ?? 0);
-        $completedTasks = (int) ($this->completed_tasks ?? 0);
-        $activeTasks = (int) ($this->active_tasks ?? 0);
-        $locationsCount = (int) ($this->locations_count ?? ($this->relationLoaded('farmLocations') ? $this->farmLocations->count() : 0));
-
         $locations = $this->relationLoaded('farmLocations') ? $this->farmLocations : collect();
         $categories = $locations->pluck('type')->filter()->unique()->values()->all();
         if (empty($categories) && $this->primary_activity) {
@@ -65,11 +59,6 @@ class FarmerResource extends JsonResource
             'profile_photo_url' => $this->profile_photo_path ? asset('storage/'.$this->profile_photo_path) : null,
             'app_access_enabled' => (bool) $this->app_access_enabled,
             'status' => $this->status,
-            'is_assigned' => $isAssigned,
-            'progress_percent' => $progressPercent,
-            'total_tasks' => $totalTasks,
-            'completed_tasks' => $completedTasks,
-            'active_tasks' => $activeTasks,
             'emergency_contact' => $this->whenLoaded('emergencyContact', function () {
                 return [
                     'name' => $this->emergencyContact?->name,

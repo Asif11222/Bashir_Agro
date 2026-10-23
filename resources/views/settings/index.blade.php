@@ -27,6 +27,62 @@
         </div>
     @endif
 
+    <section id="mobile-headers" class="card" style="margin-bottom:22px;padding:20px;">
+        <div class="card-title"><div class="title-left"><span class="iconbox">📱</span><div>
+            <h2>মোবাইল অ্যাপ হেডার (Mobile Header Appearance)</h2>
+            <div class="sub">প্রতিটি স্ক্রিনের ব্যানার ছবি, লেখা ও সীমিত টেক্সট স্টাইল পরিবর্তন করুন। নতুন APK প্রয়োজন নেই।</div>
+        </div></div></div>
+        @foreach($mobileHeaders as $screenKey => $header)
+            <details style="padding:14px 0;border-top:1px solid var(--line);" {{ $loop->first ? 'open' : '' }}>
+                <summary style="cursor:pointer;font-weight:700;">{{ $header['label'] }}</summary>
+                <form method="POST" action="{{ route('admin.settings.mobile-headers.update', $screenKey) }}" enctype="multipart/form-data" style="padding-top:14px;">
+                    @csrf @method('PUT')
+                    @if($header['image_url'])
+                        <img src="{{ $header['image_url'] }}" alt="বর্তমান হেডার" style="width:100%;max-width:600px;max-height:190px;object-fit:cover;border-radius:12px;display:block;margin-bottom:10px;">
+                    @endif
+                    <div class="branding-upload-grid" style="gap:14px;">
+                        <div><label class="label">নতুন হেডার ছবি (PNG/JPG/WebP, 3MB)</label>
+                            <input class="input" type="file" name="image" accept="image/png,image/jpeg,image/webp" style="width:100%;">
+                            @if($header['image_path'])<label style="display:block;margin-top:8px;"><input type="checkbox" name="remove_image" value="1"> ছবি সরিয়ে ডিফল্ট ডিজাইন ব্যবহার করুন</label>@endif
+                        </div>
+                        <div><label class="label">হেডার শিরোনাম</label>
+                            <input class="input" type="text" name="title" value="{{ $header['title'] }}" maxlength="90" required style="width:100%;">
+                        </div>
+                        <div><label class="label">সাবটাইটেল</label>
+                            <input class="input" type="text" name="subtitle" value="{{ $header['subtitle'] }}" maxlength="150" style="width:100%;">
+                        </div>
+                        <div><label class="label">লেখার রঙ</label>
+                            <input type="color" name="title_color" value="{{ $header['title_color'] }}" style="height:40px;width:65px;cursor:pointer;">
+                        </div>
+                        <div><label class="label">শিরোনামের আকার</label>
+                            <select name="font_size" class="input" style="width:100%;">
+                                @foreach([16,18,20,22,24,26] as $sz)
+                                    <option value="{{ $sz }}" @selected((int)$header['font_size'] === $sz)>{{ $sz }}sp</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div><label class="label">লেখার অবস্থান</label>
+                            <select name="alignment" class="input" style="width:100%;">
+                                @foreach(['left'=>'বামে', 'center'=>'মাঝে', 'right'=>'ডানে'] as $v=>$label)
+                                    <option value="{{ $v }}" @selected($header['alignment'] === $v)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div><label class="label">ছবির উপরের অন্ধকার আবরণ</label>
+                            <select name="overlay" class="input" style="width:100%;">
+                                @foreach(['0.15'=>'হালকা','0.25'=>'কম','0.35'=>'মাঝারি','0.5'=>'গাঢ়','0.7'=>'বেশি'] as $v=>$label)
+                                    <option value="{{ $v }}" @selected((float)$header['overlay'] === (float)$v)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" name="shadow" value="1" @checked($header['shadow'])> লেখার ছায়া (Text Shadow)</label></div>
+                    </div>
+                    <button class="btn primary" type="submit" style="margin-top:14px;">এই হেডার সংরক্ষণ করুন</button>
+                </form>
+            </details>
+        @endforeach
+    </section>
+
     <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
         @csrf
         @method('PUT')
@@ -51,7 +107,7 @@
                     <div style="border:1px solid var(--line);border-radius:12px;padding:16px;background:#fbfdfc;">
                         <label class="label" style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:10px;">
                             <span>সাইট লোগো (Site Logo)</span>
-                            <span class="pill" style="font-size:10px;padding:2px 8px;">প্রস্তাবিত: PNG / SVG / WebP</span>
+                            <span class="pill" style="font-size:10px;padding:2px 8px;">প্রস্তাবিত: PNG / JPG / WebP</span>
                         </label>
 
                         <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
@@ -66,7 +122,7 @@
                             </div>
 
                             <div style="flex:1;">
-                                <input type="file" id="site_logo" name="site_logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="input" style="padding:6px 10px;font-size:12px;width:100%;" onchange="previewBrandingImage(this, 'logo-preview-img', 'logo-default-icon')">
+                                <input type="file" id="site_logo" name="site_logo" accept="image/png,image/jpeg,image/webp" class="input" style="padding:6px 10px;font-size:12px;width:100%;" onchange="previewBrandingImage(this, 'logo-preview-img', 'logo-default-icon')">
                                 <small style="color:var(--muted);display:block;margin-top:4px;font-size:11px;">
                                     সাইডবার ও লগইন পেজে প্রদর্শিত হবে। সর্বোচ্চ সাইজ: 2MB
                                 </small>
@@ -100,7 +156,7 @@
                             </div>
 
                             <div style="flex:1;">
-                                <input type="file" id="site_favicon" name="site_favicon" accept=".ico,image/x-icon,image/png,image/svg+xml,image/webp,image/jpeg" class="input" style="padding:6px 10px;font-size:12px;width:100%;" onchange="previewBrandingImage(this, 'favicon-preview-img', 'favicon-default-icon')">
+                                <input type="file" id="site_favicon" name="site_favicon" accept=".ico,image/x-icon,image/png,image/webp,image/jpeg" class="input" style="padding:6px 10px;font-size:12px;width:100%;" onchange="previewBrandingImage(this, 'favicon-preview-img', 'favicon-default-icon')">
                                 <small style="color:var(--muted);display:block;margin-top:4px;font-size:11px;">
                                     ব্রাউজার ট্যাব ও বুকমার্কে প্রদর্শিত ছোট আইকন। সর্বোচ্চ সাইজ: 1MB
                                 </small>
@@ -115,6 +171,21 @@
                         @endif
                     </div>
 
+                </div>
+            </section>
+
+            <section class="card" style="grid-column:1 / -1;padding:18px 20px;">
+                <h2 style="margin:0 0 12px;">ব্র্যান্ডের পরিচিতি ও অ্যাডমিন প্রোফাইল</h2>
+                <div class="branding-upload-grid">
+                    <div><label class="label" for="brand_tagline">ব্র্যান্ডের ট্যাগলাইন</label>
+                        <input class="input" id="brand_tagline" name="brand_tagline" maxlength="100" style="width:100%;" value="{{ old('brand_tagline', \App\Models\Setting::get('brand_tagline', 'কৃষি ব্যবস্থাপনা প্ল্যাটফর্ম')) }}">
+                    </div>
+                    <div><label class="label" for="account_photo">আমার প্রোফাইল ছবি (2MB)</label>
+                        @if(auth()->user()?->profile_photo_path)
+                            <img src="{{ asset('storage/'.auth()->user()->profile_photo_path) }}" alt="প্রোফাইল" style="width:52px;height:52px;border-radius:50%;object-fit:cover;display:block;margin:6px 0;">
+                        @endif
+                        <input class="input" id="account_photo" type="file" name="account_photo" accept="image/png,image/jpeg,image/webp" style="width:100%;">
+                    </div>
                 </div>
             </section>
 

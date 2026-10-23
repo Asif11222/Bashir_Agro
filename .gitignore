@@ -75,7 +75,7 @@ build/
 .env.*
 !.env.example
 
-# PHPUnit
+
 .phpunit.result.cache
 
 # Dependencies

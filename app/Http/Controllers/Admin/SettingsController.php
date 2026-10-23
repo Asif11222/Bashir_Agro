@@ -8,6 +8,7 @@ use App\Services\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SettingsController extends Controller
@@ -21,12 +22,14 @@ class SettingsController extends Controller
      */
     public function index(): View
     {
+        abort_unless(auth()->user()?->isAdmin(), 403);
         $groupedSettings = $this->settingsService->getGroupedSettings();
 
         return view('settings.index', [
             'activeTab' => 'settings',
             'title' => 'সিস্টেম সেটিংস',
             'groupedSettings' => $groupedSettings,
+            'mobileHeaders' => \App\Services\AppAppearanceService::screens(),
         ]);
     }
 
@@ -35,8 +38,12 @@ class SettingsController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
+        abort_unless($request->user()?->isAdmin(), 403);
+
         $validated = $request->validate([
             'farm_name' => ['required', 'string', 'max:100'],
+            'brand_tagline' => ['nullable', 'string', 'max:100'],
+            'account_photo' => ['nullable','image','mimes:jpeg,jpg,png,webp','max:2048'],
             'company_phone' => ['required', 'string', 'max:30'],
             'company_email' => ['required', 'email', 'max:100'],
             'company_address' => ['required', 'string', 'max:255'],
@@ -45,8 +52,8 @@ class SettingsController extends Controller
             'default_geofence_radius' => ['required', 'integer', 'min:5', 'max:1000'],
             'pagination_size' => ['required', 'integer', 'in:10,15,20,25,50,100'],
             'date_format' => ['required', 'string', 'in:Y-m-d,d/m/Y,d-m-Y,m/d/Y'],
-            'site_logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
-            'site_favicon' => ['nullable', 'file', 'mimes:ico,png,svg,jpg,jpeg,webp', 'max:1024'],
+            'site_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'site_favicon' => ['nullable', 'file', 'mimes:ico,png,jpg,jpeg,webp', 'max:1024'],
             'remove_site_logo' => ['nullable', 'boolean'],
             'remove_site_favicon' => ['nullable', 'boolean'],
         ], [
@@ -64,50 +71,56 @@ class SettingsController extends Controller
             'pagination_size.required' => 'পেজিনেশন সাইজ আবশ্যক।',
             'date_format.required' => 'তারিখের ফরম্যাট আবশ্যক।',
             'site_logo.file' => 'লোগো একটি ফাইল হতে হবে।',
-            'site_logo.mimes' => 'লোগো PNG, JPG, JPEG, SVG বা WebP ফরম্যাটের হতে হবে।',
+            'site_logo.mimes' => 'লোগো PNG, JPG, JPEG বা WebP ফরম্যাটের হতে হবে।',
             'site_logo.max' => 'লোগোর সর্বোচ্চ সাইজ ২ মেগাবাইট (2MB)।',
             'site_favicon.file' => 'ফেভিকন একটি ফাইল হতে হবে।',
-            'site_favicon.mimes' => 'ফেভিকন ICO, PNG, SVG বা WebP ফরম্যাটের হতে হবে।',
+            'site_favicon.mimes' => 'ফেভিকন ICO, PNG, JPG বা WebP ফরম্যাটের হতে হবে।',
             'site_favicon.max' => 'ফেভিকনের সর্বোচ্চ সাইজ ১ মেগাবাইট (1MB)।',
         ]);
 
-        // Process site_logo upload or removal
-        if ($request->boolean('remove_site_logo')) {
-            $currentLogo = Setting::get('site_logo');
-            if ($currentLogo && Storage::disk('public')->exists($currentLogo)) {
-                Storage::disk('public')->delete($currentLogo);
+        // Store new files first, commit new paths, then remove old files.
+        // A failed database write must not leave a setting pointing at a deleted image.
+        $uploadedFiles = [];
+        $retiredFiles = [];
+        $accountPhoto = null;
+        $user = $request->user();
+        try {
+            if ($request->hasFile('account_photo')) {
+                $accountPhoto = $request->file('account_photo')->store('users/photos', 'public');
+                if (! $accountPhoto) throw new \RuntimeException('প্রোফাইল ছবি সংরক্ষণ করা যায়নি।');
+                $uploadedFiles[] = $accountPhoto;
+                if ($user->profile_photo_path) $retiredFiles[] = $user->profile_photo_path;
             }
-            $validated['site_logo'] = '';
-        } elseif ($request->hasFile('site_logo')) {
-            $currentLogo = Setting::get('site_logo');
-            if ($currentLogo && Storage::disk('public')->exists($currentLogo)) {
-                Storage::disk('public')->delete($currentLogo);
-            }
-            $validated['site_logo'] = $request->file('site_logo')->store('branding', 'public');
-        } else {
-            unset($validated['site_logo']);
-        }
-        unset($validated['remove_site_logo']);
+            unset($validated['account_photo']);
 
-        // Process site_favicon upload or removal
-        if ($request->boolean('remove_site_favicon')) {
-            $currentFavicon = Setting::get('site_favicon');
-            if ($currentFavicon && Storage::disk('public')->exists($currentFavicon)) {
-                Storage::disk('public')->delete($currentFavicon);
+            foreach (['site_logo', 'site_favicon'] as $key) {
+                $old = Setting::get($key);
+                if ($request->boolean('remove_'.$key)) {
+                    $validated[$key] = '';
+                    if ($old) $retiredFiles[] = $old;
+                } elseif ($request->hasFile($key)) {
+                    $path = $request->file($key)->store('branding', 'public');
+                    if (! $path) throw new \RuntimeException('ব্র্যান্ডিং ছবি সংরক্ষণ করা যায়নি।');
+                    $uploadedFiles[] = $path;
+                    $validated[$key] = $path;
+                    if ($old) $retiredFiles[] = $old;
+                } else {
+                    unset($validated[$key]);
+                }
+                unset($validated['remove_'.$key]);
             }
-            $validated['site_favicon'] = '';
-        } elseif ($request->hasFile('site_favicon')) {
-            $currentFavicon = Setting::get('site_favicon');
-            if ($currentFavicon && Storage::disk('public')->exists($currentFavicon)) {
-                Storage::disk('public')->delete($currentFavicon);
-            }
-            $validated['site_favicon'] = $request->file('site_favicon')->store('branding', 'public');
-        } else {
-            unset($validated['site_favicon']);
-        }
-        unset($validated['remove_site_favicon']);
 
-        $result = $this->settingsService->updateSettings($validated, auth()->user());
+            $result = DB::transaction(function () use ($validated, $user, $accountPhoto) {
+                if ($accountPhoto) {
+                    $user->forceFill(['profile_photo_path' => $accountPhoto])->save();
+                }
+                return $this->settingsService->updateSettings($validated, $user);
+            });
+        } catch (\Throwable $exception) {
+            foreach ($uploadedFiles as $path) Storage::disk('public')->delete($path);
+            throw $exception;
+        }
+        foreach ($retiredFiles as $path) Storage::disk('public')->delete($path);
 
         if ($result['updated_count'] > 0) {
             $msg = "{$result['updated_count']} টি সেটিংস সফলভাবে হালনাগাদ করা হয়েছে।";

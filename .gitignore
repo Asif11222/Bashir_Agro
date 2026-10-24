@@ -93,4 +93,6 @@ build/
 *.pdf
 *.xlsx
 /public/storage
+*.code-workspace
+/android/
 

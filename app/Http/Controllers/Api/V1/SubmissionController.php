@@ -15,6 +15,7 @@ use App\Services\GeofenceService;
 use App\Services\TaskAssignmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class SubmissionController extends Controller
@@ -47,6 +48,7 @@ class SubmissionController extends Controller
             'photos' => ['nullable', 'array'],
             'photos.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
             'override_geofence' => ['nullable'],
+            'photo_metadata' => ['nullable'],
         ]);
 
         $assignment->load(['taskTemplate', 'location', 'farmer']);
@@ -104,7 +106,7 @@ class SubmissionController extends Controller
             ], 422);
         }
 
-        $submission = DB::transaction(function () use ($validated, $assignment, $geofenceResult, $uploadedFiles, $user, $overrideGeofence) {
+        $submission = DB::transaction(function () use ($validated, $assignment, $geofenceResult, $uploadedFiles, $user, $overrideGeofence, $request) {
             $photoPaths = [];
 
             $farmerNote = $validated['notes'] ?? null;
@@ -132,18 +134,42 @@ class SubmissionController extends Controller
                 ]
             );
 
-            // Store uploaded photos
-            foreach ($uploadedFiles as $file) {
+            $photosMeta = [];
+            if ($request->filled('photo_metadata')) {
+                $rawMeta = $request->input('photo_metadata');
+                if (is_string($rawMeta)) {
+                    $decoded = json_decode($rawMeta, true);
+                    if (is_array($decoded)) {
+                        $photosMeta = $decoded;
+                    }
+                } elseif (is_array($rawMeta)) {
+                    $photosMeta = $rawMeta;
+                }
+            }
+
+            // Store uploaded photos with exact per-photo GPS coordinates
+            foreach ($uploadedFiles as $index => $file) {
                 $path = $file->store('submissions/photos', 'public');
                 $photoPaths[] = $path;
+
+                $meta = $photosMeta[$index] ?? [];
+                $photoLat = isset($meta['latitude']) && is_numeric($meta['latitude'])
+                    ? (float) $meta['latitude']
+                    : (float) $validated['latitude'];
+                $photoLng = isset($meta['longitude']) && is_numeric($meta['longitude'])
+                    ? (float) $meta['longitude']
+                    : (float) $validated['longitude'];
+                $capturedAt = isset($meta['captured_at']) && ! empty($meta['captured_at'])
+                    ? Carbon::parse($meta['captured_at'])
+                    : now();
 
                 EvidencePhoto::create([
                     'task_submission_id' => $taskSubmission->id,
                     'file_path' => $path,
                     'source' => 'camera',
-                    'captured_at' => now(),
-                    'latitude' => $validated['latitude'],
-                    'longitude' => $validated['longitude'],
+                    'captured_at' => $capturedAt,
+                    'latitude' => $photoLat,
+                    'longitude' => $photoLng,
                 ]);
             }
 

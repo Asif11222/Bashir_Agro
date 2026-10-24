@@ -32,6 +32,15 @@ class FarmerResource extends JsonResource
             $landArea = 4.0;
         }
 
+        $activeTasks = isset($this->active_tasks)
+            ? (int) $this->active_tasks
+            : ($this->relationLoaded('unfinishedTaskAssignments')
+                ? $this->unfinishedTaskAssignments->count()
+                : $this->unfinishedTaskAssignments()->count());
+
+        $totalTasks = (int) ($this->total_tasks ?? 0);
+        $completedTasks = (int) ($this->completed_tasks ?? 0);
+
         return [
             'id' => $this->id,
             'farmer_code' => $this->farmer_code,
@@ -50,11 +59,13 @@ class FarmerResource extends JsonResource
             'profile_photo_url' => $this->profile_photo_path ? asset('storage/'.$this->profile_photo_path) : null,
             'app_access_enabled' => (bool) $this->app_access_enabled,
             'status' => $this->status,
-            'is_assigned' => (int) ($this->active_tasks ?? 0) > 0,
-            'active_tasks' => (int) ($this->active_tasks ?? 0),
-            'total_tasks' => (int) ($this->total_tasks ?? 0),
-            'completed_tasks' => (int) ($this->completed_tasks ?? 0),
-            'progress_percent' => $this->resource->taskProgressPercent(),
+            'is_assigned' => $activeTasks > 0,
+            'active_tasks' => $activeTasks,
+            'total_tasks' => $totalTasks,
+            'completed_tasks' => $completedTasks,
+            'progress_percent' => method_exists($this->resource, 'taskProgressPercent')
+                ? $this->resource->taskProgressPercent()
+                : ($totalTasks > 0 ? (int) round(($completedTasks / $totalTasks) * 100) : 0),
             'emergency_contact' => $this->whenLoaded('emergencyContact', function () {
                 return [
                     'name' => $this->emergencyContact?->name,

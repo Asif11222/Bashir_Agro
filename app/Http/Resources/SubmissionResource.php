@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\TaskSubmission;
+use App\Services\GeofenceService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -38,11 +39,29 @@ class SubmissionResource extends JsonResource
             'submitted_at' => $this->submitted_at?->toIso8601String(),
             'photos' => $this->photos ?? [],
             'evidence_photos' => $this->whenLoaded('evidencePhotos', function () {
-                return $this->evidencePhotos->map(fn ($p) => [
-                    'id' => $p->id,
-                    'url' => asset('storage/'.($p->file_path ?? $p->photo_path)),
-                    'caption' => $p->caption ?? null,
-                ]);
+                $location = $this->taskAssignment?->location;
+                $geofenceService = app(GeofenceService::class);
+
+                return $this->evidencePhotos->map(function ($p) use ($location, $geofenceService) {
+                    $isInside = null;
+                    if ($location && $p->latitude !== null && $p->longitude !== null) {
+                        $isInside = $geofenceService->validate(
+                            (float) $p->latitude,
+                            (float) $p->longitude,
+                            $location
+                        )['is_within'] ?? null;
+                    }
+
+                    return [
+                        'id' => $p->id,
+                        'url' => asset('storage/'.($p->file_path ?? $p->photo_path)),
+                        'latitude' => $p->latitude ? (float) $p->latitude : null,
+                        'longitude' => $p->longitude ? (float) $p->longitude : null,
+                        'captured_at' => $p->captured_at?->toIso8601String(),
+                        'caption' => $p->caption ?? null,
+                        'inside_geofence' => $isInside,
+                    ];
+                });
             }),
             'farmer' => new FarmerResource($this->whenLoaded('farmer')),
             'assignment' => new AssignmentResource($this->whenLoaded('taskAssignment')),

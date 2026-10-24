@@ -10,6 +10,7 @@ IP_ADDRESS="129.212.239.216"
 EMAIL="admin@bashiragro.com"
 CERT_DIR="/etc/ssl/ip-certs"
 WEBROOT="/var/www/html"
+PROJECT_DIR="$(pwd)"
 
 echo "=================================================="
 echo " Starting Native IP SSL Setup for $IP_ADDRESS"
@@ -63,7 +64,23 @@ mkdir -p "$CERT_DIR"
 echo "[+] Certificate files installed:"
 ls -lh "$CERT_DIR"
 
-# 7. Check Nginx configuration
+# 7. Update Laravel Admin .env if present
+if [ -f "$PROJECT_DIR/.env" ]; then
+  echo "[+] Updating APP_URL in $PROJECT_DIR/.env..."
+  if grep -q "^APP_URL=" "$PROJECT_DIR/.env"; then
+    sed -i "s|^APP_URL=.*|APP_URL=https://$IP_ADDRESS|" "$PROJECT_DIR/.env"
+  else
+    echo "APP_URL=https://$IP_ADDRESS" >> "$PROJECT_DIR/.env"
+  fi
+  
+  if [ -f "$PROJECT_DIR/artisan" ]; then
+    echo "[+] Clearing Laravel configuration cache..."
+    php "$PROJECT_DIR/artisan" config:clear || true
+    php "$PROJECT_DIR/artisan" route:clear || true
+  fi
+fi
+
+# 8. Check Nginx configuration
 echo "[+] Testing Nginx configuration..."
 nginx -t
 
@@ -72,5 +89,6 @@ systemctl reload nginx
 
 echo "=================================================="
 echo "[SUCCESS] Native IP SSL successfully activated!"
-echo "Verify at: https://$IP_ADDRESS/api/v1/owner/dashboard"
+echo "Admin Web URL: https://$IP_ADDRESS"
+echo "Mobile API URL: https://$IP_ADDRESS/api/v1"
 echo "=================================================="

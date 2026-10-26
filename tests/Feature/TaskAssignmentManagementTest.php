@@ -462,17 +462,20 @@ class TaskAssignmentManagementTest extends TestCase
             'assigned_by' => $this->admin->id,
         ]);
 
-        $responseFarmer = $this->actingAs($this->admin)->get('/admin/assignments?search=কামাল');
+        $responseFarmer = $this->actingAs($this->admin)->get('/admin/assignments?search=কামাল&view_mode=flat');
         $responseFarmer->assertSee('কামাল হোসেন');
-        $responseFarmer->assertDontSee('মোঃ রহিম উদ্দিন');
+        $this->assertEquals(1, $responseFarmer->viewData('assignments')->total());
+        $this->assertEquals($farmer2->id, $responseFarmer->viewData('assignments')->first()->farmer_id);
 
-        $responseTask = $this->actingAs($this->admin)->get('/admin/assignments?search=মাছের');
+        $responseTask = $this->actingAs($this->admin)->get('/admin/assignments?search=মাছের&view_mode=flat');
         $responseTask->assertSee('মাছের খাবার');
-        $responseTask->assertDontSee('সার প্রয়োগ');
+        $this->assertEquals(1, $responseTask->viewData('assignments')->total());
+        $this->assertEquals($task2->id, $responseTask->viewData('assignments')->first()->task_template_id);
 
-        $responseLoc = $this->actingAs($this->admin)->get('/admin/assignments?search=দক্ষিণ');
+        $responseLoc = $this->actingAs($this->admin)->get('/admin/assignments?search=দক্ষিণ&view_mode=flat');
         $responseLoc->assertSee('দক্ষিণ পুকুর');
-        $responseLoc->assertDontSee('উত্তর মাঠ');
+        $this->assertEquals(1, $responseLoc->viewData('assignments')->total());
+        $this->assertEquals($location2->id, $responseLoc->viewData('assignments')->first()->farm_location_id);
     }
 
     public function test_filter_assignments_by_status_priority_and_date(): void
@@ -619,4 +622,139 @@ class TaskAssignmentManagementTest extends TestCase
         $response2->assertRedirect();
         $this->assertEquals(0, TaskAssignment::where('recurring_group_id', $groupId)->whereNull('deleted_at')->count());
     }
+
+    public function test_newly_created_task_assignment_appears_first_in_list(): void
+    {
+        // Assignment 1 (created earlier, with future scheduled date)
+        $task1 = TaskAssignment::create([
+            'task_template_id' => $this->task->id,
+            'farmer_id' => $this->farmer->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => today()->addDays(10),
+            'start_time' => '08:00',
+            'priority' => 'normal',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+            'created_at' => now()->subMinutes(10),
+        ]);
+
+        // Assignment 2 (created now, with current scheduled date)
+        $task2 = TaskAssignment::create([
+            'task_template_id' => $this->task->id,
+            'farmer_id' => $this->farmer->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => today(),
+            'start_time' => '09:00',
+            'priority' => 'important',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+            'created_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->admin)->get('/admin/assignments?view_mode=flat');
+        $response->assertStatus(200);
+
+        $assignments = $response->viewData('assignments');
+        // task2 must be first because it was created latest, even though task1 has a future scheduled date
+        $this->assertEquals($task2->id, $assignments->first()->id);
+    }
+
+    public function test_filter_assignments_by_farmer_and_area(): void
+    {
+        $farmer2 = Farmer::create([
+            'farmer_code' => 'F-000002',
+            'full_name' => 'জামাল মিয়া',
+            'phone' => '01899001122',
+            'primary_activity' => 'ধান চাষ',
+            'address' => 'ময়মনসিংহ',
+            'status' => 'active',
+            'created_by' => $this->admin->id,
+        ]);
+
+        $location2 = FarmLocation::create([
+            'location_code' => 'LOC-000002',
+            'name' => 'পশ্চিম প্লট',
+            'type' => 'ধান ক্ষেত',
+            'address' => 'ময়মনসিংহ',
+            'status' => 'active',
+            'created_by' => $this->admin->id,
+        ]);
+
+        $task1 = TaskAssignment::create([
+            'task_template_id' => $this->task->id,
+            'farmer_id' => $this->farmer->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => today(),
+            'start_time' => '08:00',
+            'priority' => 'normal',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        $task2 = TaskAssignment::create([
+            'task_template_id' => $this->task->id,
+            'farmer_id' => $farmer2->id,
+            'farm_location_id' => $location2->id,
+            'scheduled_date' => today(),
+            'start_time' => '10:00',
+            'priority' => 'urgent',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        // Filter by Farmer
+        $resFarmer = $this->actingAs($this->admin)->get("/admin/assignments?farmer_id={$farmer2->id}&view_mode=flat");
+        $resFarmer->assertStatus(200);
+        $this->assertEquals(1, $resFarmer->viewData('assignments')->total());
+        $this->assertEquals($task2->id, $resFarmer->viewData('assignments')->first()->id);
+
+        // Filter by Location
+        $resLoc = $this->actingAs($this->admin)->get("/admin/assignments?location_id={$location2->id}&view_mode=flat");
+        $resLoc->assertStatus(200);
+        $this->assertEquals(1, $resLoc->viewData('assignments')->total());
+        $this->assertEquals($task2->id, $resLoc->viewData('assignments')->first()->id);
+    }
+
+    public function test_filter_assignments_by_date_range_and_time_shift(): void
+    {
+        $taskMorning = TaskAssignment::create([
+            'task_template_id' => $this->task->id,
+            'farmer_id' => $this->farmer->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => '2026-11-05',
+            'start_time' => '07:30',
+            'priority' => 'normal',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        $taskAfternoon = TaskAssignment::create([
+            'task_template_id' => $this->task->id,
+            'farmer_id' => $this->farmer->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => '2026-11-20',
+            'start_time' => '16:00',
+            'priority' => 'important',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        // Filter by Date Range (2026-11-01 to 2026-11-10)
+        $resRange = $this->actingAs($this->admin)->get('/admin/assignments?date_filter=range&start_date=2026-11-01&end_date=2026-11-10&view_mode=flat');
+        $this->assertEquals(1, $resRange->viewData('assignments')->total());
+        $this->assertEquals($taskMorning->id, $resRange->viewData('assignments')->first()->id);
+
+        // Filter by Morning Shift
+        $resMorning = $this->actingAs($this->admin)->get('/admin/assignments?time_shift=morning&view_mode=flat');
+        $morningIds = $resMorning->viewData('assignments')->pluck('id')->all();
+        $this->assertContains($taskMorning->id, $morningIds);
+        $this->assertNotContains($taskAfternoon->id, $morningIds);
+
+        // Filter by Afternoon Shift
+        $resAfternoon = $this->actingAs($this->admin)->get('/admin/assignments?time_shift=afternoon&view_mode=flat');
+        $afternoonIds = $resAfternoon->viewData('assignments')->pluck('id')->all();
+        $this->assertContains($taskAfternoon->id, $afternoonIds);
+        $this->assertNotContains($taskMorning->id, $afternoonIds);
+    }
 }
+

@@ -27,49 +27,266 @@
                     </div>
                 </div>
 
-                {{-- Search & Filter Row --}}
-                <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
-                    <form method="GET" action="{{ route('admin.assignments.index') }}" style="display:flex;gap:8px;flex:1;flex-wrap:wrap;">
+                @php
+                    $queryParams = array_filter([
+                        'view_mode' => $viewMode,
+                        'search' => $search,
+                        'priority' => $priority,
+                        'farmer_id' => $farmerId,
+                        'location_id' => $locationId,
+                        'date_filter' => $dateFilter,
+                        'date' => $customDate,
+                        'start_date' => $startDate,
+                        'end_date' => $endDate,
+                        'time_shift' => $timeShift,
+                        'time_from' => $timeFrom,
+                        'time_to' => $timeTo,
+                        'sort_by' => $sortBy !== 'latest' ? $sortBy : null,
+                    ], fn($v) => !is_null($v) && $v !== '');
+
+                    $hasAdvancedFilters = !empty($dateFilter) || !empty($customDate) || !empty($startDate) || !empty($endDate) || !empty($timeShift) || !empty($timeFrom) || !empty($timeTo) || (!empty($sortBy) && $sortBy !== 'latest') || !empty($priority);
+                    $anyFilterActive = ($search !== '') || $farmerId || $locationId || $priority || $dateFilter || $customDate || $startDate || $endDate || $timeShift || $timeFrom || $timeTo || ($sortBy && $sortBy !== 'latest');
+                @endphp
+
+                {{-- Comprehensive Search & Filter Toolbar --}}
+                <div style="background:#f8faf9;border:1px solid #d4ded8;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+                    <form method="GET" action="{{ route('admin.assignments.index') }}" id="assignmentFilterForm">
                         <input type="hidden" name="view_mode" value="{{ $viewMode }}">
                         @if($status)
                             <input type="hidden" name="status" value="{{ $status }}">
                         @endif
-                        <input class="input" type="text" name="search" value="{{ $search }}" placeholder="কৃষক, কাজ বা লোকেশনের নাম দিয়ে খুঁজুন..." style="padding:7px 12px;font-size:12px;flex:1;min-width:200px;">
-                        
-                        <select name="priority" class="input" style="padding:7px 10px;font-size:12px;width:auto;" onchange="this.form.submit()">
-                            <option value="">সকল অগ্রাধিকার</option>
-                            <option value="normal" {{ $priority === 'normal' ? 'selected' : '' }}>সাধারণ</option>
-                            <option value="important" {{ $priority === 'important' ? 'selected' : '' }}>গুরুত্বপূর্ণ</option>
-                            <option value="urgent" {{ $priority === 'urgent' ? 'selected' : '' }}>জরুরি</option>
-                        </select>
 
-                        <select name="date_filter" id="dateFilterSelect" class="input" style="padding:7px 10px;font-size:12px;width:auto;" onchange="handleDateFilterChange(this)">
-                            <option value="">সকল তারিখ</option>
-                            <option value="today" {{ $dateFilter === 'today' ? 'selected' : '' }}>আজকের কাজ</option>
-                            <option value="this_week" {{ $dateFilter === 'this_week' ? 'selected' : '' }}>এই সপ্তাহের কাজ</option>
-                            <option value="custom" {{ $dateFilter === 'custom' ? 'selected' : '' }}>নির্দিষ্ট তারিখ</option>
-                        </select>
+                        {{-- Row 1: Primary Controls --}}
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            {{-- Search Input --}}
+                            <div style="position:relative;flex:1;min-width:200px;">
+                                <input class="input" type="text" name="search" value="{{ $search }}" placeholder="কৃষক, কাজ বা লোকেশনের নাম দিয়ে খুঁজুন..." style="padding:7px 12px;font-size:12px;width:100%;">
+                            </div>
 
-                        <input type="date" id="customDateInput" name="date" class="input" value="{{ $customDate }}" style="padding:6px 10px;font-size:12px;width:auto;display:{{ $dateFilter === 'custom' ? 'inline-block' : 'none' }};" onchange="this.form.submit()">
+                            {{-- Farmer Dropdown --}}
+                            <select name="farmer_id" class="input" style="padding:7px 10px;font-size:12px;width:auto;min-width:140px;" onchange="this.form.submit()">
+                                <option value="">সকল কৃষক</option>
+                                @foreach($farmers as $f)
+                                    <option value="{{ $f->id }}" {{ (string)$farmerId === (string)$f->id ? 'selected' : '' }}>
+                                        {{ $f->full_name }} ({{ $f->farmer_code }})
+                                    </option>
+                                @endforeach
+                            </select>
 
-                        <button type="submit" class="btn soft" style="padding:7px 14px">ফিল্টার</button>
-                        @if($search || $priority || $dateFilter)
-                            <a href="{{ route('admin.assignments.index', array_filter(['view_mode' => $viewMode, 'status' => $status])) }}" class="btn" style="padding:7px 12px" title="ফিল্টার মুছুন">✕ রিস্টার্ট</a>
+                            {{-- Location/Area Dropdown --}}
+                            <select name="location_id" class="input" style="padding:7px 10px;font-size:12px;width:auto;min-width:140px;" onchange="this.form.submit()">
+                                <option value="">সকল এলাকা / লোকেশন</option>
+                                @foreach($locations as $loc)
+                                    <option value="{{ $loc->id }}" {{ (string)$locationId === (string)$loc->id ? 'selected' : '' }}>
+                                        {{ $loc->name }} ({{ $loc->location_code }})
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            {{-- Filter Submit Button --}}
+                            <button type="submit" class="btn primary" style="padding:7px 14px;font-size:12px;">🔍 ফিল্টার</button>
+
+                            @if($anyFilterActive)
+                                <a href="{{ route('admin.assignments.index', array_filter(['view_mode' => $viewMode, 'status' => $status])) }}" class="btn" style="padding:7px 12px;font-size:12px;" title="সব ফিল্টার রিসেট করুন">✕ রিসেট</a>
+                            @endif
+
+                            {{-- Advanced Filters Toggle Button --}}
+                            <button type="button" class="btn soft" onclick="toggleAdvancedFilters()" style="padding:7px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                                <span>⚙️ অতিরিক্ত ফিল্টার</span>
+                                @if($hasAdvancedFilters)
+                                    <span style="background:#08783f;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;">সক্রিয়</span>
+                                @endif
+                                <span id="advFilterChevron">{{ $hasAdvancedFilters ? '▴' : '▾' }}</span>
+                            </button>
+                        </div>
+
+                        {{-- Row 2: Advanced Filters Panel (Collapsible) --}}
+                        <div id="advancedFilterPanel" style="display:{{ $hasAdvancedFilters ? 'flex' : 'none' }};gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed #d4ded8;">
+                            
+                            {{-- Date Wise Dropdown & Inputs --}}
+                            <div style="display:flex;align-items:center;gap:5px;">
+                                <span style="font-size:11px;font-weight:600;color:var(--muted);">তারিখ:</span>
+                                <select name="date_filter" id="dateFilterSelect" class="input" style="padding:6px 10px;font-size:12px;width:auto;" onchange="handleDateFilterChange(this)">
+                                    <option value="">সকল তারিখ</option>
+                                    <option value="today" {{ $dateFilter === 'today' ? 'selected' : '' }}>আজকের কাজ</option>
+                                    <option value="tomorrow" {{ $dateFilter === 'tomorrow' ? 'selected' : '' }}>আগামীকালের কাজ</option>
+                                    <option value="this_week" {{ $dateFilter === 'this_week' ? 'selected' : '' }}>চলতি সপ্তাহ</option>
+                                    <option value="this_month" {{ $dateFilter === 'this_month' ? 'selected' : '' }}>চলতি মাস</option>
+                                    <option value="overdue" {{ $dateFilter === 'overdue' ? 'selected' : '' }}>সময় অতিক্রান্ত (ওভারডিউ)</option>
+                                    <option value="custom" {{ $dateFilter === 'custom' ? 'selected' : '' }}>নির্দিষ্ট একক তারিখ</option>
+                                    <option value="range" {{ $dateFilter === 'range' ? 'selected' : '' }}>কাস্টম তারিখ রেঞ্জ</option>
+                                </select>
+
+                                {{-- Single Custom Date --}}
+                                <input type="date" id="customDateInput" name="date" class="input" value="{{ $customDate }}" style="padding:5px 8px;font-size:12px;width:auto;display:{{ $dateFilter === 'custom' ? 'inline-block' : 'none' }};" onchange="this.form.submit()">
+
+                                {{-- Custom Date Range --}}
+                                <div id="dateRangeInputs" style="display:{{ $dateFilter === 'range' ? 'inline-flex' : 'none' }};align-items:center;gap:4px;">
+                                    <input type="date" name="start_date" class="input" value="{{ $startDate }}" style="padding:5px 8px;font-size:12px;width:auto;" title="শুরুর তারিখ">
+                                    <span style="font-size:11px;color:var(--muted);">থেকে</span>
+                                    <input type="date" name="end_date" class="input" value="{{ $endDate }}" style="padding:5px 8px;font-size:12px;width:auto;" title="শেষ তারিখ">
+                                </div>
+                            </div>
+
+                            {{-- Time Shift / Range Filter --}}
+                            <div style="display:flex;align-items:center;gap:5px;">
+                                <span style="font-size:11px;font-weight:600;color:var(--muted);">সময়সীমা:</span>
+                                <select name="time_shift" id="timeShiftSelect" class="input" style="padding:6px 10px;font-size:12px;width:auto;" onchange="handleTimeShiftChange(this)">
+                                    <option value="">সকল সময়</option>
+                                    <option value="morning" {{ $timeShift === 'morning' ? 'selected' : '' }}>🌅 সকাল (০৫:০০ - ১২:০০)</option>
+                                    <option value="noon" {{ $timeShift === 'noon' ? 'selected' : '' }}>☀️ দুপুর (১২:০০ - ১৫:০০)</option>
+                                    <option value="afternoon" {{ $timeShift === 'afternoon' ? 'selected' : '' }}>🌤️ বিকাল (১৫:০০ - ১৮:০০)</option>
+                                    <option value="evening_night" {{ $timeShift === 'evening_night' ? 'selected' : '' }}>🌙 সন্ধ্যা ও রাত (১৮:০০ - রাত)</option>
+                                    <option value="custom" {{ $timeShift === 'custom' ? 'selected' : '' }}>⏱️ কাস্টম সময় রেঞ্জ</option>
+                                </select>
+
+                                <div id="timeRangeInputs" style="display:{{ $timeShift === 'custom' ? 'inline-flex' : 'none' }};align-items:center;gap:4px;">
+                                    <input type="time" name="time_from" class="input" value="{{ $timeFrom }}" style="padding:5px 8px;font-size:12px;width:auto;" title="শুরুর সময়">
+                                    <span style="font-size:11px;color:var(--muted);">-</span>
+                                    <input type="time" name="time_to" class="input" value="{{ $timeTo }}" style="padding:5px 8px;font-size:12px;width:auto;" title="শেষ সময়">
+                                </div>
+                            </div>
+
+                            {{-- Priority --}}
+                            <div style="display:flex;align-items:center;gap:5px;">
+                                <span style="font-size:11px;font-weight:600;color:var(--muted);">অগ্রাধিকার:</span>
+                                <select name="priority" class="input" style="padding:6px 10px;font-size:12px;width:auto;" onchange="this.form.submit()">
+                                    <option value="">সকল অগ্রাধিকার</option>
+                                    <option value="normal" {{ $priority === 'normal' ? 'selected' : '' }}>সাধারণ</option>
+                                    <option value="important" {{ $priority === 'important' ? 'selected' : '' }}>গুরুত্বপূর্ণ</option>
+                                    <option value="urgent" {{ $priority === 'urgent' ? 'selected' : '' }}>জরুরি</option>
+                                </select>
+                            </div>
+
+                            {{-- Sort By --}}
+                            <div style="display:flex;align-items:center;gap:5px;">
+                                <span style="font-size:11px;font-weight:600;color:var(--muted);">ক্রম (সর্ট):</span>
+                                <select name="sort_by" class="input" style="padding:6px 10px;font-size:12px;width:auto;" onchange="this.form.submit()">
+                                    <option value="latest" {{ $sortBy === 'latest' ? 'selected' : '' }}>🆕 সর্বশেষ সংযোজিত (নতুন আগে)</option>
+                                    <option value="date_asc" {{ $sortBy === 'date_asc' ? 'selected' : '' }}>📅 কাজের তারিখ (নিকটবর্তী আগে)</option>
+                                    <option value="date_desc" {{ $sortBy === 'date_desc' ? 'selected' : '' }}>📆 কাজের তারিখ (দূরবর্তী আগে)</option>
+                                    <option value="priority" {{ $sortBy === 'priority' ? 'selected' : '' }}>⚡ অগ্রাধিকার (জরুরি আগে)</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn soft" style="padding:6px 12px;font-size:11px;font-weight:700;">প্রয়োগ করুন</button>
+                        </div>
+
+                        {{-- Row 3: Active Filter Badges (Chips) --}}
+                        @if($anyFilterActive)
+                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px;padding-top:8px;border-top:1px solid #e2ede6;">
+                                <span style="font-size:11px;color:var(--muted);font-weight:600;">সক্রিয় ফিল্টার:</span>
+
+                                @if($search !== '')
+                                    <span class="pill" style="font-size:11px;padding:2px 8px;background:#eef7f2;border:1px solid #c2e2d0;">
+                                        সার্চ: "{{ $search }}"
+                                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['search' => null])) }}" style="color:var(--red);margin-left:4px;text-decoration:none;font-weight:bold;">✕</a>
+                                    </span>
+                                @endif
+
+                                @if($farmerId && $farmers->find($farmerId))
+                                    <span class="pill" style="font-size:11px;padding:2px 8px;background:#eef7f2;border:1px solid #c2e2d0;">
+                                        কৃষক: {{ $farmers->find($farmerId)->full_name }}
+                                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['farmer_id' => null])) }}" style="color:var(--red);margin-left:4px;text-decoration:none;font-weight:bold;">✕</a>
+                                    </span>
+                                @endif
+
+                                @if($locationId && $locations->find($locationId))
+                                    <span class="pill" style="font-size:11px;padding:2px 8px;background:#eef7f2;border:1px solid #c2e2d0;">
+                                        এলাকা: {{ $locations->find($locationId)->name }}
+                                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['location_id' => null])) }}" style="color:var(--red);margin-left:4px;text-decoration:none;font-weight:bold;">✕</a>
+                                    </span>
+                                @endif
+
+                                @if($priority)
+                                    <span class="pill" style="font-size:11px;padding:2px 8px;background:#eef7f2;border:1px solid #c2e2d0;">
+                                        অগ্রাধিকার: {{ match($priority) { 'urgent' => 'জরুরি', 'important' => 'গুরুত্বপূর্ণ', default => 'সাধারণ' } }}
+                                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['priority' => null])) }}" style="color:var(--red);margin-left:4px;text-decoration:none;font-weight:bold;">✕</a>
+                                    </span>
+                                @endif
+
+                                @if($dateFilter)
+                                    <span class="pill" style="font-size:11px;padding:2px 8px;background:#eef7f2;border:1px solid #c2e2d0;">
+                                        তারিখ: {{ match($dateFilter) {
+                                            'today' => 'আজকের কাজ',
+                                            'tomorrow' => 'আগামীকালের কাজ',
+                                            'this_week' => 'চলতি সপ্তাহ',
+                                            'this_month' => 'চলতি মাস',
+                                            'overdue' => 'সময় অতিক্রান্ত',
+                                            'custom' => $customDate ?: 'নির্দিষ্ট তারিখ',
+                                            'range' => ($startDate && $endDate ? "{$startDate} থেকে {$endDate}" : 'তারিখ রেঞ্জ'),
+                                            default => $dateFilter
+                                        } }}
+                                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['date_filter' => null, 'date' => null, 'start_date' => null, 'end_date' => null])) }}" style="color:var(--red);margin-left:4px;text-decoration:none;font-weight:bold;">✕</a>
+                                    </span>
+                                @endif
+
+                                @if($timeShift)
+                                    <span class="pill" style="font-size:11px;padding:2px 8px;background:#eef7f2;border:1px solid #c2e2d0;">
+                                        সময়: {{ match($timeShift) {
+                                            'morning' => 'সকাল (০৫-১২)',
+                                            'noon' => 'দুপুর (১২-১৫)',
+                                            'afternoon' => 'বিকাল (১৫-১৮)',
+                                            'evening_night' => 'সন্ধ্যা ও রাত',
+                                            'custom' => ($timeFrom && $timeTo ? "{$timeFrom} - {$timeTo}" : 'কাস্টম সময়'),
+                                            default => $timeShift
+                                        } }}
+                                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['time_shift' => null, 'time_from' => null, 'time_to' => null])) }}" style="color:var(--red);margin-left:4px;text-decoration:none;font-weight:bold;">✕</a>
+                                    </span>
+                                @endif
+
+                                @if($sortBy && $sortBy !== 'latest')
+                                    <span class="pill" style="font-size:11px;padding:2px 8px;background:#eef7f2;border:1px solid #c2e2d0;">
+                                        সর্ট: {{ match($sortBy) {
+                                            'date_asc' => 'তারিখ (নিকটবর্তী আগে)',
+                                            'date_desc' => 'তারিখ (দূরবর্তী আগে)',
+                                            'priority' => 'অগ্রাধিকার (জরুরি আগে)',
+                                            default => $sortBy
+                                        } }}
+                                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['sort_by' => null])) }}" style="color:var(--red);margin-left:4px;text-decoration:none;font-weight:bold;">✕</a>
+                                    </span>
+                                @endif
+
+                                <a href="{{ route('admin.assignments.index', array_filter(['view_mode' => $viewMode, 'status' => $status])) }}" style="font-size:11px;color:var(--red);margin-left:auto;text-decoration:none;font-weight:700;">সব মুছুন ✕</a>
+                            </div>
                         @endif
                     </form>
+
                     <script>
+                        function toggleAdvancedFilters() {
+                            var panel = document.getElementById('advancedFilterPanel');
+                            var chevron = document.getElementById('advFilterChevron');
+                            if (panel.style.display === 'none' || panel.style.display === '') {
+                                panel.style.display = 'flex';
+                                chevron.innerText = '▴';
+                            } else {
+                                panel.style.display = 'none';
+                                chevron.innerText = '▾';
+                            }
+                        }
+
                         function handleDateFilterChange(select) {
                             var dateInput = document.getElementById('customDateInput');
+                            var rangeInputs = document.getElementById('dateRangeInputs');
                             if (select.value === 'custom') {
-                                if (dateInput) {
-                                    dateInput.style.display = 'inline-block';
-                                    dateInput.focus();
-                                }
+                                if (dateInput) { dateInput.style.display = 'inline-block'; dateInput.focus(); }
+                                if (rangeInputs) { rangeInputs.style.display = 'none'; }
+                            } else if (select.value === 'range') {
+                                if (dateInput) { dateInput.style.display = 'none'; }
+                                if (rangeInputs) { rangeInputs.style.display = 'inline-flex'; }
                             } else {
-                                if (dateInput) {
-                                    dateInput.style.display = 'none';
-                                    dateInput.value = '';
-                                }
+                                if (dateInput) { dateInput.style.display = 'none'; dateInput.value = ''; }
+                                if (rangeInputs) { rangeInputs.style.display = 'none'; }
+                                select.form.submit();
+                            }
+                        }
+
+                        function handleTimeShiftChange(select) {
+                            var rangeInputs = document.getElementById('timeRangeInputs');
+                            if (select.value === 'custom') {
+                                if (rangeInputs) { rangeInputs.style.display = 'inline-flex'; }
+                            } else {
+                                if (rangeInputs) { rangeInputs.style.display = 'none'; }
                                 select.form.submit();
                             }
                         }
@@ -79,31 +296,36 @@
                 {{-- Status Tabs & View Mode Switcher Header --}}
                 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
                     <div class="tabs" style="margin:0;">
-                        <a href="{{ route('admin.assignments.index', array_filter(['view_mode' => $viewMode, 'search' => $search, 'priority' => $priority, 'date_filter' => $dateFilter, 'date' => $customDate])) }}" class="tab {{ !$status ? 'active' : '' }}">
+                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['status' => null])) }}" class="tab {{ !$status ? 'active' : '' }}">
                             সব ({{ $totalAssignmentsCount }})
                         </a>
-                        <a href="{{ route('admin.assignments.index', array_filter(['view_mode' => $viewMode, 'status' => 'assigned', 'search' => $search, 'priority' => $priority, 'date_filter' => $dateFilter, 'date' => $customDate])) }}" class="tab {{ $status === 'assigned' ? 'active' : '' }}">
+                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['status' => 'assigned'])) }}" class="tab {{ $status === 'assigned' ? 'active' : '' }}">
                             বরাদ্দকৃত ({{ $assignedCount }})
                         </a>
-                        <a href="{{ route('admin.assignments.index', array_filter(['view_mode' => $viewMode, 'status' => 'in_progress', 'search' => $search, 'priority' => $priority, 'date_filter' => $dateFilter, 'date' => $customDate])) }}" class="tab {{ $status === 'in_progress' ? 'active' : '' }}">
+                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['status' => 'in_progress'])) }}" class="tab {{ $status === 'in_progress' ? 'active' : '' }}">
                             চলমান ({{ $inProgressCount }})
                         </a>
-                        <a href="{{ route('admin.assignments.index', array_filter(['view_mode' => $viewMode, 'status' => 'completed', 'search' => $search, 'priority' => $priority, 'date_filter' => $dateFilter, 'date' => $customDate])) }}" class="tab {{ $status === 'completed' ? 'active' : '' }}">
+                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['status' => 'completed'])) }}" class="tab {{ $status === 'completed' ? 'active' : '' }}">
                             সম্পন্ন ({{ $completedCount }})
                         </a>
-                        <a href="{{ route('admin.assignments.index', array_filter(['view_mode' => $viewMode, 'status' => 'cancelled', 'search' => $search, 'priority' => $priority, 'date_filter' => $dateFilter, 'date' => $customDate])) }}" class="tab {{ $status === 'cancelled' ? 'active' : '' }}">
+                        @if($lateCount > 0 || $status === 'late')
+                            <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['status' => 'late'])) }}" class="tab {{ $status === 'late' ? 'active' : '' }}" style="{{ $lateCount > 0 ? 'color:var(--red);' : '' }}">
+                                সময় অতিক্রান্ত ({{ $lateCount }})
+                            </a>
+                        @endif
+                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['status' => 'cancelled'])) }}" class="tab {{ $status === 'cancelled' ? 'active' : '' }}">
                             বাতিল ({{ $cancelledCount }})
                         </a>
                     </div>
 
                     {{-- View Mode Switcher (Grouped vs Flat) --}}
                     <div style="display:inline-flex;background:#edf2ef;padding:3px;border-radius:8px;border:1px solid #d4ded8;">
-                        <a href="{{ route('admin.assignments.index', array_filter(['view_mode' => 'grouped', 'status' => $status, 'search' => $search, 'priority' => $priority, 'date_filter' => $dateFilter, 'date' => $customDate])) }}"
+                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['view_mode' => 'grouped', 'status' => $status])) }}"
                            style="padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:all 0.15s;{{ $viewMode === 'grouped' ? 'background:#08783f;color:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#4b6354;' }}"
                            title="প্রতিটি পুনরাবৃত্তিমূলক কাজের সিরিজ ১টি রো/কার্ডে দেখাবে">
                             📁 সিরিজ গ্রুপ ভিউ
                         </a>
-                        <a href="{{ route('admin.assignments.index', array_filter(['view_mode' => 'flat', 'status' => $status, 'search' => $search, 'priority' => $priority, 'date_filter' => $dateFilter, 'date' => $customDate])) }}"
+                        <a href="{{ route('admin.assignments.index', array_merge($queryParams, ['view_mode' => 'flat', 'status' => $status])) }}"
                            style="padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:all 0.15s;{{ $viewMode === 'flat' ? 'background:#08783f;color:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.1);' : 'color:#4b6354;' }}"
                            title="প্রতিটি তারিখের কাজ আলাদা রো-তে দেখাবে">
                             📋 সব তারিখের তালিকা

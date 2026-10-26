@@ -34,8 +34,16 @@ class TaskAssignmentController extends Controller
         $search = trim((string) $request->query('search', ''));
         $status = $request->query('status');
         $priority = $request->query('priority');
+        $farmerId = $request->query('farmer_id');
+        $locationId = $request->query('location_id');
         $dateFilter = $request->query('date_filter');
         $customDate = $request->query('date');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $timeShift = $request->query('time_shift');
+        $timeFrom = $request->query('time_from');
+        $timeTo = $request->query('time_to');
+        $sortBy = $request->query('sort_by', 'latest');
         $viewMode = $request->query('view_mode', 'grouped');
         if (! in_array($viewMode, ['grouped', 'flat'], true)) {
             $viewMode = 'grouped';
@@ -57,16 +65,27 @@ class TaskAssignmentController extends Controller
 
         if ($viewMode === 'grouped') {
             // Grouped View: Non-recurring tasks OR the representative row (MIN id) for each recurring series
-            $hasActiveFilters = ($search !== '') || $status || $priority || $dateFilter;
+            $hasActiveFilters = ($search !== '')
+                || ! empty($status)
+                || ! empty($priority)
+                || ! empty($farmerId)
+                || ! empty($locationId)
+                || ! empty($dateFilter)
+                || ! empty($customDate)
+                || ! empty($startDate)
+                || ! empty($endDate)
+                || ! empty($timeShift)
+                || ! empty($timeFrom)
+                || ! empty($timeTo);
 
-            $query->where(function ($topQ) use ($search, $status, $priority, $dateFilter, $customDate, $likeOperator, $hasActiveFilters) {
+            $query->where(function ($topQ) use ($search, $status, $priority, $farmerId, $locationId, $dateFilter, $customDate, $startDate, $endDate, $timeShift, $timeFrom, $timeTo, $likeOperator, $hasActiveFilters) {
                 // 1. Non-recurring tasks
-                $topQ->where(function ($nonRecQ) use ($search, $status, $priority, $dateFilter, $customDate, $likeOperator) {
+                $topQ->where(function ($nonRecQ) use ($search, $status, $priority, $farmerId, $locationId, $dateFilter, $customDate, $startDate, $endDate, $timeShift, $timeFrom, $timeTo, $likeOperator) {
                     $nonRecQ->where('is_recurring', false);
-                    $this->applyFilters($nonRecQ, $search, $status, $priority, $dateFilter, $customDate, $likeOperator);
+                    $this->applyFilters($nonRecQ, $search, $status, $priority, $farmerId, $locationId, $dateFilter, $customDate, $startDate, $endDate, $timeShift, $timeFrom, $timeTo, $likeOperator);
                 })
                 // 2. OR Recurring series (represented by the first assignment of that recurring_group_id)
-                ->orWhere(function ($recQ) use ($search, $status, $priority, $dateFilter, $customDate, $likeOperator, $hasActiveFilters) {
+                ->orWhere(function ($recQ) use ($search, $status, $priority, $farmerId, $locationId, $dateFilter, $customDate, $startDate, $endDate, $timeShift, $timeFrom, $timeTo, $likeOperator, $hasActiveFilters) {
                     $recQ->where('is_recurring', true)
                         ->whereIn('id', function ($sub) {
                             $sub->selectRaw('MIN(id)')
@@ -79,7 +98,7 @@ class TaskAssignmentController extends Controller
                     // If filters are active, match if ANY task in the recurring series satisfies the criteria
                     if ($hasActiveFilters) {
                         $groupEloquent = TaskAssignment::query()->whereNotNull('recurring_group_id');
-                        $this->applyFilters($groupEloquent, $search, $status, $priority, $dateFilter, $customDate, $likeOperator);
+                        $this->applyFilters($groupEloquent, $search, $status, $priority, $farmerId, $locationId, $dateFilter, $customDate, $startDate, $endDate, $timeShift, $timeFrom, $timeTo, $likeOperator);
                         $matchedGroupIds = $groupEloquent->pluck('recurring_group_id')->unique()->filter()->values()->all();
 
                         $recQ->whereIn('recurring_group_id', $matchedGroupIds);
@@ -88,21 +107,55 @@ class TaskAssignmentController extends Controller
             });
         } else {
             // Flat View: Regular filter on each individual assignment
-            $this->applyFilters($query, $search, $status, $priority, $dateFilter, $customDate, $likeOperator);
+            $this->applyFilters($query, $search, $status, $priority, $farmerId, $locationId, $dateFilter, $customDate, $startDate, $endDate, $timeShift, $timeFrom, $timeTo, $likeOperator);
         }
+
+        // Active farmers & locations for dropdown filter
+        $farmers = Farmer::where('status', 'active')->orderBy('full_name')->get(['id', 'farmer_code', 'full_name']);
+        $locations = FarmLocation::where('status', 'active')->orderBy('name')->get(['id', 'location_code', 'name']);
 
         // Status counts for tabs
         $totalAssignmentsCount = TaskAssignment::count();
-        $assignedCount = TaskAssignment::where('status', 'assigned')->count();
+        $assignedCount = TaskAssignment::whereIn('status', ['assigned', 'pending'])->count();
         $inProgressCount = TaskAssignment::where('status', 'in_progress')->count();
         $completedCount = TaskAssignment::where('status', 'completed')->count();
         $cancelledCount = TaskAssignment::where('status', 'cancelled')->count();
+        $lateCount = TaskAssignment::where(function ($q) {
+            $q->where('status', 'late')
+                ->orWhere(function ($sub) {
+                    $sub->whereDate('scheduled_date', '<', today())
+                        ->whereNotIn('status', ['completed', 'cancelled']);
+                });
+        })->count();
 
-        $assignments = $query->orderBy('scheduled_date', 'desc')
-            ->orderBy('start_time', 'asc')
-            ->orderBy('id', 'desc')
-            ->paginate(15)
-            ->withQueryString();
+        // Sort ordering: Default to newest added tasks first (created_at desc, id desc)
+        switch ($sortBy) {
+            case 'date_asc':
+                $query->orderBy('scheduled_date', 'asc')
+                    ->orderBy('start_time', 'asc')
+                    ->orderBy('id', 'asc');
+                break;
+            case 'date_desc':
+                $query->orderBy('scheduled_date', 'desc')
+                    ->orderBy('start_time', 'asc')
+                    ->orderBy('id', 'desc');
+                break;
+            case 'priority':
+                $query->orderByRaw("CASE 
+                    WHEN priority = 'urgent' THEN 1 
+                    WHEN priority = 'important' THEN 2 
+                    ELSE 3 END")
+                    ->orderBy('created_at', 'desc')
+                    ->orderBy('id', 'desc');
+                break;
+            case 'latest':
+            default:
+                $query->orderBy('created_at', 'desc')
+                    ->orderBy('id', 'desc');
+                break;
+        }
+
+        $assignments = $query->paginate(15)->withQueryString();
 
         return view('assignments.index', [
             'activeTab' => 'assignments',
@@ -112,21 +165,46 @@ class TaskAssignmentController extends Controller
             'search' => $search,
             'status' => $status,
             'priority' => $priority,
+            'farmerId' => $farmerId,
+            'locationId' => $locationId,
             'dateFilter' => $dateFilter,
             'customDate' => $customDate,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'timeShift' => $timeShift,
+            'timeFrom' => $timeFrom,
+            'timeTo' => $timeTo,
+            'sortBy' => $sortBy,
+            'farmers' => $farmers,
+            'locations' => $locations,
             'totalAssignmentsCount' => $totalAssignmentsCount,
             'assignedCount' => $assignedCount,
             'inProgressCount' => $inProgressCount,
             'completedCount' => $completedCount,
             'cancelledCount' => $cancelledCount,
+            'lateCount' => $lateCount,
         ]);
     }
 
     /**
-     * Apply common search, status, priority, and date filters to an Eloquent query.
+     * Apply common search, status, priority, area, farmer, date, and time filters to an Eloquent query.
      */
-    private function applyFilters($q, string $search, ?string $status, ?string $priority, ?string $dateFilter, ?string $customDate, string $likeOperator): void
-    {
+    private function applyFilters(
+        $q,
+        string $search,
+        ?string $status,
+        ?string $priority,
+        ?string $farmerId,
+        ?string $locationId,
+        ?string $dateFilter,
+        ?string $customDate,
+        ?string $startDate,
+        ?string $endDate,
+        ?string $timeShift,
+        ?string $timeFrom,
+        ?string $timeTo,
+        string $likeOperator
+    ): void {
         if ($search !== '') {
             $q->where(function ($sub) use ($search, $likeOperator) {
                 $sub->whereHas('farmer', function ($fq) use ($search, $likeOperator) {
@@ -144,23 +222,88 @@ class TaskAssignmentController extends Controller
             });
         }
 
-        if ($status && in_array($status, ['assigned', 'in_progress', 'completed', 'cancelled'], true)) {
-            $q->where('status', $status);
+        if ($farmerId) {
+            $q->where('farmer_id', $farmerId);
+        }
+
+        if ($locationId) {
+            $q->where('farm_location_id', $locationId);
+        }
+
+        if ($status && in_array($status, ['assigned', 'in_progress', 'completed', 'cancelled', 'late'], true)) {
+            if ($status === 'assigned') {
+                $q->whereIn('status', ['assigned', 'pending']);
+            } elseif ($status === 'late') {
+                $q->where(function ($sub) {
+                    $sub->where('status', 'late')
+                        ->orWhere(function ($overdueQ) {
+                            $overdueQ->whereDate('scheduled_date', '<', today())
+                                ->whereNotIn('status', ['completed', 'cancelled']);
+                        });
+                });
+            } else {
+                $q->where('status', $status);
+            }
         }
 
         if ($priority && in_array($priority, ['normal', 'important', 'urgent'], true)) {
             $q->where('priority', $priority);
         }
 
+        // Date wise filtering
         if ($dateFilter === 'today') {
             $q->whereDate('scheduled_date', today());
+        } elseif ($dateFilter === 'tomorrow') {
+            $q->whereDate('scheduled_date', today()->addDay());
         } elseif ($dateFilter === 'this_week') {
             $q->whereBetween('scheduled_date', [
                 now()->startOfWeek()->toDateString(),
                 now()->endOfWeek()->toDateString(),
             ]);
+        } elseif ($dateFilter === 'this_month') {
+            $q->whereBetween('scheduled_date', [
+                now()->startOfMonth()->toDateString(),
+                now()->endOfMonth()->toDateString(),
+            ]);
+        } elseif ($dateFilter === 'overdue') {
+            $q->whereDate('scheduled_date', '<', today())
+                ->whereNotIn('status', ['completed', 'cancelled']);
         } elseif ($dateFilter === 'custom' && $customDate) {
             $q->whereDate('scheduled_date', $customDate);
+        } elseif ($dateFilter === 'range' || ($startDate && $endDate)) {
+            if ($startDate && $endDate) {
+                $q->whereBetween('scheduled_date', [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $q->whereDate('scheduled_date', '>=', $startDate);
+            } elseif ($endDate) {
+                $q->whereDate('scheduled_date', '<=', $endDate);
+            }
+        }
+
+        // Time shift and range filtering
+        if ($timeShift === 'morning') {
+            $q->whereTime('start_time', '>=', '05:00:00')
+                ->whereTime('start_time', '<', '12:00:00');
+        } elseif ($timeShift === 'noon') {
+            $q->whereTime('start_time', '>=', '12:00:00')
+                ->whereTime('start_time', '<', '15:00:00');
+        } elseif ($timeShift === 'afternoon') {
+            $q->whereTime('start_time', '>=', '15:00:00')
+                ->whereTime('start_time', '<', '18:00:00');
+        } elseif ($timeShift === 'evening_night') {
+            $q->where(function ($tq) {
+                $tq->whereTime('start_time', '>=', '18:00:00')
+                    ->orWhereTime('start_time', '<', '05:00:00');
+            });
+        } elseif ($timeShift === 'custom' || ($timeFrom && $timeTo)) {
+            if ($timeFrom && $timeTo) {
+                $q->whereTime('start_time', '>=', $timeFrom)
+                    ->whereTime('start_time', '<=', $timeTo);
+            } elseif ($timeFrom) {
+                $q->whereTime('start_time', '>=', $timeFrom);
+            } elseif ($timeTo) {
+                $q->whereTime('start_time', '<=', $timeTo);
+            }
         }
     }
 

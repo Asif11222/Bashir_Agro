@@ -224,10 +224,11 @@
                                         </td>
                                         <td style="text-align:right">
                                             <div style="display:flex;gap:4px;justify-content:flex-end;align-items:center;">
+                                                <a href="{{ route('admin.assignments.show', $assignment) }}" class="btn" style="padding:4px 8px;font-size:11px" title="সিরিজ বিস্তারিত">দেখুন</a>
                                                 <button type="button" class="btn soft" onclick="toggleSeriesDrawer('{{ $assignment->recurring_group_id }}', this)" style="padding:4px 8px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:3px;" title="সবগুলো তারিখের তালিকা দেখুন">
                                                     <span class="chevron-icon">▾</span> <span class="btn-label">{{ $totalChildren }}টি তারিখ</span>
                                                 </button>
-                                                <a href="{{ route('admin.assignments.show', $assignment) }}" class="btn" style="padding:4px 8px;font-size:11px" title="সিরিজ বিস্তারিত">দেখুন</a>
+                                                <button type="button" class="btn red" onclick="promptDeleteSeries('{{ $assignment->recurring_group_id }}', '{{ addslashes($assignment->taskTemplate->name ?? 'কাজ') }}', {{ $totalChildren }}, {{ $completedKids }})" style="padding:4px 8px;font-size:11px" title="সম্পূর্ণ সিরিজ মুছুন">মুছুন</button>
                                             </div>
                                         </td>
                                     </tr>
@@ -301,9 +302,14 @@
                                                                     @include('components.submission-health', ['assignment' => $child])
                                                                 </td>
                                                                 <td style="padding:6px 10px;text-align:right;">
-                                                                    <div style="display:flex;gap:4px;justify-content:flex-end;">
+                                                                    <div style="display:flex;gap:4px;justify-content:flex-end;align-items:center;">
                                                                         <a href="{{ route('admin.assignments.show', $child) }}" class="btn" style="padding:2px 7px;font-size:11px;">দেখুন</a>
                                                                         <a href="{{ route('admin.assignments.edit', $child) }}" class="btn soft" style="padding:2px 7px;font-size:11px;">সম্পাদনা</a>
+                                                                        <form method="POST" action="{{ route('admin.assignments.destroy', $child) }}" style="display:inline;" onsubmit="return confirm('আপনি কি নিশ্চিত যে এই তারিখের কাজটি মুছে ফেলতে চান? এটি সফট ডিলিট হবে।');">
+                                                                            @csrf
+                                                                            @method('DELETE')
+                                                                            <button type="submit" class="btn red" style="padding:2px 7px;font-size:11px;">মুছুন</button>
+                                                                        </form>
                                                                     </div>
                                                                 </td>
                                                             </tr>
@@ -396,7 +402,102 @@
                             }
                         }
                     }
+
+                    function promptDeleteSeries(groupId, taskName, totalCount, completedCount) {
+                        const modal = document.getElementById('delete-series-modal');
+                        const form = document.getElementById('delete-series-form');
+                        const desc = document.getElementById('delete-modal-desc');
+                        const warning = document.getElementById('delete-modal-completed-warning');
+                        const completedCountSpan = document.getElementById('delete-modal-completed-count');
+                        const completedOptions = document.getElementById('delete-modal-completed-options');
+                        const directBtn = document.getElementById('delete-modal-direct-btn');
+
+                        if (!modal || !form) return;
+
+                        form.action = "{{ url('admin/assignments/recurring') }}/" + groupId;
+
+                        if (completedCount > 0) {
+                            desc.innerHTML = `আপনি <b>${taskName}</b> কাজের পুনরাবৃত্তিমূলক সিরিজটি মুছে ফেলতে চাচ্ছেন (মোট <b>${totalCount}</b>টি কাজ)।`;
+                            if (completedCountSpan) completedCountSpan.innerText = completedCount;
+                            if (warning) warning.style.display = 'block';
+                            if (completedOptions) completedOptions.style.display = 'flex';
+                            if (directBtn) directBtn.style.display = 'none';
+                        } else {
+                            desc.innerHTML = `আপনি কি নিশ্চিত যে <b>${taskName}</b> কাজের পুনরাবৃত্তিমূলক সিরিজের সকল <b>${totalCount}</b>টি কাজ মুছে ফেলতে চান? এটি সফট ডিলিট হবে।`;
+                            if (warning) warning.style.display = 'none';
+                            if (completedOptions) completedOptions.style.display = 'none';
+                            if (directBtn) directBtn.style.display = 'inline-block';
+                        }
+
+                        modal.style.display = 'flex';
+                    }
+
+                    function submitDeleteSeries(includeCompleted) {
+                        const form = document.getElementById('delete-series-form');
+                        const input = document.getElementById('delete-series-include-completed');
+                        if (!form || !input) return;
+
+                        input.value = includeCompleted ? '1' : '0';
+                        form.submit();
+                    }
+
+                    function closeDeleteSeriesModal() {
+                        const modal = document.getElementById('delete-series-modal');
+                        if (modal) modal.style.display = 'none';
+                    }
                 </script>
+
+                {{-- Smart Delete Recurring Series Modal --}}
+                <div id="delete-series-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+                    <div style="background:#ffffff;border-radius:12px;max-width:480px;width:100%;box-shadow:0 20px 25px -5px rgba(0,0,0,0.15),0 10px 10px -5px rgba(0,0,0,0.04);overflow:hidden;">
+                        <div style="padding:16px 20px;border-bottom:1px solid #fee2e2;display:flex;align-items:center;justify-content:space-between;background:#fef2f2;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span style="font-size:20px;">🗑️</span>
+                                <b style="font-size:15px;color:#991b1b;">সম্পূর্ণ পুনরাবৃত্তিমূলক সিরিজ মুছুন</b>
+                            </div>
+                            <button type="button" onclick="closeDeleteSeriesModal()" style="border:none;background:none;font-size:18px;cursor:pointer;color:#64748b;">✕</button>
+                        </div>
+
+                        <form id="delete-series-form" method="POST" action="">
+                            @csrf
+                            @method('DELETE')
+                            <input type="hidden" name="include_completed" id="delete-series-include-completed" value="0">
+
+                            <div style="padding:20px;">
+                                <p id="delete-modal-desc" style="font-size:13.5px;color:#334155;line-height:1.6;margin-bottom:14px;"></p>
+
+                                {{-- Warning block when completed tasks exist --}}
+                                <div id="delete-modal-completed-warning" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:14px;">
+                                    <div style="display:flex;gap:8px;">
+                                        <span style="font-size:16px;">⚠️</span>
+                                        <div style="font-size:12.5px;color:#92400e;line-height:1.5;">
+                                            <b>সতর্কতা:</b> এই সিরিজের <span id="delete-modal-completed-count" style="font-weight:700;"></span>টি কাজ ইতিমধ্যে সম্পন্ন হয়েছে। আপনি কি শুধুমাত্র বাকি অসম্পূর্ণ কাজগুলো মুছতে চান, নাকি সম্পন্ন কাজসহ সম্পূর্ণ সিরিজটিই মুছে ফেলবেন?
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Action choices when completed tasks exist --}}
+                                <div id="delete-modal-completed-options" style="display:none;flex-direction:column;gap:10px;margin-bottom:8px;">
+                                    <button type="button" onclick="submitDeleteSeries(false)" style="padding:10px 14px;background:#f8fafc;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:8px;text-align:left;display:flex;flex-direction:column;cursor:pointer;transition:all 0.15s;">
+                                        <b style="font-size:13px;color:#0f172a;">🛡️ শুধুমাত্র বাকি অসম্পূর্ণ কাজগুলো মুছুন (প্রস্তাবিত)</b>
+                                        <span style="font-size:11.5px;color:#64748b;margin-top:2px;">সম্পন্ন কাজের হিসেব ও কৃষকের জমা ছবি সংরক্ষিত থাকবে, কিন্তু বাকিগুলো মুছে যাবে।</span>
+                                    </button>
+                                    <button type="button" onclick="submitDeleteSeries(true)" style="padding:10px 14px;background:#fef2f2;border:1.5px solid #fecaca;color:#991b1b;border-radius:8px;text-align:left;display:flex;flex-direction:column;cursor:pointer;transition:all 0.15s;">
+                                        <b style="font-size:13px;color:#dc2626;">⚠️ সম্পন্ন কাজসহ সম্পূর্ণ সিরিজটিই মুছুন</b>
+                                        <span style="font-size:11.5px;color:#b91c1c;margin-top:2px;">ইতিমধ্যে সম্পন্ন কাজের হিসেবসহ সিরিজের সকল কাজ সফট ডিলিট হবে।</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style="padding:14px 20px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;">
+                                <button type="button" class="btn soft" onclick="closeDeleteSeriesModal()" style="padding:6px 14px;font-size:12.5px;">বাতিল</button>
+                                <button type="button" id="delete-modal-direct-btn" onclick="submitDeleteSeries(true)" class="btn red" style="padding:6px 16px;font-size:12.5px;font-weight:600;">
+                                    হ্যাঁ, সম্পূর্ণ সিরিজ মুছুন
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
                 @if ($assignments->hasPages())
                     <div style="margin-top:16px;">

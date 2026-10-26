@@ -443,4 +443,61 @@ class TaskAssignmentController extends Controller
 
         return back()->with('success', "সিরিজের {$count}টি কাজ সফলভাবে বাতিল করা হয়েছে।");
     }
+
+    /**
+     * Soft delete an entire recurring series (or remaining non-completed tasks).
+     */
+    public function destroyRecurringSeries(Request $request, string $recurringGroupId): RedirectResponse
+    {
+        $includeCompleted = $request->boolean('include_completed', false);
+
+        $query = TaskAssignment::where('recurring_group_id', $recurringGroupId);
+        if (! $includeCompleted) {
+            $query->whereIn('status', ['assigned', 'pending', 'in_progress']);
+        }
+
+        $assignments = $query->get();
+        $count = $assignments->count();
+
+        if ($count === 0) {
+            return back()->with('info', 'মুছে ফেলার মতো কোনো কাজের রেকর্ড পাওয়া যায়নি।');
+        }
+
+        DB::transaction(function () use ($assignments, $recurringGroupId, $includeCompleted, $count) {
+            $assignmentIds = $assignments->pluck('id')->all();
+
+            // Clean related notifications
+            foreach ($assignmentIds as $aid) {
+                DB::table('notifications')
+                    ->where('data', 'like', '%"assignment_id":'.$aid.'%')
+                    ->delete();
+            }
+
+            foreach ($assignments as $assignment) {
+                $assignment->delete();
+            }
+
+            $detailMsg = $includeCompleted
+                ? "সম্পূর্ণ পুনরাবৃত্তিমূলক সিরিজ (সম্পন্ন কাজসহ) মুছে ফেলা হয়েছে (সিরিজ: {$recurringGroupId}, মোট {$count}টি কাজ)"
+                : "পুনরাবৃত্তিমূলক সিরিজের অসম্পূর্ণ কাজগুলো মুছে ফেলা হয়েছে (সিরিজ: {$recurringGroupId}, মোট {$count}টি কাজ)";
+
+            ActivityLog::record(
+                action: 'assignment.recurring_deleted',
+                description: $detailMsg,
+                newValues: [
+                    'recurring_group_id' => $recurringGroupId,
+                    'deleted_count' => $count,
+                    'included_completed' => $includeCompleted,
+                ]
+            );
+        });
+
+        DashboardService::clearKpiCache();
+
+        $successMsg = $includeCompleted
+            ? "সম্পূর্ণ সিরিজের সকল {$count}টি কাজ সফলভাবে মুছে ফেলা হয়েছে (সফট ডিলিট)।"
+            : "সিরিজের বাকি {$count}টি অসম্পূর্ণ কাজ সফলভাবে মুছে ফেলা হয়েছে (সফট ডিলিট)।";
+
+        return back()->with('success', $successMsg);
+    }
 }

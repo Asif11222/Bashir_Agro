@@ -571,4 +571,52 @@ class TaskAssignmentManagementTest extends TestCase
         $responseFlat->assertStatus(200);
         $responseFlat->assertSee('সব তারিখের তালিকা');
     }
+
+    public function test_admin_can_destroy_entire_recurring_series_or_only_pending_tasks(): void
+    {
+        $groupId = 'rec_delete_test_' . uniqid();
+        for ($i = 1; $i <= 4; $i++) {
+            TaskAssignment::create([
+                'recurring_group_id' => $groupId,
+                'recurrence_type' => 'daily',
+                'recurrence_seq' => $i,
+                'recurrence_total_count' => 4,
+                'is_recurring' => true,
+                'task_template_id' => $this->task->id,
+                'farmer_id' => $this->farmer->id,
+                'farm_location_id' => $this->location->id,
+                'scheduled_date' => today()->addDays($i),
+                'start_time' => '08:00',
+                'priority' => 'normal',
+                'status' => $i === 1 ? 'completed' : 'assigned',
+                'assigned_by' => $this->admin->id,
+            ]);
+        }
+
+        // Test 1: Delete only pending tasks (include_completed = 0)
+        $response1 = $this->actingAs($this->admin)->delete("/admin/assignments/recurring/{$groupId}", [
+            'include_completed' => 0,
+        ]);
+        $response1->assertRedirect();
+        $response1->assertSessionHas('success');
+
+        // Task #1 (completed) should still exist
+        $this->assertDatabaseHas('task_assignments', [
+            'recurring_group_id' => $groupId,
+            'recurrence_seq' => 1,
+            'status' => 'completed',
+            'deleted_at' => null,
+        ]);
+
+        // Remaining 3 tasks should be soft-deleted
+        $remainingCount = TaskAssignment::where('recurring_group_id', $groupId)->whereNull('deleted_at')->count();
+        $this->assertEquals(1, $remainingCount);
+
+        // Test 2: Delete entire series including completed (include_completed = 1)
+        $response2 = $this->actingAs($this->admin)->delete("/admin/assignments/recurring/{$groupId}", [
+            'include_completed' => 1,
+        ]);
+        $response2->assertRedirect();
+        $this->assertEquals(0, TaskAssignment::where('recurring_group_id', $groupId)->whereNull('deleted_at')->count());
+    }
 }

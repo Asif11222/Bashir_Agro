@@ -256,4 +256,28 @@ class TaskAssignment extends Model
     {
         return $query->where('recurring_group_id', $groupId);
     }
+
+    /**
+     * Relationship to load all sibling assignments belonging to the same recurring series.
+     */
+    public function recurringChildren(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TaskAssignment::class, 'recurring_group_id', 'recurring_group_id')
+            ->orderBy('scheduled_date', 'asc')
+            ->orderBy('start_time', 'asc')
+            ->orderBy('recurrence_seq', 'asc');
+    }
+
+    /**
+     * Bengali label for recurrence type.
+     */
+    public function getRecurrenceTypeLabelAttribute(): string
+    {
+        return match ($this->recurrence_type) {
+            'daily' => 'দৈনিক',
+            'weekly' => 'সাপ্তাহিক',
+            'monthly' => 'মাসিক',
+            default => 'এককালীন',
+        };
+    }
 }

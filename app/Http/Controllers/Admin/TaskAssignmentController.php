@@ -36,48 +36,59 @@ class TaskAssignmentController extends Controller
         $priority = $request->query('priority');
         $dateFilter = $request->query('date_filter');
         $customDate = $request->query('date');
+        $viewMode = $request->query('view_mode', 'grouped');
+        if (! in_array($viewMode, ['grouped', 'flat'], true)) {
+            $viewMode = 'grouped';
+        }
 
-        $query = TaskAssignment::with(['farmer', 'taskTemplate', 'location', 'assigner', 'submission']);
+        $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
 
-        // Driver-aware search for PostgreSQL and SQLite
-        if ($search !== '') {
-            $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
-            $query->where(function ($q) use ($search, $likeOperator) {
-                $q->whereHas('farmer', function ($fq) use ($search, $likeOperator) {
-                    $fq->where('full_name', $likeOperator, "%{$search}%")
-                        ->orWhere('farmer_code', $likeOperator, "%{$search}%");
+        $query = TaskAssignment::with([
+            'farmer',
+            'taskTemplate',
+            'location',
+            'assigner',
+            'submission',
+            'recurringChildren.farmer',
+            'recurringChildren.taskTemplate',
+            'recurringChildren.location',
+            'recurringChildren.submission',
+        ]);
+
+        if ($viewMode === 'grouped') {
+            // Grouped View: Non-recurring tasks OR the representative row (MIN id) for each recurring series
+            $hasActiveFilters = ($search !== '') || $status || $priority || $dateFilter;
+
+            $query->where(function ($topQ) use ($search, $status, $priority, $dateFilter, $customDate, $likeOperator, $hasActiveFilters) {
+                // 1. Non-recurring tasks
+                $topQ->where(function ($nonRecQ) use ($search, $status, $priority, $dateFilter, $customDate, $likeOperator) {
+                    $nonRecQ->where('is_recurring', false);
+                    $this->applyFilters($nonRecQ, $search, $status, $priority, $dateFilter, $customDate, $likeOperator);
                 })
-                    ->orWhereHas('taskTemplate', function ($tq) use ($search, $likeOperator) {
-                        $tq->where('name', $likeOperator, "%{$search}%")
-                            ->orWhere('task_code', $likeOperator, "%{$search}%");
-                    })
-                    ->orWhereHas('location', function ($lq) use ($search, $likeOperator) {
-                        $lq->where('name', $likeOperator, "%{$search}%")
-                            ->orWhere('location_code', $likeOperator, "%{$search}%");
-                    });
+                // 2. OR Recurring series (represented by the first assignment of that recurring_group_id)
+                ->orWhere(function ($recQ) use ($search, $status, $priority, $dateFilter, $customDate, $likeOperator, $hasActiveFilters) {
+                    $recQ->where('is_recurring', true)
+                        ->whereIn('id', function ($sub) {
+                            $sub->selectRaw('MIN(id)')
+                                ->from('task_assignments')
+                                ->where('is_recurring', true)
+                                ->whereNull('deleted_at')
+                                ->groupBy('recurring_group_id');
+                        });
+
+                    // If filters are active, match if ANY task in the recurring series satisfies the criteria
+                    if ($hasActiveFilters) {
+                        $groupEloquent = TaskAssignment::query()->whereNotNull('recurring_group_id');
+                        $this->applyFilters($groupEloquent, $search, $status, $priority, $dateFilter, $customDate, $likeOperator);
+                        $matchedGroupIds = $groupEloquent->pluck('recurring_group_id')->unique()->filter()->values()->all();
+
+                        $recQ->whereIn('recurring_group_id', $matchedGroupIds);
+                    }
+                });
             });
-        }
-
-        // Status Filter
-        if ($status && in_array($status, ['assigned', 'in_progress', 'completed', 'cancelled'])) {
-            $query->where('status', $status);
-        }
-
-        // Priority Filter
-        if ($priority && in_array($priority, ['normal', 'important', 'urgent'])) {
-            $query->where('priority', $priority);
-        }
-
-        // Date Filter
-        if ($dateFilter === 'today') {
-            $query->whereDate('scheduled_date', today());
-        } elseif ($dateFilter === 'this_week') {
-            $query->whereBetween('scheduled_date', [
-                now()->startOfWeek()->toDateString(),
-                now()->endOfWeek()->toDateString(),
-            ]);
-        } elseif ($dateFilter === 'custom' && $customDate) {
-            $query->whereDate('scheduled_date', $customDate);
+        } else {
+            // Flat View: Regular filter on each individual assignment
+            $this->applyFilters($query, $search, $status, $priority, $dateFilter, $customDate, $likeOperator);
         }
 
         // Status counts for tabs
@@ -90,13 +101,14 @@ class TaskAssignmentController extends Controller
         $assignments = $query->orderBy('scheduled_date', 'desc')
             ->orderBy('start_time', 'asc')
             ->orderBy('id', 'desc')
-            ->paginate(20)
+            ->paginate(15)
             ->withQueryString();
 
         return view('assignments.index', [
             'activeTab' => 'assignments',
             'title' => 'কাজ বরাদ্দ ব্যবস্থাপনা',
             'assignments' => $assignments,
+            'viewMode' => $viewMode,
             'search' => $search,
             'status' => $status,
             'priority' => $priority,
@@ -108,6 +120,48 @@ class TaskAssignmentController extends Controller
             'completedCount' => $completedCount,
             'cancelledCount' => $cancelledCount,
         ]);
+    }
+
+    /**
+     * Apply common search, status, priority, and date filters to an Eloquent query.
+     */
+    private function applyFilters($q, string $search, ?string $status, ?string $priority, ?string $dateFilter, ?string $customDate, string $likeOperator): void
+    {
+        if ($search !== '') {
+            $q->where(function ($sub) use ($search, $likeOperator) {
+                $sub->whereHas('farmer', function ($fq) use ($search, $likeOperator) {
+                    $fq->where('full_name', $likeOperator, "%{$search}%")
+                        ->orWhere('farmer_code', $likeOperator, "%{$search}%");
+                })
+                ->orWhereHas('taskTemplate', function ($tq) use ($search, $likeOperator) {
+                    $tq->where('name', $likeOperator, "%{$search}%")
+                        ->orWhere('task_code', $likeOperator, "%{$search}%");
+                })
+                ->orWhereHas('location', function ($lq) use ($search, $likeOperator) {
+                    $lq->where('name', $likeOperator, "%{$search}%")
+                        ->orWhere('location_code', $likeOperator, "%{$search}%");
+                });
+            });
+        }
+
+        if ($status && in_array($status, ['assigned', 'in_progress', 'completed', 'cancelled'], true)) {
+            $q->where('status', $status);
+        }
+
+        if ($priority && in_array($priority, ['normal', 'important', 'urgent'], true)) {
+            $q->where('priority', $priority);
+        }
+
+        if ($dateFilter === 'today') {
+            $q->whereDate('scheduled_date', today());
+        } elseif ($dateFilter === 'this_week') {
+            $q->whereBetween('scheduled_date', [
+                now()->startOfWeek()->toDateString(),
+                now()->endOfWeek()->toDateString(),
+            ]);
+        } elseif ($dateFilter === 'custom' && $customDate) {
+            $q->whereDate('scheduled_date', $customDate);
+        }
     }
 
     /**

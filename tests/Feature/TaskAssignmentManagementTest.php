@@ -534,4 +534,41 @@ class TaskAssignmentManagementTest extends TestCase
         $responsePage2 = $this->actingAs($this->admin)->get('/admin/assignments?page=2');
         $responsePage2->assertStatus(200);
     }
+
+    public function test_assignments_index_defaults_to_grouped_view_and_groups_recurring_series(): void
+    {
+        $groupId = 'rec_test_group_' . uniqid();
+        for ($i = 1; $i <= 5; $i++) {
+            TaskAssignment::create([
+                'recurring_group_id' => $groupId,
+                'recurrence_type' => 'weekly',
+                'recurrence_seq' => $i,
+                'recurrence_total_count' => 5,
+                'is_recurring' => true,
+                'task_template_id' => $this->task->id,
+                'farmer_id' => $this->farmer->id,
+                'farm_location_id' => $this->location->id,
+                'scheduled_date' => today()->addDays($i),
+                'start_time' => '09:00',
+                'priority' => 'normal',
+                'status' => $i === 1 ? 'completed' : 'assigned',
+                'assigned_by' => $this->admin->id,
+            ]);
+        }
+
+        // In Grouped View (default), the 5 occurrences appear under 1 master row with progress bar & drawer
+        $response = $this->actingAs($this->admin)->get('/admin/assignments');
+        $response->assertStatus(200);
+        $response->assertSee('সিরিজ গ্রুপ ভিউ');
+        $response->assertSee('সাপ্তাহিক রুটিন');
+        $response->assertSee('5টি সেশন');
+        $response->assertSee('drawer-' . $groupId);
+        $response->assertSee('20%');
+        $response->assertSee('5টি তারিখ');
+
+        // In Flat View, view_mode=flat shows each occurrence individually
+        $responseFlat = $this->actingAs($this->admin)->get('/admin/assignments?view_mode=flat');
+        $responseFlat->assertStatus(200);
+        $responseFlat->assertSee('সব তারিখের তালিকা');
+    }
 }

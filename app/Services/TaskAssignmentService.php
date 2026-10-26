@@ -149,15 +149,23 @@ class TaskAssignmentService
         } elseif ($recurrenceType === 'monthly') {
             $startDate = Carbon::parse($data['start_date'])->startOfDay();
             $monthsCount = max(1, min(12, (int) ($data['months_count'] ?? 1)));
-            $monthlyDays = array_map('intval', $data['monthly_days'] ?? [1]);
+            $monthlyDays = array_values(array_unique(array_map('intval', $data['monthly_days'] ?? [1])));
             $monthlyTasks = $data['monthly_tasks'] ?? [];
 
             for ($m = 0; $m < $monthsCount; $m++) {
                 $monthAnchor = $startDate->copy()->addMonthsNoOverflow($m);
                 $daysInMonth = $monthAnchor->daysInMonth;
 
+                // Deduplicate actual days for this month (e.g. 29, 30, 31 in Feb all resolve to 28)
+                $actualDaysInMonth = [];
                 foreach ($monthlyDays as $dayNum) {
                     $actualDay = min($dayNum, $daysInMonth);
+                    $actualDaysInMonth[$actualDay] = true;
+                }
+                $sortedActualDays = array_keys($actualDaysInMonth);
+                sort($sortedActualDays);
+
+                foreach ($sortedActualDays as $actualDay) {
                     $candidateDate = $monthAnchor->copy()->day($actualDay);
 
                     if ($candidateDate->gte($startDate)) {

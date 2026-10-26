@@ -375,15 +375,45 @@
                                     </select>
                                 </div>
                                 <div class="field full">
-                                    <label class="label">প্রতি মাসের কোন কোন তারিখে কাজ হবে? <span class="req">*</span></label>
-                                    <div class="weekday-picker">
-                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="1" checked> <span>১ তারিখ</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="5"> <span>৫ তারিখ</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="10"> <span>১০ তারিখ</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="15" checked> <span>১৫ তারিখ</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="20"> <span>২০ তারিখ</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="25"> <span>২৫ তারিখ</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="30"> <span>মাসের শেষ দিন</span></label>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                                        <label class="label" style="margin:0;">প্রতি মাসের কোন কোন তারিখে কাজ হবে? <span class="req">*</span></label>
+                                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                            <span style="font-size:11.5px;color:var(--muted)">কুইক সিলেক্ট:</span>
+                                            <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;" onclick="setMonthlyPreset([1, 15])">১ ও ১৫</button>
+                                            <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;" onclick="setMonthlyPreset([5, 20])">৫ ও ২০</button>
+                                            <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;" onclick="setMonthlyPreset([10, 25])">১০ ও ২৫</button>
+                                            <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;" onclick="setMonthlyPreset([31])">মাসের শেষ দিন</button>
+                                            <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;color:#dc2626;" onclick="clearMonthlyDays()">সব মুছুন</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 1 to 31 Calendar Grid Picker -->
+                                    <div class="month-day-grid" id="monthly-days-grid">
+                                        @php
+                                            $bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+                                        @endphp
+                                        @for($d = 1; $d <= 31; $d++)
+                                            @php
+                                                $dText = str_replace(range(0, 9), $bnDigits, (string)$d);
+                                            @endphp
+                                            <label class="month-day-cell {{ in_array($d, [1, 15]) ? 'selected' : '' }}" id="cell-day-{{ $d }}" title="{{ $dText }} তারিখ">
+                                                <input type="checkbox" name="monthly_days[]" value="{{ $d }}" {{ in_array($d, [1, 15]) ? 'checked' : '' }} onchange="onMonthlyDayChange()">
+                                                <span class="cell-num">{{ $dText }}</span>
+                                            </label>
+                                        @endfor
+                                        <div class="month-day-cell last-day-cell" id="cell-day-last" title="মাসের শেষ দিন (ফেব্রুয়ারিতে ২৮/২৯, অন্য মাসে ৩০ বা ৩১)" onclick="toggleDay31()">
+                                            <span class="cell-num">🏁 মাসের শেষ দিন (৩১)</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Custom Date Input Adder -->
+                                    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                                        <span style="font-size:12px;color:#3f5147;font-weight:600;">➕ কাস্টম দিন যোগ/বাদ দিন:</span>
+                                        <input type="text" id="custom_month_day_input" placeholder="১-৩১" style="width:75px;padding:5px 8px;font-size:13px;border:1px solid #c9d8cf;border-radius:6px;text-align:center;" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomMonthDay();}">
+                                        <button type="button" class="btn soft" style="font-size:12px;padding:5px 12px;font-weight:600;" onclick="addCustomMonthDay()">+ দিন যুক্ত করুন</button>
+                                        <span id="selected-days-badge" style="font-size:12px;color:#08783f;background:#edfcf2;border:1px solid #bbf7d0;padding:4px 10px;border-radius:6px;font-weight:600;">
+                                            নির্বাচিত: ১, ১৫ তারিখ (মোট ২ দিন)
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -594,6 +624,56 @@
     border-color: #08783f;
     color: #08783f;
     font-weight: 600;
+}
+.month-day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    background: #ffffff;
+    border: 1.5px solid #dcebe1;
+    border-radius: 10px;
+    padding: 10px;
+    max-width: 520px;
+}
+@media (max-width: 600px) {
+    .month-day-grid {
+        grid-template-columns: repeat(7, 1fr);
+        max-width: 100%;
+    }
+}
+.month-day-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    background: #f8faf9;
+    border: 1px solid #d2ded7;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #273b30;
+    user-select: none;
+    transition: all 0.15s ease;
+}
+.month-day-cell input {
+    display: none;
+}
+.month-day-cell:hover {
+    background: #eaf8ef;
+    border-color: #08783f;
+    color: #08783f;
+}
+.month-day-cell.selected,
+.month-day-cell:has(input:checked) {
+    background: #08783f !important;
+    border-color: #08783f !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(8, 120, 63, 0.25);
+}
+.month-day-cell.last-day-cell {
+    grid-column: span 4;
+    font-size: 12px;
 }
 .task-repeater-row {
     background: #ffffff;
@@ -924,6 +1004,111 @@ function calculateSummary() {
     }
 }
 
+// Monthly Days Handlers
+function toBnDigits(num) {
+    const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return String(num).replace(/[0-9]/g, d => bn[d]);
+}
+
+function parseBnOrEnInt(str) {
+    if (!str) return NaN;
+    const bnMap = {'০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9'};
+    const normalized = String(str).trim().replace(/[০-৯]/g, d => bnMap[d]);
+    return parseInt(normalized, 10);
+}
+
+function onMonthlyDayChange() {
+    let has31 = false;
+    document.querySelectorAll('#panel-monthly .month-day-cell').forEach(cell => {
+        const input = cell.querySelector('input');
+        if (input) {
+            if (input.checked) {
+                cell.classList.add('selected');
+                if (input.value === '31') has31 = true;
+            } else {
+                cell.classList.remove('selected');
+            }
+        }
+    });
+
+    const lastDayCell = document.getElementById('cell-day-last');
+    if (lastDayCell) {
+        if (has31) {
+            lastDayCell.classList.add('selected');
+        } else {
+            lastDayCell.classList.remove('selected');
+        }
+    }
+
+    updateMonthlyDaysBadge();
+    calculateSummary();
+}
+
+function toggleDay31() {
+    const input31 = document.querySelector('#panel-monthly input[name="monthly_days[]"][value="31"]');
+    if (input31) {
+        input31.checked = !input31.checked;
+        onMonthlyDayChange();
+    }
+}
+
+function updateMonthlyDaysBadge() {
+    const checked = Array.from(document.querySelectorAll('#panel-monthly input[name="monthly_days[]"]:checked'))
+        .map(i => parseInt(i.value, 10))
+        .filter((v, i, a) => a.indexOf(v) === i)
+        .sort((a, b) => a - b);
+
+    const badge = document.getElementById('selected-days-badge');
+    if (!badge) return;
+
+    if (checked.length === 0) {
+        badge.innerText = 'কোনো দিন নির্বাচিত নেই';
+        badge.style.color = '#dc2626';
+        badge.style.background = '#fef2f2';
+        badge.style.borderColor = '#fecaca';
+    } else {
+        const daysStr = checked.map(d => d === 31 ? 'মাসের শেষ দিন (৩১)' : `${toBnDigits(d)} তারিখ`).join(', ');
+        badge.innerText = `নির্বাচিত: ${daysStr} (মোট ${toBnDigits(checked.length)} দিন)`;
+        badge.style.color = '#08783f';
+        badge.style.background = '#edfcf2';
+        badge.style.borderColor = '#bbf7d0';
+    }
+}
+
+function setMonthlyPreset(days) {
+    document.querySelectorAll('#panel-monthly input[name="monthly_days[]"]').forEach(input => {
+        const val = parseInt(input.value, 10);
+        input.checked = days.includes(val);
+    });
+    onMonthlyDayChange();
+}
+
+function clearMonthlyDays() {
+    document.querySelectorAll('#panel-monthly input[name="monthly_days[]"]').forEach(input => {
+        input.checked = false;
+    });
+    onMonthlyDayChange();
+}
+
+function addCustomMonthDay() {
+    const input = document.getElementById('custom_month_day_input');
+    if (!input || !input.value.trim()) return;
+
+    const val = parseBnOrEnInt(input.value);
+    if (isNaN(val) || val < 1 || val > 31) {
+        alert('অনুগ্রহ করে ১ থেকে ৩১ এর মধ্যে একটি সঠিক দিন প্রদান করুন।');
+        return;
+    }
+
+    const targetInput = document.querySelector(`#panel-monthly input[name="monthly_days[]"][value="${val}"]`);
+    if (targetInput) {
+        targetInput.checked = true;
+    }
+
+    input.value = '';
+    onMonthlyDayChange();
+}
+
 // Preset helpers
 function formatTimeToBanglaPeriod(timeStr) {
     if (!timeStr) return '';
@@ -992,6 +1177,7 @@ function setFromNowPreset() {
 
 document.addEventListener('DOMContentLoaded', function() {
     switchRecurrence('{{ $activeRecurrence }}');
+    onMonthlyDayChange();
 
     // Attach listeners for inputs that affect calculations
     document.addEventListener('input', function(e) {

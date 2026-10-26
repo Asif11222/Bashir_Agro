@@ -44,6 +44,8 @@ Route::prefix('admin')
         Route::delete('locations/{location}/farmers/{farmer}', [FarmLocationController::class, 'detachFarmer'])->name('locations.farmers.detach');
         Route::resource('tasks', TaskTemplateController::class);
         Route::resource('assignments', TaskAssignmentController::class);
+        Route::post('assignments/{assignment}/reassign', [TaskAssignmentController::class, 'reassign'])->name('assignments.reassign');
+        Route::post('assignments/recurring/{recurringGroupId}/cancel', [TaskAssignmentController::class, 'cancelRecurringSeries'])->name('assignments.recurring.cancel');
         Route::post('assignments/{assignment}/review', [TaskAssignmentController::class, 'reviewSubmission'])->name('assignments.review');
         Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
         Route::get('/reports', [ReportController::class, 'index'])->name('reports');

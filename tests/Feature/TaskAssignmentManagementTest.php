@@ -213,20 +213,50 @@ class TaskAssignmentManagementTest extends TestCase
             'assigned_by' => $this->admin->id,
         ]);
 
-        // Attempt to create duplicate for same farmer, task, location, date
+        // Attempt to create duplicate for same farmer, task, location, date, and start_time
         $response = $this->actingAs($this->admin)->post('/admin/assignments', [
             'farmer_id' => $this->farmer->id,
             'task_template_id' => $this->task->id,
             'farm_location_id' => $this->location->id,
             'scheduled_date' => '2026-10-05',
-            'start_time' => '14:00',
-            'end_time' => '16:00',
+            'start_time' => '08:00',
+            'end_time' => '10:00',
             'priority' => 'urgent',
             'status' => 'assigned',
         ]);
 
         $response->assertSessionHasErrors(['farmer_id']);
         $this->assertEquals(1, TaskAssignment::whereDate('scheduled_date', '2026-10-05')->count());
+    }
+
+    public function test_same_task_different_time_on_same_date_is_allowed(): void
+    {
+        TaskAssignment::create([
+            'task_template_id' => $this->task->id,
+            'farmer_id' => $this->farmer->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => '2026-10-06',
+            'start_time' => '08:00',
+            'end_time' => '10:00',
+            'priority' => 'normal',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        // Second assignment with different start time (e.g. afternoon)
+        $response = $this->actingAs($this->admin)->post('/admin/assignments', [
+            'farmer_id' => $this->farmer->id,
+            'task_template_id' => $this->task->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => '2026-10-06',
+            'start_time' => '15:00',
+            'end_time' => '17:00',
+            'priority' => 'normal',
+            'status' => 'assigned',
+        ]);
+
+        $response->assertRedirect('/admin/assignments');
+        $this->assertEquals(2, TaskAssignment::whereDate('scheduled_date', '2026-10-06')->count());
     }
 
     public function test_admin_can_view_assignment_details(): void

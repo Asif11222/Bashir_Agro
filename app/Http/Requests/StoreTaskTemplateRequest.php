@@ -31,7 +31,7 @@ class StoreTaskTemplateRequest extends FormRequest
             'require_realtime_photo' => ['nullable'],
             'allow_gallery_upload' => ['nullable'],
             'require_geofence' => ['nullable'],
-            'recurrence_type' => ['required', 'string', 'in:once,daily,weekly,monthly,এককালীন,দৈনিক,সাপ্তাহিক,মাসিক'],
+            'recurrence_type' => ['nullable', 'string', 'in:once,daily,weekly,monthly,এককালীন,দৈনিক,সাপ্তাহিক,মাসিক'],
             'status' => ['required', 'string', 'in:active,inactive'],
         ];
     }

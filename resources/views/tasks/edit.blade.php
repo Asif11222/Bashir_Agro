@@ -62,20 +62,6 @@
                         </label>
 
                         <label class="field">
-                            <span class="label">পুনরাবৃত্তি <span class="req">*</span></span>
-                            <select class="select" name="recurrence_type" required>
-                                @php $curRec = old('recurrence_type', $task->recurrence_type); @endphp
-                                <option value="once" {{ in_array($curRec, ['once', 'এককালীন']) ? 'selected' : '' }}>এককালীন (Once)</option>
-                                <option value="daily" {{ in_array($curRec, ['daily', 'দৈনিক']) ? 'selected' : '' }}>দৈনিক (Daily)</option>
-                                <option value="weekly" {{ in_array($curRec, ['weekly', 'সাপ্তাহিক']) ? 'selected' : '' }}>সাপ্তাহিক (Weekly)</option>
-                                <option value="monthly" {{ in_array($curRec, ['monthly', 'মাসিক']) ? 'selected' : '' }}>মাসিক (Monthly)</option>
-                            </select>
-                            @error('recurrence_type')
-                                <div class="field-error">{{ $message }}</div>
-                            @enderror
-                        </label>
-
-                        <label class="field full">
                             <span class="label">সংক্ষিপ্ত ব্যাখ্যা (ঐচ্ছিক)</span>
                             <input class="input" type="text" name="description" value="{{ old('description', $task->description) }}">
                             @error('description')

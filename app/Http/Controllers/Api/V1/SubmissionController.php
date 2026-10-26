@@ -46,7 +46,7 @@ class SubmissionController extends Controller
             'accuracy' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'photos' => ['nullable', 'array'],
-            'photos.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
+            'photos.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
             'override_geofence' => ['nullable'],
             'photo_metadata' => ['nullable'],
         ]);
@@ -62,36 +62,10 @@ class SubmissionController extends Controller
             $accuracy
         );
 
-        $requiresGeofence = (bool) ($assignment->taskTemplate->requires_geofence_validation
-            ?? $assignment->taskTemplate->require_geofence
-            ?? true);
-
-        $overrideGeofence = $request->boolean('override_geofence')
-            || $request->input('override_geofence') === '1'
-            || $request->input('override_geofence') === 1
-            || filter_var($request->input('override_geofence'), FILTER_VALIDATE_BOOLEAN);
-
-        // Strict Geofence / Boundary Check: reject if outside boundary/radius and required unless farmer confirmed override
-        if ($requiresGeofence && ! $geofenceResult['is_within'] && ! $overrideGeofence) {
-            $dist = $geofenceResult['distance_meters'];
-            $radius = $geofenceResult['radius_meters'];
-            $isPolygon = ! empty($geofenceResult['polygon_validated']);
-
-            $errorMessage = $isPolygon
-                ? "আপনি নির্ধারিত ফার্ম সীমানার বাইরে অবস্থান করছেন। (সীমানা হতে দূরত্ব: {$dist} মিটার)"
-                : "আপনি নির্ধারিত ফার্ম লোকেশনের জিও-ফেন্স পরিধির বাইরে অবস্থান করছেন। (দূরত্ব: {$dist} মিটার, গ্রহণযোগ্য: {$radius} মিটার)";
-
-            return response()->json([
-                'success' => false,
-                'message' => $errorMessage,
-                'geofence' => [
-                    'passed' => false,
-                    'distance_meters' => $dist,
-                    'radius_meters' => $radius,
-                    'polygon_boundary' => $isPolygon,
-                ],
-            ], 422);
-        }
+        $isWithinGeofence = (bool) ($geofenceResult['is_within'] ?? true);
+        $dist = (float) ($geofenceResult['distance_meters'] ?? 0.0);
+        $radius = (float) ($geofenceResult['radius_meters'] ?? 0.0);
+        $isPolygon = ! empty($geofenceResult['polygon_validated']);
 
         // Check required photo count
         $uploadedFiles = $request->file('photos', []);
@@ -106,14 +80,24 @@ class SubmissionController extends Controller
             ], 422);
         }
 
-        $submission = DB::transaction(function () use ($validated, $assignment, $geofenceResult, $uploadedFiles, $user, $overrideGeofence, $request) {
+        $submission = DB::transaction(function () use ($validated, $assignment, $geofenceResult, $isWithinGeofence, $dist, $uploadedFiles, $user, $request) {
             $photoPaths = [];
 
             $farmerNote = $validated['notes'] ?? null;
-            if ($overrideGeofence && ! $geofenceResult['is_within']) {
+            if (! $isWithinGeofence) {
                 $tag = '[মাঠের বাইরে থেকে জমা দেওয়া]';
                 $farmerNote = $farmerNote ? "{$farmerNote} {$tag}" : $tag;
             }
+
+            $isStartedLate = false;
+            if ($assignment->start_time && $assignment->started_at && $assignment->scheduled_date) {
+                try {
+                    $scheduledStart = \Illuminate\Support\Carbon::parse($assignment->scheduled_date->format('Y-m-d').' '.$assignment->start_time);
+                    $isStartedLate = $assignment->started_at->isAfter($scheduledStart);
+                } catch (\Throwable) {}
+            }
+            $isFinishedLate = (bool) $assignment->is_past_deadline;
+            $isSubmissionLate = $isStartedLate || $isFinishedLate;
 
             $taskSubmission = TaskSubmission::updateOrCreate(
                 ['task_assignment_id' => $assignment->id],
@@ -123,12 +107,12 @@ class SubmissionController extends Controller
                     'latitude' => $validated['latitude'],
                     'longitude' => $validated['longitude'],
                     'accuracy' => $validated['accuracy'] ?? null,
-                    'geofence_passed' => $geofenceResult['is_within'],
-                    'distance_meters' => $geofenceResult['distance_meters'],
-                    'is_late' => $assignment->is_past_deadline,
+                    'geofence_passed' => $isWithinGeofence,
+                    'distance_meters' => $dist,
+                    'is_late' => $isSubmissionLate,
                     'status' => 'submitted',
-                    'verification_status' => $geofenceResult['is_within'] ? 'pending' : 'flagged',
-                    'validation_status' => $geofenceResult['is_within'] ? 'pending' : 'flagged',
+                    'verification_status' => $isWithinGeofence ? 'pending' : 'flagged',
+                    'validation_status' => $isWithinGeofence ? 'pending' : 'flagged',
                     'notes' => $farmerNote,
                     'farmer_note' => $farmerNote,
                 ]
@@ -186,9 +170,21 @@ class SubmissionController extends Controller
 
         $submission->load(['evidencePhotos', 'farmer', 'taskAssignment']);
 
+        $message = $isWithinGeofence
+            ? 'কাজের প্রমাণ ও প্রতিবেদন সফলভাবে জমা হয়েছে।'
+            : ($isPolygon
+                ? "কাজের প্রমাণ সফলভাবে জমা হয়েছে। (নির্ধারিত ফার্ম সীমানা হতে {$dist} মিটার বাইরে অবস্থান করায় সতর্কবার্তা সহ চিহ্নিত করা হয়েছে)"
+                : "কাজের প্রমাণ সফলভাবে জমা হয়েছে। (নির্ধারিত ফার্ম লোকেশনের বাইরে অবস্থান করায় সতর্কবার্তা সহ চিহ্নিত করা হয়েছে)");
+
         return response()->json([
             'success' => true,
-            'message' => 'কাজের প্রমাণ ও প্রতিবেদন সফলভাবে জমা হয়েছে।',
+            'message' => $message,
+            'geofence' => [
+                'passed' => $isWithinGeofence,
+                'distance_meters' => $dist,
+                'radius_meters' => $radius,
+                'polygon_boundary' => $isPolygon,
+            ],
             'data' => new SubmissionResource($submission),
         ], 201);
     }

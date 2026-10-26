@@ -118,6 +118,12 @@
                                     <td>
                                         <b>{{ $assignment->taskTemplate->name ?? '—' }}</b>
                                         <br><small style="color:var(--g700)">{{ $assignment->taskTemplate->category ?? '' }}</small>
+                                        @if($assignment->is_recurring)
+                                            <br>
+                                            <span class="pill" style="font-size:10.5px;padding:1px 6px;background:#edfcf2;color:#08783f;border:1px solid #bbf7d0;display:inline-flex;align-items:center;gap:3px;margin-top:3px;">
+                                                🔄 {{ match($assignment->recurrence_type) { 'daily' => 'দৈনিক', 'weekly' => 'সাপ্তাহিক', 'monthly' => 'মাসিক', default => 'সিরিজ' } }} ({{ $assignment->recurrence_seq }}/{{ $assignment->recurrence_total_count }})
+                                            </span>
+                                        @endif
                                     </td>
                                     <td>
                                         <span>{{ $assignment->location->name ?? '—' }}</span>

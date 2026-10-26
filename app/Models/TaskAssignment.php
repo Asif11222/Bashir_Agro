@@ -14,6 +14,11 @@ class TaskAssignment extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'recurring_group_id',
+        'recurrence_type',
+        'recurrence_seq',
+        'recurrence_total_count',
+        'is_recurring',
         'task_template_id',
         'farmer_id',
         'farm_location_id',
@@ -36,6 +41,9 @@ class TaskAssignment extends Model
             'assigned_at' => 'datetime',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'is_recurring' => 'boolean',
+            'recurrence_seq' => 'integer',
+            'recurrence_total_count' => 'integer',
         ];
     }
 
@@ -231,5 +239,21 @@ class TaskAssignment extends Model
         }
 
         return "{$minutes} মিনিট";
+    }
+
+    /**
+     * Scope a query to only include recurring assignments.
+     */
+    public function scopeRecurring($query)
+    {
+        return $query->where('is_recurring', true);
+    }
+
+    /**
+     * Scope a query to a specific recurring group.
+     */
+    public function scopeRecurringGroup($query, string $groupId)
+    {
+        return $query->where('recurring_group_id', $groupId);
     }
 }

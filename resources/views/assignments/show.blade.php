@@ -15,6 +15,30 @@
         </div>
     </div>
 
+    @if($assignment->is_recurring)
+        <div style="background:#f0fdf4;border:1.5px solid #86efac;padding:14px 18px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:24px;">🔄</span>
+                <div>
+                    <b style="color:#166534;font-size:14.5px;">
+                        {{ match($assignment->recurrence_type) { 'daily' => 'দৈনিক', 'weekly' => 'সাপ্তাহিক', 'monthly' => 'মাসিক', default => 'নিয়মিত' } }} পুনরাবৃত্তিমূলক কাজের সিরিজ
+                    </b>
+                    <div style="font-size:12.5px;color:#14532d;margin-top:2px;">
+                        সিরিজ কোড: <code style="background:#dcfce7;padding:2px 6px;border-radius:4px;font-weight:700;">{{ $assignment->recurring_group_id }}</code> • 
+                        সিরিজের ধাপ: <b>#{{ $assignment->recurrence_seq }}</b> (সর্বমোট {{ $assignment->recurrence_total_count }}টি কাজের মধ্যে)
+                    </div>
+                </div>
+            </div>
+            @if(!in_array($assignment->status, ['completed', 'cancelled']))
+                <div>
+                    <button type="button" class="btn soft" style="font-size:12px;padding:6px 12px;color:#dc2626;border-color:#fca5a5;background:#fff;" onclick="openCancelSeriesModal()">
+                        ✕ সম্পূর্ণ সিরিজ বাতিল করুন
+                    </button>
+                </div>
+            @endif
+        </div>
+    @endif
+
     <div class="grid cols-2">
         <section class="card">
             <div class="card-title">
@@ -107,15 +131,22 @@
                     </div>
                 </div>
 
-                <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
                     <div>
                         <b style="font-size:16px;display:block;">{{ $assignment->farmer->full_name ?? '—' }}</b>
                         <small style="color:var(--muted)">কোড: {{ $assignment->farmer->farmer_code ?? '' }} • মোবাইল: {{ $assignment->farmer->phone ?? '' }}</small>
                         <br><small style="color:var(--text)">প্রধান কাজ: {{ $assignment->farmer->primary_activity ?? 'কৃষি' }}</small>
                     </div>
-                    @if($assignment->farmer)
-                        <a href="{{ route('admin.farmers.show', $assignment->farmer) }}" class="btn soft" style="font-size:12px;padding:6px 10px;">কৃষক প্রোফাইল</a>
-                    @endif
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        @if($assignment->farmer)
+                            <a href="{{ route('admin.farmers.show', $assignment->farmer) }}" class="btn soft" style="font-size:12px;padding:6px 10px;">কৃষক প্রোফাইল</a>
+                        @endif
+                        @if(!in_array($assignment->status, ['completed', 'cancelled']))
+                            <button type="button" class="btn soft" style="font-size:12px;padding:6px 10px;color:#1d4ed8;border-color:#93c5fd;background:#eff6ff;" onclick="openReassignModal()">
+                                🔄 কৃষক পরিবর্তন
+                            </button>
+                        @endif
+                    </div>
                 </div>
             </section>
 
@@ -349,6 +380,90 @@
         </div>
     </section>
     @endif
+
+    <!-- Reassign Farmer Modal -->
+    <div class="modal-overlay" id="reassignModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+        <div class="modal-card" style="background:#fff;max-width:500px;width:90%;border-radius:12px;padding:22px;box-shadow:0 10px 25px rgba(0,0,0,0.15);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <b style="font-size:16px;color:#14241d;">🔄 বিকল্প কৃষক প্রতিস্থাপন (Reassign Farmer)</b>
+                <button type="button" onclick="closeReassignModal()" style="border:0;background:none;font-size:22px;color:#8fa298;cursor:pointer;">&times;</button>
+            </div>
+            <p style="font-size:12.5px;color:#6f7f77;margin:0 0 16px;line-height:1.4;">
+                কৃষক অসুস্থ বা অনুপস্থিত থাকলে তার পরিবর্তে অন্য কৃষককে কাজটি অর্পণ করুন।
+            </p>
+
+            <form method="POST" action="{{ route('admin.assignments.reassign', $assignment) }}">
+                @csrf
+                <div style="margin-bottom:14px;">
+                    <label class="label">নতুন কৃষক নির্বাচন করুন <span class="req">*</span></label>
+                    <select class="input" name="new_farmer_id" required>
+                        <option value="">-- কৃষক নির্বাচন করুন --</option>
+                        @foreach($farmers ?? [] as $f)
+                            @if($f->id !== $assignment->farmer_id)
+                                <option value="{{ $f->id }}">{{ $f->full_name }} ({{ $f->farmer_code }}) — {{ $f->phone }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                </div>
+
+                @if($assignment->is_recurring)
+                <div style="background:#f4fbf6;border:1px solid #d4eedd;padding:12px;border-radius:8px;margin-bottom:14px;">
+                    <b style="font-size:13px;color:#08783f;display:block;margin-bottom:8px;">পুনরাবৃত্তি সিরিজের জন্য প্রযোজ্য বিকল্প:</b>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:8px;cursor:pointer;">
+                        <input type="radio" name="apply_to_future_series" value="0" checked>
+                        <span>শুধুমাত্র এই নির্দিষ্ট দিনের কাজের জন্য পরিবর্তন করুন</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                        <input type="radio" name="apply_to_future_series" value="1">
+                        <span><b>এই সিরিজের ভবিষ্যৎ সকল কাজের জন্য</b> নতুন কৃষককে দায়িত্ব দিন</span>
+                    </label>
+                </div>
+                @endif
+
+                <div style="margin-bottom:16px;">
+                    <label class="label">পরিবর্তনের কারণ বা নোট (ঐচ্ছিক)</label>
+                    <input class="input" type="text" name="reason" placeholder="যেমন: কৃষক অসুস্থ / জরুরি ছুটি">
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:8px;">
+                    <button type="button" class="btn" onclick="closeReassignModal()">বাতিল</button>
+                    <button type="submit" class="btn primary">✓ কৃষক প্রতিস্থাপন নিশ্চিত করুন</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if($assignment->is_recurring)
+    <!-- Cancel Series Modal -->
+    <div class="modal-overlay" id="cancelSeriesModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+        <div class="modal-card" style="background:#fff;max-width:480px;width:90%;border-radius:12px;padding:22px;box-shadow:0 10px 25px rgba(0,0,0,0.15);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <b style="font-size:16px;color:#dc2626;">✕ সম্পূর্ণ পুনরাবৃত্তি সিরিজ বাতিলকরণ</b>
+                <button type="button" onclick="closeCancelSeriesModal()" style="border:0;background:none;font-size:22px;color:#8fa298;cursor:pointer;">&times;</button>
+            </div>
+            <p style="font-size:13px;color:#4b5563;margin:0 0 14px;line-height:1.4;">
+                আপনি কি নিশ্চিত যে সিরিজ <b>{{ $assignment->recurring_group_id }}</b>-এর সকল অনিষ্পন্ন কাজ বাতিল করতে চান?
+            </p>
+
+            <form method="POST" action="{{ route('admin.assignments.recurring.cancel', $assignment->recurring_group_id) }}">
+                @csrf
+                <div style="margin-bottom:14px;">
+                    <label class="label">যে তারিখ থেকে বাতিল হবে</label>
+                    <input class="input" type="date" name="from_date" value="{{ $assignment->scheduled_date ? $assignment->scheduled_date->toDateString() : date('Y-m-d') }}">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label class="label">বাতিলের কারণ (ঐচ্ছিক)</label>
+                    <input class="input" type="text" name="reason" placeholder="যেমন: প্রতিকূল আবহাওয়া / পরিকল্পনা পরিবর্তন">
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:8px;">
+                    <button type="button" class="btn" onclick="closeCancelSeriesModal()">বাতিল</button>
+                    <button type="submit" class="btn red">✕ সিরিজ বাতিল নিশ্চিত করুন</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
 </div>
 @endsection
 
@@ -516,5 +631,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+window.openReassignModal = function() {
+    const modal = document.getElementById('reassignModal');
+    if (modal) modal.style.display = 'flex';
+};
+window.closeReassignModal = function() {
+    const modal = document.getElementById('reassignModal');
+    if (modal) modal.style.display = 'none';
+};
+window.openCancelSeriesModal = function() {
+    const modal = document.getElementById('cancelSeriesModal');
+    if (modal) modal.style.display = 'flex';
+};
+window.closeCancelSeriesModal = function() {
+    const modal = document.getElementById('cancelSeriesModal');
+    if (modal) modal.style.display = 'none';
+};
 </script>
 @endpush

@@ -59,19 +59,6 @@
                         </label>
 
                         <label class="field">
-                            <span class="label">পুনরাবৃত্তি <span class="req">*</span></span>
-                            <select class="select" name="recurrence_type" required>
-                                <option value="once" {{ old('recurrence_type', 'once') === 'once' ? 'selected' : '' }}>এককালীন (Once)</option>
-                                <option value="daily" {{ old('recurrence_type') === 'daily' ? 'selected' : '' }}>দৈনিক (Daily)</option>
-                                <option value="weekly" {{ old('recurrence_type') === 'weekly' ? 'selected' : '' }}>সাপ্তাহিক (Weekly)</option>
-                                <option value="monthly" {{ old('recurrence_type') === 'monthly' ? 'selected' : '' }}>মাসিক (Monthly)</option>
-                            </select>
-                            @error('recurrence_type')
-                                <div class="field-error">{{ $message }}</div>
-                            @enderror
-                        </label>
-
-                        <label class="field full">
                             <span class="label">সংক্ষিপ্ত ব্যাখ্যা (ঐচ্ছিক)</span>
                             <input class="input" type="text" name="description" value="{{ old('description') }}" placeholder="কাজের উদ্দেশ্য বা সংক্ষিপ্ত সারসংক্ষেপ">
                             @error('description')

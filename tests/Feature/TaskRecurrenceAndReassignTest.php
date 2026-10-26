@@ -1,0 +1,320 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Farmer;
+use App\Models\FarmLocation;
+use App\Models\TaskAssignment;
+use App\Models\TaskTemplate;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class TaskRecurrenceAndReassignTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private User $admin;
+    private Farmer $farmerA;
+    private Farmer $farmerB;
+    private TaskTemplate $task1;
+    private TaskTemplate $task2;
+    private FarmLocation $location;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->admin = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+
+        $this->farmerA = Farmer::create([
+            'farmer_code' => 'F-000001',
+            'full_name' => 'মোঃ রহিম উদ্দিন (কৃষক ক)',
+            'phone' => '01711223344',
+            'primary_activity' => 'সবজি চাষ',
+            'address' => 'ময়মনসিংহ',
+            'status' => 'active',
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->farmerB = Farmer::create([
+            'farmer_code' => 'F-000002',
+            'full_name' => 'মোঃ করিম মিয়া (কৃষক খ)',
+            'phone' => '01811223344',
+            'primary_activity' => 'মাছ চাষ',
+            'address' => 'ময়মনসিংহ',
+            'status' => 'active',
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->task1 = TaskTemplate::create([
+            'task_code' => 'TASK-000001',
+            'name' => 'সকালের খাদ্য প্রদান',
+            'category' => 'মাছ চাষ',
+            'instructions' => 'পুকুরে সকালে খাদ্য দিন',
+            'required_photo_count' => 1,
+            'status' => 'active',
+            'is_active' => true,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->task2 = TaskTemplate::create([
+            'task_code' => 'TASK-000002',
+            'name' => 'বিকালের অক্সিজেন পরীক্ষা',
+            'category' => 'মাছ চাষ',
+            'instructions' => 'পানির অক্সিজেন লেভেল মাপুন',
+            'required_photo_count' => 1,
+            'status' => 'active',
+            'is_active' => true,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->location = FarmLocation::create([
+            'location_code' => 'LOC-000001',
+            'name' => 'পুকুর ১',
+            'type' => 'মৎস্য খামার',
+            'address' => 'ময়মনসিংহ',
+            'latitude' => 24.7471,
+            'longitude' => 90.4203,
+            'geofence_radius_meters' => 50,
+            'status' => 'active',
+            'created_by' => $this->admin->id,
+        ]);
+    }
+
+    public function test_admin_can_create_daily_recurring_assignments_with_multiple_tasks(): void
+    {
+        $response = $this->actingAs($this->admin)->post('/admin/assignments', [
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'recurrence_type' => 'daily',
+            'start_date' => '2026-11-01',
+            'end_date' => '2026-11-03', // 3 days
+            'daily_tasks' => [
+                [
+                    'task_template_id' => $this->task1->id,
+                    'start_time' => '08:00',
+                    'end_time' => '09:00',
+                    'priority' => 'normal',
+                    'notes' => 'সকালের রুটিন',
+                ],
+                [
+                    'task_template_id' => $this->task2->id,
+                    'start_time' => '16:00',
+                    'end_time' => '17:00',
+                    'priority' => 'important',
+                    'notes' => 'বিকালের রুটিন',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect('/admin/assignments');
+        $response->assertSessionHas('success');
+
+        // 3 days x 2 tasks = 6 assignments
+        $this->assertEquals(6, TaskAssignment::count());
+
+        $first = TaskAssignment::orderBy('id', 'asc')->first();
+        $this->assertTrue($first->is_recurring);
+        $this->assertEquals('daily', $first->recurrence_type);
+        $this->assertEquals(6, $first->recurrence_total_count);
+        $this->assertNotNull($first->recurring_group_id);
+
+        // All 6 should share the exact same recurring_group_id
+        $this->assertEquals(6, TaskAssignment::where('recurring_group_id', $first->recurring_group_id)->count());
+    }
+
+    public function test_admin_can_create_weekly_recurring_assignments(): void
+    {
+        $response = $this->actingAs($this->admin)->post('/admin/assignments', [
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'recurrence_type' => 'weekly',
+            'start_date' => '2026-11-01', // Sunday
+            'weeks_count' => 2, // 2 weeks
+            'weekly_days' => ['sun', 'tue'], // 2 days per week
+            'weekly_tasks' => [
+                [
+                    'task_template_id' => $this->task1->id,
+                    'start_time' => '09:00',
+                    'end_time' => '12:00',
+                    'priority' => 'normal',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect('/admin/assignments');
+        $this->assertGreaterThanOrEqual(4, TaskAssignment::count());
+    }
+
+    public function test_admin_can_create_monthly_recurring_assignments(): void
+    {
+        $response = $this->actingAs($this->admin)->post('/admin/assignments', [
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'recurrence_type' => 'monthly',
+            'start_date' => '2026-11-01',
+            'months_count' => 2,
+            'monthly_days' => [1, 15],
+            'monthly_tasks' => [
+                [
+                    'task_template_id' => $this->task1->id,
+                    'start_time' => '10:00',
+                    'end_time' => '12:00',
+                    'priority' => 'normal',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect('/admin/assignments');
+        $this->assertEquals(4, TaskAssignment::count());
+    }
+
+    public function test_admin_can_reassign_single_task_when_farmer_is_sick(): void
+    {
+        $assignment = TaskAssignment::create([
+            'task_template_id' => $this->task1->id,
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => '2026-11-05',
+            'start_time' => '08:00',
+            'end_time' => '10:00',
+            'priority' => 'normal',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)->post("/admin/assignments/{$assignment->id}/reassign", [
+            'new_farmer_id' => $this->farmerB->id,
+            'reason' => 'কৃষক অসুস্থ ও অনুপস্থিত',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $assignment->refresh();
+        $this->assertEquals($this->farmerB->id, $assignment->farmer_id);
+        $this->assertStringContainsString('কৃষক অসুস্থ ও অনুপস্থিত', $assignment->notes);
+    }
+
+    public function test_admin_can_reassign_future_series_when_farmer_is_sick(): void
+    {
+        $groupId = 'REC-TEST-SERIES';
+
+        // 3 assignments across consecutive days
+        $a1 = TaskAssignment::create([
+            'recurring_group_id' => $groupId,
+            'is_recurring' => true,
+            'recurrence_type' => 'daily',
+            'recurrence_seq' => 1,
+            'recurrence_total_count' => 3,
+            'task_template_id' => $this->task1->id,
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => '2026-11-01',
+            'start_time' => '08:00',
+            'status' => 'completed',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        $a2 = TaskAssignment::create([
+            'recurring_group_id' => $groupId,
+            'is_recurring' => true,
+            'recurrence_type' => 'daily',
+            'recurrence_seq' => 2,
+            'recurrence_total_count' => 3,
+            'task_template_id' => $this->task1->id,
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => '2026-11-02',
+            'start_time' => '08:00',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        $a3 = TaskAssignment::create([
+            'recurring_group_id' => $groupId,
+            'is_recurring' => true,
+            'recurrence_type' => 'daily',
+            'recurrence_seq' => 3,
+            'recurrence_total_count' => 3,
+            'task_template_id' => $this->task1->id,
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => '2026-11-03',
+            'start_time' => '08:00',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        // Reassign from $a2 onwards with apply_to_future_series = true
+        $response = $this->actingAs($this->admin)->post("/admin/assignments/{$a2->id}/reassign", [
+            'new_farmer_id' => $this->farmerB->id,
+            'apply_to_future_series' => 1,
+            'reason' => 'কৃষক হাসপাতালে ভর্তি',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $a1->refresh();
+        $a2->refresh();
+        $a3->refresh();
+
+        // a1 (completed in past) remains farmer A
+        $this->assertEquals($this->farmerA->id, $a1->farmer_id);
+        // a2 & a3 reassigned to farmer B
+        $this->assertEquals($this->farmerB->id, $a2->farmer_id);
+        $this->assertEquals($this->farmerB->id, $a3->farmer_id);
+    }
+
+    public function test_admin_can_cancel_recurring_series(): void
+    {
+        $groupId = 'REC-TEST-CANCEL';
+
+        $a1 = TaskAssignment::create([
+            'recurring_group_id' => $groupId,
+            'is_recurring' => true,
+            'recurrence_type' => 'daily',
+            'recurrence_seq' => 1,
+            'recurrence_total_count' => 2,
+            'task_template_id' => $this->task1->id,
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => '2026-11-01',
+            'start_time' => '08:00',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        $a2 = TaskAssignment::create([
+            'recurring_group_id' => $groupId,
+            'is_recurring' => true,
+            'recurrence_type' => 'daily',
+            'recurrence_seq' => 2,
+            'recurrence_total_count' => 2,
+            'task_template_id' => $this->task1->id,
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'scheduled_date' => '2026-11-02',
+            'start_time' => '08:00',
+            'status' => 'assigned',
+            'assigned_by' => $this->admin->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)->post("/admin/assignments/recurring/{$groupId}/cancel", [
+            'from_date' => '2026-11-01',
+            'reason' => 'ভারী বৃষ্টির কারণে সাময়িক বাতিল',
+        ]);
+
+        $response->assertRedirect();
+
+        $a1->refresh();
+        $a2->refresh();
+        $this->assertEquals('cancelled', $a1->status);
+        $this->assertEquals('cancelled', $a2->status);
+    }
+}

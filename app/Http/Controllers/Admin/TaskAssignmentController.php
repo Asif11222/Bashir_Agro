@@ -143,8 +143,21 @@ class TaskAssignmentController extends Controller
         $validated = $request->validated();
         $assignment = $this->assignmentService->createAssignment($validated, auth()->user());
 
+        $farmerName = $assignment->farmer->full_name ?? 'কৃষক';
+        if ($assignment->is_recurring) {
+            $recLabel = match ($assignment->recurrence_type) {
+                'daily' => 'দৈনিক',
+                'weekly' => 'সাপ্তাহিক',
+                'monthly' => 'মাসিক',
+                default => 'নিয়মিত',
+            };
+            $msg = "কৃষক {$farmerName}-কে {$recLabel} পুনরাবৃত্তিতে মোট {$assignment->recurrence_total_count}টি কাজের শিডিউল সফলভাবে বরাদ্দ করা হয়েছে।";
+        } else {
+            $msg = "কৃষক {$farmerName}-কে কাজটি সফলভাবে বরাদ্দ করা হয়েছে।";
+        }
+
         return redirect()->route('admin.assignments.index')
-            ->with('success', "কৃষক {$assignment->farmer->full_name}-কে কাজটি সফলভাবে বরাদ্দ করা হয়েছে।");
+            ->with('success', $msg);
     }
 
     /**
@@ -153,11 +166,13 @@ class TaskAssignmentController extends Controller
     public function show(TaskAssignment $assignment): View
     {
         $assignment->load(['farmer', 'taskTemplate', 'location', 'assigner', 'submission.evidencePhotos']);
+        $farmers = Farmer::where('status', 'active')->orderBy('full_name')->get();
 
         return view('assignments.show', [
             'activeTab' => 'assignments',
             'title' => "কাজের বরাদ্দ বিবরণ — #{$assignment->id}",
             'assignment' => $assignment,
+            'farmers' => $farmers,
         ]);
     }
 
@@ -323,5 +338,55 @@ class TaskAssignmentController extends Controller
 
         return redirect()->to(route('admin.assignments.show', $assignment).'#review-section')
             ->with('success', $message);
+    }
+
+    /**
+     * Reassign an assignment (or recurring series) to a new farmer (e.g. if original farmer is sick).
+     */
+    public function reassign(Request $request, TaskAssignment $assignment): RedirectResponse
+    {
+        $validated = $request->validate([
+            'new_farmer_id' => ['required', 'integer', 'exists:farmers,id'],
+            'apply_to_future_series' => ['nullable'],
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $applyToFuture = $request->boolean('apply_to_future_series', false);
+        $count = $this->assignmentService->reassignFarmer(
+            assignment: $assignment,
+            newFarmerId: (int) $validated['new_farmer_id'],
+            applyToFutureSeries: $applyToFuture,
+            reason: $validated['reason'] ?? null,
+            user: auth()->user()
+        );
+
+        $newFarmer = Farmer::find($validated['new_farmer_id']);
+        $newFarmerName = $newFarmer->full_name ?? 'নতুন কৃষক';
+
+        $msg = $applyToFuture
+            ? "সিরিজের ভবিষ্যৎ {$count}টি কাজ সফলভাবে নতুন কৃষক {$newFarmerName}-কে পুনঃবরাদ্দ করা হয়েছে।"
+            : "কাজটি সফলভাবে নতুন কৃষক {$newFarmerName}-কে পুনঃবরাদ্দ করা হয়েছে।";
+
+        return back()->with('success', $msg);
+    }
+
+    /**
+     * Cancel an entire recurring series from current date onwards.
+     */
+    public function cancelRecurringSeries(Request $request, string $recurringGroupId): RedirectResponse
+    {
+        $validated = $request->validate([
+            'from_date' => ['nullable', 'date'],
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $count = $this->assignmentService->cancelRecurringSeries(
+            recurringGroupId: $recurringGroupId,
+            fromDate: $validated['from_date'] ?? null,
+            reason: $validated['reason'] ?? null,
+            user: auth()->user()
+        );
+
+        return back()->with('success', "সিরিজের {$count}টি কাজ সফলভাবে বাতিল করা হয়েছে।");
     }
 }

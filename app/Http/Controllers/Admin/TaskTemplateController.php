@@ -88,7 +88,7 @@ class TaskTemplateController extends Controller
                 'require_realtime_photo' => $request->boolean('require_realtime_photo', true),
                 'allow_gallery_upload' => $request->boolean('allow_gallery_upload', false),
                 'require_geofence' => $request->boolean('require_geofence', true),
-                'recurrence_type' => $validated['recurrence_type'],
+                'recurrence_type' => $validated['recurrence_type'] ?? 'once',
                 'status' => $status,
                 'is_active' => $status === 'active',
                 'created_by' => auth()->id(),
@@ -159,7 +159,7 @@ class TaskTemplateController extends Controller
                 'require_realtime_photo' => $request->boolean('require_realtime_photo', true),
                 'allow_gallery_upload' => $request->boolean('allow_gallery_upload', false),
                 'require_geofence' => $request->boolean('require_geofence', true),
-                'recurrence_type' => $validated['recurrence_type'],
+                'recurrence_type' => $validated['recurrence_type'] ?? $task->recurrence_type ?? 'once',
                 'status' => $newStatus,
                 'is_active' => $newStatus === 'active',
             ]);

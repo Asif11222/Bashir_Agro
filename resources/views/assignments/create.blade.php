@@ -7,7 +7,7 @@
     <div class="head">
         <div>
             <h1>নতুন কাজ বরাদ্দ করুন</h1>
-            <p>কৃষক, কাজের টেমপ্লেট এবং ফার্ম লোকেশন নির্বাচন করে কাজ বরাদ্দ করুন</p>
+            <p>কৃষক, ফার্ম লোকেশন এবং এককালীন বা পুনরাবৃত্তিমূলক কাজের সময়সূচি নির্ধারণ করুন</p>
         </div>
         <div class="actions">
             <a href="{{ route('admin.assignments.index') }}" class="btn">← বরাদ্দ তালিকায় ফিরুন</a>
@@ -15,28 +15,29 @@
     </div>
 
     @if ($errors->any())
-        <div class="notice warn" style="margin-bottom: 16px; border-left: 4px solid var(--red); background: #fff5f5;">
-            <b>অনুগ্রহ করে নিচের ত্রুটিগুলো সংশোধন করুন:</b>
-            <ul style="margin: 6px 0 0 16px; padding: 0; font-size: 13px;">
+        <div class="notice warn" style="margin-bottom: 16px; border-left: 4px solid var(--red); background: #fff5f5; padding: 14px 16px; border-radius: 8px;">
+            <b style="color:var(--red);font-size:14px;">অনুগ্রহ করে নিচের ত্রুটিগুলো সংশোধন করুন:</b>
+            <ul style="margin: 8px 0 0 16px; padding: 0; font-size: 13px;">
                 @foreach ($errors->all() as $error)
-                    <li style="color: var(--red);">{{ $error }}</li>
+                    <li style="color: var(--red); margin-bottom: 4px;">{{ $error }}</li>
                 @endforeach
             </ul>
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.assignments.store') }}">
+    <form method="POST" action="{{ route('admin.assignments.store') }}" id="assignmentForm">
         @csrf
 
         <div class="form-layout-2col">
             <div class="form-main-col">
+                <!-- Step 1: Base Target Selection (Farmer & Location) -->
                 <section class="card">
                     <div class="card-title">
                         <div class="title-left">
-                            <span class="iconbox">✓</span>
+                            <span class="iconbox">👤</span>
                             <div>
-                                <h2>কাজের বরাদ্দ বিবরণ</h2>
-                                <div class="sub">কৃষক, কাজ, অবস্থান ও সময়সূচি নির্ধারণ</div>
+                                <h2>বরাদ্দের প্রাপক ও অবস্থান</h2>
+                                <div class="sub">কৃষক এবং ফার্মের নির্দিষ্ট প্লট বা লোকেশন নির্ধারণ</div>
                             </div>
                         </div>
                     </div>
@@ -44,7 +45,7 @@
                     <div class="form-grid">
                         <div>
                             <label class="label">কৃষক নির্বাচন <span class="req">*</span></label>
-                            <select class="input" name="farmer_id" required>
+                            <select class="input" name="farmer_id" id="farmer_select" required>
                                 <option value="">-- কৃষক নির্বাচন করুন --</option>
                                 @foreach($farmers as $farmer)
                                     <option value="{{ $farmer->id }}" {{ old('farmer_id', $selectedFarmerId) == $farmer->id ? 'selected' : '' }}>
@@ -58,21 +59,6 @@
                         </div>
 
                         <div>
-                            <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
-                            <select class="input" name="task_template_id" required>
-                                <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
-                                @foreach($tasks as $task)
-                                    <option value="{{ $task->id }}" {{ old('task_template_id', $selectedTaskId) == $task->id ? 'selected' : '' }}>
-                                        {{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('task_template_id')
-                                <div class="help" style="color:var(--red)">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="field full">
                             <label class="label">ফার্ম লোকেশন (প্লট / জমি / পুকুর) <span class="req">*</span></label>
                             <select class="input" name="farm_location_id" required>
                                 <option value="">-- ফার্মের লোকেশন নির্বাচন করুন --</option>
@@ -86,67 +72,392 @@
                                 <div class="help" style="color:var(--red)">{{ $message }}</div>
                             @enderror
                         </div>
+                    </div>
+                </section>
 
-                        <div>
-                            <label class="label">বরাদ্দের তারিখ <span class="req">*</span></label>
-                            <input class="input" type="date" name="scheduled_date" value="{{ old('scheduled_date', date('Y-m-d')) }}" required>
-                            @error('scheduled_date')
-                                <div class="help" style="color:var(--red)">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label class="label">অগ্রাধিকার <span class="req">*</span></label>
-                            <select class="input" name="priority" required>
-                                <option value="normal" {{ old('priority', 'normal') === 'normal' ? 'selected' : '' }}>সাধারণ (Normal)</option>
-                                <option value="important" {{ old('priority') === 'important' ? 'selected' : '' }}>গুরুত্বপূর্ণ (Important)</option>
-                                <option value="urgent" {{ old('priority') === 'urgent' ? 'selected' : '' }}>জরুরি (Urgent)</option>
-                            </select>
-                            @error('priority')
-                                <div class="help" style="color:var(--red)">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label class="label">শুরুর সময় <span class="req">*</span></label>
-                            <input class="input" type="time" id="start_time" name="start_time" value="{{ old('start_time', '08:00') }}" required>
-                            @error('start_time')
-                                <div class="help" style="color:var(--red)">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label class="label">শেষ সময় (সময়সীমা)</label>
-                            <input class="input" type="time" id="end_time" name="end_time" value="{{ old('end_time', '22:00') }}">
-                            @error('end_time')
-                                <div class="help" style="color:var(--red)">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="field full">
-                            <label class="label" style="font-size:12px;color:var(--muted);margin-bottom:4px;">⏱ দ্রুত সময়সূচী নির্বাচন (Quick Presets):</label>
-                            <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                                <button type="button" class="btn soft" style="font-size:11px;padding:4px 8px;" onclick="setTimePreset('08:00', '22:00')">সকাল - রাত (08:00 AM - 10:00 PM)</button>
-                                <button type="button" class="btn soft" style="font-size:11px;padding:4px 8px;" onclick="setTimePreset('08:00', '23:59')">সারাদিন (08:00 AM - 11:59 PM)</button>
-                                <button type="button" class="btn soft" style="font-size:11px;padding:4px 8px;" onclick="setTimePreset('08:00', '12:00')">সকাল শিফট (08:00 AM - 12:00 PM)</button>
-                                <button type="button" class="btn soft" style="font-size:11px;padding:4px 8px;" onclick="setTimePreset('14:00', '18:00')">বিকাল শিফট (02:00 PM - 06:00 PM)</button>
-                                <button type="button" class="btn soft" style="font-size:11px;padding:4px 8px;" onclick="setFromNowPreset()">এখন থেকে +৪ ঘণ্টা</button>
+                <!-- Step 2: Recurrence Selector -->
+                <section class="card section-gap">
+                    <div class="card-title">
+                        <div class="title-left">
+                            <span class="iconbox" style="background:#eaf8ef;color:#08783f">🔄</span>
+                            <div>
+                                <h2>কাজের পুনরাবৃত্তি ও সময়সূচী (Recurrence)</h2>
+                                <div class="sub">এককালীন, দৈনিক, সাপ্তাহিক বা মাসিক কাজের রুটিন নির্ধারণ</div>
                             </div>
-                            <div id="time-preview-badge" style="margin-top:8px;font-size:13px;font-weight:600;color:#08783f;background:#edfcf2;border:1px solid #bbf7d0;padding:6px 10px;border-radius:6px;display:inline-block;"></div>
-                            <div id="past-time-warning" style="display:none;margin-top:8px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.4;"></div>
+                        </div>
+                    </div>
+
+                    @php $activeRecurrence = old('recurrence_type', 'once'); @endphp
+                    <div class="recurrence-switcher">
+                        <label class="rec-tab-item {{ $activeRecurrence === 'once' ? 'active' : '' }}" onclick="switchRecurrence('once')">
+                            <input type="radio" name="recurrence_type" value="once" {{ $activeRecurrence === 'once' ? 'checked' : '' }} style="display:none;">
+                            <span class="tab-icon">🔘</span>
+                            <div class="tab-meta">
+                                <b class="tab-title">এককালীন (Once)</b>
+                                <span class="tab-desc">শুধুমাত্র নির্দিষ্ট ১ দিনের কাজ</span>
+                            </div>
+                        </label>
+
+                        <label class="rec-tab-item {{ $activeRecurrence === 'daily' ? 'active' : '' }}" onclick="switchRecurrence('daily')">
+                            <input type="radio" name="recurrence_type" value="daily" {{ $activeRecurrence === 'daily' ? 'checked' : '' }} style="display:none;">
+                            <span class="tab-icon">📅</span>
+                            <div class="tab-meta">
+                                <b class="tab-title">দৈনিক (Daily)</b>
+                                <span class="tab-desc">প্রতিদিনের একাধিক কাজের রুটিন</span>
+                            </div>
+                        </label>
+
+                        <label class="rec-tab-item {{ $activeRecurrence === 'weekly' ? 'active' : '' }}" onclick="switchRecurrence('weekly')">
+                            <input type="radio" name="recurrence_type" value="weekly" {{ $activeRecurrence === 'weekly' ? 'checked' : '' }} style="display:none;">
+                            <span class="tab-icon">🗓</span>
+                            <div class="tab-meta">
+                                <b class="tab-title">সাপ্তাহিক (Weekly)</b>
+                                <span class="tab-desc">সপ্তাহের নির্দিষ্ট দিনভিত্তিক কাজ</span>
+                            </div>
+                        </label>
+
+                        <label class="rec-tab-item {{ $activeRecurrence === 'monthly' ? 'active' : '' }}" onclick="switchRecurrence('monthly')">
+                            <input type="radio" name="recurrence_type" value="monthly" {{ $activeRecurrence === 'monthly' ? 'checked' : '' }} style="display:none;">
+                            <span class="tab-icon">📆</span>
+                            <div class="tab-meta">
+                                <b class="tab-title">মাসিক (Monthly)</b>
+                                <span class="tab-desc">প্রতি মাসের নির্দিষ্ট তারিখের কাজ</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Panel 1: Once (এককালীন) -->
+                    <div id="panel-once" class="rec-panel" style="{{ $activeRecurrence === 'once' ? '' : 'display:none;' }}">
+                        <div class="form-grid">
+                            <div class="field full">
+                                <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
+                                <select class="input" name="task_template_id" id="once_task_template_id">
+                                    <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
+                                    @foreach($tasks as $task)
+                                        <option value="{{ $task->id }}" {{ old('task_template_id', $selectedTaskId) == $task->id ? 'selected' : '' }}>
+                                            {{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('task_template_id')
+                                    <div class="help" style="color:var(--red)">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="label">বরাদ্দের তারিখ <span class="req">*</span></label>
+                                <input class="input" type="date" name="scheduled_date" id="scheduled_date" value="{{ old('scheduled_date', date('Y-m-d')) }}">
+                                @error('scheduled_date')
+                                    <div class="help" style="color:var(--red)">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="label">অগ্রাধিকার <span class="req">*</span></label>
+                                <select class="input" name="priority">
+                                    <option value="normal" {{ old('priority', 'normal') === 'normal' ? 'selected' : '' }}>সাধারণ (Normal)</option>
+                                    <option value="important" {{ old('priority') === 'important' ? 'selected' : '' }}>গুরুত্বপূর্ণ (Important)</option>
+                                    <option value="urgent" {{ old('priority') === 'urgent' ? 'selected' : '' }}>জরুরি (Urgent)</option>
+                                </select>
+                                @error('priority')
+                                    <div class="help" style="color:var(--red)">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="label">শুরুর সময় <span class="req">*</span></label>
+                                <input class="input" type="time" id="start_time" name="start_time" value="{{ old('start_time', '08:00') }}">
+                                @error('start_time')
+                                    <div class="help" style="color:var(--red)">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="label">শেষ সময় (সময়সীমা)</label>
+                                <input class="input" type="time" id="end_time" name="end_time" value="{{ old('end_time', '22:00') }}">
+                                @error('end_time')
+                                    <div class="help" style="color:var(--red)">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="field full">
+                                <label class="label" style="font-size:12px;color:var(--muted);margin-bottom:4px;">⏱ দ্রুত সময়সূচী নির্বাচন (Quick Presets):</label>
+                                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                    <button type="button" class="btn soft" style="font-size:11px;padding:4px 8px;" onclick="setTimePreset('08:00', '22:00')">সকাল - রাত (08:00 AM - 10:00 PM)</button>
+                                    <button type="button" class="btn soft" style="font-size:11px;padding:4px 8px;" onclick="setTimePreset('08:00', '23:59')">সারাদিন (08:00 AM - 11:59 PM)</button>
+                                    <button type="button" class="btn soft" style="font-size:11px;padding:4px 8px;" onclick="setTimePreset('08:00', '12:00')">সকাল শিফট (08:00 AM - 12:00 PM)</button>
+                                    <button type="button" class="btn soft" style="font-size:11px;padding:4px 8px;" onclick="setTimePreset('14:00', '18:00')">বিকাল শিফট (02:00 PM - 06:00 PM)</button>
+                                    <button type="button" class="btn soft" style="font-size:11px;padding:4px 8px;" onclick="setFromNowPreset()">এখন থেকে +৪ ঘণ্টা</button>
+                                </div>
+                                <div id="time-preview-badge" style="margin-top:8px;font-size:13px;font-weight:600;color:#08783f;background:#edfcf2;border:1px solid #bbf7d0;padding:6px 10px;border-radius:6px;display:inline-block;"></div>
+                                <div id="past-time-warning" style="display:none;margin-top:8px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.4;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel 2: Daily (দৈনিক) -->
+                    <div id="panel-daily" class="rec-panel" style="{{ $activeRecurrence === 'daily' ? '' : 'display:none;' }}">
+                        <div class="config-subcard">
+                            <b class="subcard-title">📅 দৈনিক কাজের সময়কাল (তারিখ সীমা)</b>
+                            <div class="form-grid" style="margin-top:10px;">
+                                <div>
+                                    <label class="label">শুরুর তারিখ <span class="req">*</span></label>
+                                    <input class="input" type="date" name="start_date" id="daily_start_date" value="{{ old('start_date', date('Y-m-d')) }}">
+                                </div>
+                                <div>
+                                    <label class="label">শেষের তারিখ <span class="req">*</span></label>
+                                    <input class="input" type="date" name="end_date" id="daily_end_date" value="{{ old('end_date', date('Y-m-d', strtotime('+7 days'))) }}">
+                                </div>
+                                <div class="field full">
+                                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                        <span style="font-size:12px;color:var(--muted)">দ্রুত দিন নির্বাচন:</span>
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:3px 8px;" onclick="setDailyDuration(7)">+ ৭ দিন</button>
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:3px 8px;" onclick="setDailyDuration(15)">+ ১৫ দিন</button>
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:3px 8px;" onclick="setDailyDuration(30)">+ ৩০ দিন (১ মাস)</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="field full">
-                            <label class="label">বিশেষ নির্দেশাবলী বা নোট (ঐচ্ছিক)</label>
-                            <textarea class="input" name="notes" rows="3" placeholder="মাঠ পর্যায়ে কাজের জন্য কোনো বিশেষ নোট বা সতর্কতা থাকলে লিখুন...">{{ old('notes') }}</textarea>
-                            @error('notes')
-                                <div class="help" style="color:var(--red)">{{ $message }}</div>
-                            @enderror
+                        <div style="margin-top:18px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                                <b style="font-size:14px;color:#14241d;">📋 প্রতিদিন যে যে কাজ করতে হবে (একাধিক কাজ যুক্ত করুন):</b>
+                                <button type="button" class="btn soft" style="font-size:12px;padding:5px 10px;" onclick="addDailyTaskRow()">
+                                    + আরও একটি কাজ যোগ করুন
+                                </button>
+                            </div>
+
+                            <div id="daily-tasks-container" style="display:flex;flex-direction:column;gap:10px;">
+                                <!-- Repeater Item Template -->
+                                <div class="task-repeater-row" data-index="0">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                        <span class="row-badge">কাজ #১</span>
+                                        <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)" style="display:none;">✕ সরান</button>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div class="field full">
+                                            <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
+                                            <select class="input" name="daily_tasks[0][task_template_id]">
+                                                <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
+                                                @foreach($tasks as $task)
+                                                    <option value="{{ $task->id }}">{{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">শুরুর সময় <span class="req">*</span></label>
+                                            <input class="input" type="time" name="daily_tasks[0][start_time]" value="08:00">
+                                        </div>
+                                        <div>
+                                            <label class="label">শেষ সময়</label>
+                                            <input class="input" type="time" name="daily_tasks[0][end_time]" value="12:00">
+                                        </div>
+                                        <div>
+                                            <label class="label">অগ্রাধিকার</label>
+                                            <select class="input" name="daily_tasks[0][priority]">
+                                                <option value="normal">সাধারণ (Normal)</option>
+                                                <option value="important">গুরুত্বপূর্ণ (Important)</option>
+                                                <option value="urgent">জরুরি (Urgent)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">কাজের নোট (ঐচ্ছিক)</label>
+                                            <input class="input" type="text" name="daily_tasks[0][notes]" placeholder="যেমন: সকালের খাবার/সেচ">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- Panel 3: Weekly (সাপ্তাহিক) -->
+                    <div id="panel-weekly" class="rec-panel" style="{{ $activeRecurrence === 'weekly' ? '' : 'display:none;' }}">
+                        <div class="config-subcard">
+                            <b class="subcard-title">🗓 সাপ্তাহিক সময়কাল ও বারের তালিকা</b>
+                            <div class="form-grid" style="margin-top:10px;">
+                                <div>
+                                    <label class="label">শুরুর তারিখ <span class="req">*</span></label>
+                                    <input class="input" type="date" name="start_date" id="weekly_start_date" value="{{ old('start_date', date('Y-m-d')) }}">
+                                </div>
+                                <div>
+                                    <label class="label">কত সপ্তাহ চলবে? <span class="req">*</span></label>
+                                    <select class="input" name="weeks_count" id="weeks_count">
+                                        <option value="1">১ সপ্তাহ</option>
+                                        <option value="2">২ সপ্তাহ</option>
+                                        <option value="4" selected>৪ সপ্তাহ (১ মাস)</option>
+                                        <option value="8">৮ সপ্তাহ (২ মাস)</option>
+                                        <option value="12">১২ সপ্তাহ (৩ মাস)</option>
+                                        <option value="24">২৪ সপ্তাহ (৬ মাস)</option>
+                                    </select>
+                                </div>
+                                <div class="field full">
+                                    <label class="label">সপ্তাহের কোন কোন দিন কাজ হবে? <span class="req">*</span></label>
+                                    <div class="weekday-picker">
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="sat"> <span>শনিবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="sun" checked> <span>রবিবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="mon"> <span>সোমবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="tue" checked> <span>মঙ্গলবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="wed"> <span>বুধবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="thu" checked> <span>বৃহস্পতিবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="fri"> <span>শুক্রবার</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:18px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                                <b style="font-size:14px;color:#14241d;">📋 সাপ্তাহিক নির্ধারিত কাজের তালিকা:</b>
+                                <button type="button" class="btn soft" style="font-size:12px;padding:5px 10px;" onclick="addWeeklyTaskRow()">
+                                    + আরও একটি কাজ যোগ করুন
+                                </button>
+                            </div>
+
+                            <div id="weekly-tasks-container" style="display:flex;flex-direction:column;gap:10px;">
+                                <div class="task-repeater-row" data-index="0">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                        <span class="row-badge">কাজ #১</span>
+                                        <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)" style="display:none;">✕ সরান</button>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div class="field full">
+                                            <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
+                                            <select class="input" name="weekly_tasks[0][task_template_id]">
+                                                <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
+                                                @foreach($tasks as $task)
+                                                    <option value="{{ $task->id }}">{{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">শুরুর সময় <span class="req">*</span></label>
+                                            <input class="input" type="time" name="weekly_tasks[0][start_time]" value="09:00">
+                                        </div>
+                                        <div>
+                                            <label class="label">শেষ সময়</label>
+                                            <input class="input" type="time" name="weekly_tasks[0][end_time]" value="13:00">
+                                        </div>
+                                        <div>
+                                            <label class="label">অগ্রাধিকার</label>
+                                            <select class="input" name="weekly_tasks[0][priority]">
+                                                <option value="normal">সাধারণ (Normal)</option>
+                                                <option value="important">গুরুত্বপূর্ণ (Important)</option>
+                                                <option value="urgent">জরুরি (Urgent)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">নোট (ঐচ্ছিক)</label>
+                                            <input class="input" type="text" name="weekly_tasks[0][notes]" placeholder="যেমন: স্প্রে ও সার প্রয়োগ">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel 4: Monthly (মাসিক) -->
+                    <div id="panel-monthly" class="rec-panel" style="{{ $activeRecurrence === 'monthly' ? '' : 'display:none;' }}">
+                        <div class="config-subcard">
+                            <b class="subcard-title">📆 মাসিক সময়কাল ও তারিখের তালিকা</b>
+                            <div class="form-grid" style="margin-top:10px;">
+                                <div>
+                                    <label class="label">শুরুর তারিখ <span class="req">*</span></label>
+                                    <input class="input" type="date" name="start_date" id="monthly_start_date" value="{{ old('start_date', date('Y-m-d')) }}">
+                                </div>
+                                <div>
+                                    <label class="label">কত মাস চলবে? <span class="req">*</span></label>
+                                    <select class="input" name="months_count" id="months_count">
+                                        <option value="1">১ মাস</option>
+                                        <option value="2">২ মাস</option>
+                                        <option value="3" selected>৩ মাস (১ কোয়ার্টার)</option>
+                                        <option value="6">৬ মাস (অর্ধবছর)</option>
+                                        <option value="12">১২ মাস (১ বছর)</option>
+                                    </select>
+                                </div>
+                                <div class="field full">
+                                    <label class="label">প্রতি মাসের কোন কোন তারিখে কাজ হবে? <span class="req">*</span></label>
+                                    <div class="weekday-picker">
+                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="1" checked> <span>১ তারিখ</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="5"> <span>৫ তারিখ</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="10"> <span>১০ তারিখ</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="15" checked> <span>১৫ তারিখ</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="20"> <span>২০ তারিখ</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="25"> <span>২৫ তারিখ</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="monthly_days[]" value="30"> <span>মাসের শেষ দিন</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:18px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                                <b style="font-size:14px;color:#14241d;">📋 মাসিক নির্ধারিত কাজের তালিকা:</b>
+                                <button type="button" class="btn soft" style="font-size:12px;padding:5px 10px;" onclick="addMonthlyTaskRow()">
+                                    + আরও একটি কাজ যোগ করুন
+                                </button>
+                            </div>
+
+                            <div id="monthly-tasks-container" style="display:flex;flex-direction:column;gap:10px;">
+                                <div class="task-repeater-row" data-index="0">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                        <span class="row-badge">কাজ #১</span>
+                                        <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)" style="display:none;">✕ সরান</button>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div class="field full">
+                                            <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
+                                            <select class="input" name="monthly_tasks[0][task_template_id]">
+                                                <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
+                                                @foreach($tasks as $task)
+                                                    <option value="{{ $task->id }}">{{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">শুরুর সময় <span class="req">*</span></label>
+                                            <input class="input" type="time" name="monthly_tasks[0][start_time]" value="10:00">
+                                        </div>
+                                        <div>
+                                            <label class="label">শেষ সময়</label>
+                                            <input class="input" type="time" name="monthly_tasks[0][end_time]" value="14:00">
+                                        </div>
+                                        <div>
+                                            <label class="label">অগ্রাধিকার</label>
+                                            <select class="input" name="monthly_tasks[0][priority]">
+                                                <option value="normal">সাধারণ (Normal)</option>
+                                                <option value="important">গুরুত্বপূর্ণ (Important)</option>
+                                                <option value="urgent">জরুরি (Urgent)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">নোট (ঐচ্ছিক)</label>
+                                            <input class="input" type="text" name="monthly_tasks[0][notes]" placeholder="যেমন: মাসিক স্বাস্থ্য পরীক্ষা বা ওজন গ্রহণ">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Summary Preview Box -->
+                    <div id="live-recurrence-summary" class="summary-preview-card" style="margin-top:20px;">
+                        <div class="summary-icon">✨</div>
+                        <div class="summary-content">
+                            <b class="summary-title" id="summary-title-text">কাজের শিডিউল সারসংক্ষেপ</b>
+                            <div class="summary-body" id="summary-body-text">
+                                লোড হচ্ছে...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:16px;">
+                        <label class="label">সার্বিক নির্দেশাবলী বা অতিরিক্ত নোট (ঐচ্ছিক)</label>
+                        <textarea class="input" name="notes" rows="2" placeholder="মাঠ পর্যায়ে কৃষকের প্রতি সাধারণ নির্দেশনা বা সতর্কতা থাকলে লিখুন...">{{ old('notes') }}</textarea>
                     </div>
                 </section>
             </div>
 
+            <!-- Sidebar Guidance -->
             <div class="form-side-col">
                 <section class="card sticky-side-card">
                     <div class="card-title">
@@ -154,7 +465,7 @@
                             <span class="iconbox" style="background:#eaf8ef;color:#08783f">ℹ</span>
                             <div>
                                 <h3 style="font-size:15px;margin:0;color:var(--ink)">বরাদ্দ নির্দেশিকা ও নিয়ম</h3>
-                                <div class="sub">সঠিক বরাদ্দ নিশ্চিতে সহায়ক নিয়মাবলী</div>
+                                <div class="sub">পুনরাবৃত্তি ও ব্যবস্থাপনা নীতি</div>
                             </div>
                         </div>
                     </div>
@@ -162,28 +473,28 @@
                     <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:#3f5147;line-height:1.5;">
                         <div style="background:#f4fbf6;border:1px solid #d4eedd;padding:12px;border-radius:9px;">
                             <b style="color:#08783f;display:flex;align-items:center;gap:6px;">
-                                <span>📌</span> ডুপ্লিকেট প্রতিরোধ নিয়ম
+                                <span>🔄</span> স্বয়ংক্রিয় সিরিজ বরাদ্দ
                             </b>
                             <p style="margin:6px 0 0;font-size:12.5px;">
-                                একজন কৃষক একই দিনে একাধিক ভিন্ন কাজ সম্পন্ন করতে পারেন। তবে <b>একই কৃষককে একই তারিখে ও একই লোকেশনে ডুপ্লিকেট কাজ</b> বরাদ্দ করা যাবে না।
+                                দৈনিক, সাপ্তাহিক বা মাসিক শিডিউলে নির্ধারিত সকল কাজ স্বয়ংক্রিয়ভাবে কৃষকের মোবাইল অ্যাপে ক্যালেন্ডার অনুযায়ী নির্দিষ্ট দিনে পৌঁছে যাবে।
+                            </p>
+                        </div>
+
+                        <div style="background:#eef6ff;border:1px solid #bfdbfe;padding:12px;border-radius:9px;">
+                            <b style="color:#1d4ed8;display:flex;align-items:center;gap:6px;">
+                                <span>🏥</span> কৃষক অসুস্থ হলে করণীয়
+                            </b>
+                            <p style="margin:6px 0 0;font-size:12.5px;">
+                                যদি কোনো কৃষক হঠাৎ অসুস্থ হন, তবে বরাদ্দের বিস্তারিত পেজ থেকে এক ক্লিকেই <b>বিকল্প কৃষক প্রতিস্থাপন (Reassign)</b> করতে পারবেন—শুধুমাত্র ওইদিনের জন্য অথবা ভবিষ্যৎ সকল কাজের জন্য।
                             </p>
                         </div>
 
                         <div style="background:#fff9ed;border:1px solid #fce3b8;padding:12px;border-radius:9px;">
                             <b style="color:#a16207;display:flex;align-items:center;gap:6px;">
-                                <span>⏱</span> সময়সীমা ও বিলম্ব সতর্কতা
+                                <span>⏱</span> একই দিনে একাধিক কাজ
                             </b>
                             <p style="margin:6px 0 0;font-size:12.5px;">
-                                কাজ নির্ধারিত সময়ের পরে সম্পন্ন করলেও মোবাইল অ্যাপে সাবমিশন গ্রহণ হবে, তবে ড্যাশবোর্ড ও ফিল্ড রিপোর্টে তা <b>Late</b> হিসেবে চিহ্নিত থাকবে।
-                            </p>
-                        </div>
-
-                        <div style="background:#f0f7ff;border:1px solid #cbe2fe;padding:12px;border-radius:9px;">
-                            <b style="color:#1d4ed8;display:flex;align-items:center;gap:6px;">
-                                <span>📍</span> লোকেশন জিওফেন্সিং
-                            </b>
-                            <p style="margin:6px 0 0;font-size:12.5px;">
-                                কৃষক কাজ শুরু ও ছবি তোলার সময় অ্যাপ স্বয়ংক্রিয়ভাবে জিপিএস লোকেশন ও জিওফেন্স পরিধি যাচাই করবে।
+                                সময় ভিন্ন হলে একই দিনে একই কাজ একাধিকবার বরাদ্দ করা যায় (যেমন: সকালের খাদ্য ও বিকালের খাদ্য)।
                             </p>
                         </div>
                     </div>
@@ -193,12 +504,427 @@
 
         <div class="sticky-actions">
             <a href="{{ route('admin.assignments.index') }}" class="btn">বাতিল</a>
-            <button type="submit" class="btn primary">✓ কাজ বরাদ্দ সম্পন্ন করুন</button>
+            <button type="submit" class="btn primary" id="submit-btn">✓ কাজ বরাদ্দ সম্পন্ন করুন</button>
         </div>
     </form>
 </div>
 
+<style>
+.recurrence-switcher {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+@media (max-width: 900px) {
+    .recurrence-switcher {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+.rec-tab-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: #f8faf9;
+    border: 2px solid #e2e8e5;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+.rec-tab-item:hover {
+    border-color: #8fa298;
+    background: #f1f6f3;
+}
+.rec-tab-item.active {
+    border-color: #08783f;
+    background: #edfcf2;
+    box-shadow: 0 2px 6px rgba(8, 120, 63, 0.12);
+}
+.rec-tab-item .tab-icon {
+    font-size: 20px;
+}
+.rec-tab-item .tab-title {
+    display: block;
+    font-size: 13.5px;
+    color: #14241d;
+}
+.rec-tab-item.active .tab-title {
+    color: #08783f;
+}
+.rec-tab-item .tab-desc {
+    display: block;
+    font-size: 11px;
+    color: #6f7f77;
+    margin-top: 2px;
+}
+.config-subcard {
+    background: #f9fbf9;
+    border: 1px solid #dcebe1;
+    padding: 14px 16px;
+    border-radius: 10px;
+}
+.subcard-title {
+    font-size: 13.5px;
+    color: #14241d;
+    display: block;
+}
+.weekday-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+.day-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    border: 1px solid #c9d8cf;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    color: #273b30;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.day-chip:has(input:checked) {
+    background: #eaf8ef;
+    border-color: #08783f;
+    color: #08783f;
+    font-weight: 600;
+}
+.task-repeater-row {
+    background: #ffffff;
+    border: 1px solid #e0eae4;
+    border-radius: 9px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.row-badge {
+    font-size: 11.5px;
+    font-weight: 700;
+    background: #e2f2e7;
+    color: #08783f;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+.btn-remove-row {
+    background: none;
+    border: none;
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 6px;
+}
+.btn-remove-row:hover {
+    text-decoration: underline;
+}
+.summary-preview-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    padding: 14px 18px;
+    border-radius: 10px;
+}
+.summary-icon {
+    font-size: 24px;
+    line-height: 1;
+}
+.summary-title {
+    font-size: 14px;
+    color: #166534;
+    display: block;
+    margin-bottom: 4px;
+}
+.summary-body {
+    font-size: 13px;
+    color: #14532d;
+    line-height: 1.5;
+}
+</style>
+
 <script>
+// Available Task Templates for dynamic row creation
+const taskTemplatesOptions = `
+    <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
+    @foreach($tasks as $task)
+        <option value="{{ $task->id }}">{{ addslashes($task->name) }} ({{ $task->task_code }}) — {{ addslashes($task->category) }}</option>
+    @endforeach
+`;
+
+let currentRecurrence = '{{ $activeRecurrence }}';
+
+function switchRecurrence(type) {
+    currentRecurrence = type;
+    document.querySelectorAll('.rec-tab-item').forEach(tab => {
+        const input = tab.querySelector('input');
+        if (input.value === type) {
+            tab.classList.add('active');
+            input.checked = true;
+        } else {
+            tab.classList.remove('active');
+            input.checked = false;
+        }
+    });
+
+    document.querySelectorAll('.rec-panel').forEach(panel => {
+        panel.style.display = 'none';
+    });
+    const activePanel = document.getElementById(`panel-${type}`);
+    if (activePanel) {
+        activePanel.style.display = 'block';
+    }
+
+    // Toggle required attributes for once mode
+    const onceTemplateSelect = document.getElementById('once_task_template_id');
+    const scheduledDateInput = document.getElementById('scheduled_date');
+    const startTimeInput = document.getElementById('start_time');
+
+    if (type === 'once') {
+        if (onceTemplateSelect) onceTemplateSelect.required = true;
+        if (scheduledDateInput) scheduledDateInput.required = true;
+        if (startTimeInput) startTimeInput.required = true;
+    } else {
+        if (onceTemplateSelect) onceTemplateSelect.required = false;
+        if (scheduledDateInput) scheduledDateInput.required = false;
+        if (startTimeInput) startTimeInput.required = false;
+    }
+
+    calculateSummary();
+}
+
+function setDailyDuration(days) {
+    const startInput = document.getElementById('daily_start_date');
+    const endInput = document.getElementById('daily_end_date');
+    if (!startInput || !endInput) return;
+
+    const startDate = startInput.value ? new Date(startInput.value) : new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + (days - 1));
+
+    endInput.value = endDate.toISOString().split('T')[0];
+    calculateSummary();
+}
+
+function addDailyTaskRow() {
+    const container = document.getElementById('daily-tasks-container');
+    const index = container.querySelectorAll('.task-repeater-row').length;
+    const rowHtml = `
+        <div class="task-repeater-row" data-index="${index}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span class="row-badge">কাজ #${index + 1}</span>
+                <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)">✕ সরান</button>
+            </div>
+            <div class="form-grid">
+                <div class="field full">
+                    <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
+                    <select class="input" name="daily_tasks[${index}][task_template_id]" required>
+                        ${taskTemplatesOptions}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">শুরুর সময় <span class="req">*</span></label>
+                    <input class="input" type="time" name="daily_tasks[${index}][start_time]" value="14:00" required>
+                </div>
+                <div>
+                    <label class="label">শেষ সময়</label>
+                    <input class="input" type="time" name="daily_tasks[${index}][end_time]" value="18:00">
+                </div>
+                <div>
+                    <label class="label">অগ্রাধিকার</label>
+                    <select class="input" name="daily_tasks[${index}][priority]">
+                        <option value="normal">সাধারণ (Normal)</option>
+                        <option value="important">গুরুত্বপূর্ণ (Important)</option>
+                        <option value="urgent">জরুরি (Urgent)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">কাজের নোট (ঐচ্ছিক)</label>
+                    <input class="input" type="text" name="daily_tasks[${index}][notes]" placeholder="যেমন: বিকালের পরিদর্শন">
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', rowHtml);
+    updateRowBadges(container);
+    calculateSummary();
+}
+
+function addWeeklyTaskRow() {
+    const container = document.getElementById('weekly-tasks-container');
+    const index = container.querySelectorAll('.task-repeater-row').length;
+    const rowHtml = `
+        <div class="task-repeater-row" data-index="${index}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span class="row-badge">কাজ #${index + 1}</span>
+                <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)">✕ সরান</button>
+            </div>
+            <div class="form-grid">
+                <div class="field full">
+                    <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
+                    <select class="input" name="weekly_tasks[${index}][task_template_id]" required>
+                        ${taskTemplatesOptions}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">শুরুর সময় <span class="req">*</span></label>
+                    <input class="input" type="time" name="weekly_tasks[${index}][start_time]" value="09:00" required>
+                </div>
+                <div>
+                    <label class="label">শেষ সময়</label>
+                    <input class="input" type="time" name="weekly_tasks[${index}][end_time]" value="13:00">
+                </div>
+                <div>
+                    <label class="label">অগ্রাধিকার</label>
+                    <select class="input" name="weekly_tasks[${index}][priority]">
+                        <option value="normal">সাধারণ (Normal)</option>
+                        <option value="important">গুরুত্বপূর্ণ (Important)</option>
+                        <option value="urgent">জরুরি (Urgent)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">নোট (ঐচ্ছিক)</label>
+                    <input class="input" type="text" name="weekly_tasks[${index}][notes]">
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', rowHtml);
+    updateRowBadges(container);
+    calculateSummary();
+}
+
+function addMonthlyTaskRow() {
+    const container = document.getElementById('monthly-tasks-container');
+    const index = container.querySelectorAll('.task-repeater-row').length;
+    const rowHtml = `
+        <div class="task-repeater-row" data-index="${index}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span class="row-badge">কাজ #${index + 1}</span>
+                <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)">✕ সরান</button>
+            </div>
+            <div class="form-grid">
+                <div class="field full">
+                    <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
+                    <select class="input" name="monthly_tasks[${index}][task_template_id]" required>
+                        ${taskTemplatesOptions}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">শুরুর সময় <span class="req">*</span></label>
+                    <input class="input" type="time" name="monthly_tasks[${index}][start_time]" value="10:00" required>
+                </div>
+                <div>
+                    <label class="label">শেষ সময়</label>
+                    <input class="input" type="time" name="monthly_tasks[${index}][end_time]" value="14:00">
+                </div>
+                <div>
+                    <label class="label">অগ্রাধিকার</label>
+                    <select class="input" name="monthly_tasks[${index}][priority]">
+                        <option value="normal">সাধারণ (Normal)</option>
+                        <option value="important">গুরুত্বপূর্ণ (Important)</option>
+                        <option value="urgent">জরুরি (Urgent)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">নোট (ঐচ্ছিক)</label>
+                    <input class="input" type="text" name="monthly_tasks[${index}][notes]">
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', rowHtml);
+    updateRowBadges(container);
+    calculateSummary();
+}
+
+function removeTaskRow(btn) {
+    const row = btn.closest('.task-repeater-row');
+    const container = row.parentElement;
+    row.remove();
+    updateRowBadges(container);
+    calculateSummary();
+}
+
+function updateRowBadges(container) {
+    const rows = container.querySelectorAll('.task-repeater-row');
+    rows.forEach((row, i) => {
+        const badge = row.querySelector('.row-badge');
+        if (badge) badge.innerText = `কাজ #${i + 1}`;
+        const removeBtn = row.querySelector('.btn-remove-row');
+        if (removeBtn) {
+            removeBtn.style.display = rows.length > 1 ? 'inline-block' : 'none';
+        }
+    });
+}
+
+function calculateSummary() {
+    const titleElem = document.getElementById('summary-title-text');
+    const bodyElem = document.getElementById('summary-body-text');
+
+    if (currentRecurrence === 'once') {
+        const dateInput = document.getElementById('scheduled_date');
+        const startInput = document.getElementById('start_time');
+        const endInput = document.getElementById('end_time');
+        const dateVal = dateInput?.value || 'আজ';
+        const startVal = startInput?.value || '০৮:০০';
+        const endVal = endInput?.value || '২২:০০';
+
+        titleElem.innerText = `এককালীন কাজের বরাদ্দ সারসংক্ষেপ`;
+        bodyElem.innerHTML = `📅 নির্ধারিত তারিখ: <b>${dateVal}</b> | ⏱ সময়: <b>${startVal} হতে ${endVal}</b> | <b>সর্বমোট ১টি কাজ</b> তৈরি হবে।`;
+        return;
+    }
+
+    if (currentRecurrence === 'daily') {
+        const startInput = document.getElementById('daily_start_date');
+        const endInput = document.getElementById('daily_end_date');
+        const tasksCount = document.querySelectorAll('#daily-tasks-container .task-repeater-row').length || 1;
+
+        if (startInput?.value && endInput?.value) {
+            const d1 = new Date(startInput.value);
+            const d2 = new Date(endInput.value);
+            const diffTime = d2 - d1;
+            const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+            const totalTasks = diffDays * tasksCount;
+
+            titleElem.innerText = `দৈনিক কাজের শিডিউল সারসংক্ষেপ`;
+            bodyElem.innerHTML = `📅 সময়কাল: <b>${startInput.value}</b> থেকে <b>${endInput.value}</b> (মোট <b>${diffDays}</b> দিন)<br>` +
+                                 `📋 প্রতিদিন কাজ: <b>${tasksCount}</b> টি | 🌟 সর্বমোট <b>${totalTasks}</b> টি কাজের অ্যাসাইনমেন্ট তৈরি হবে।`;
+        }
+        return;
+    }
+
+    if (currentRecurrence === 'weekly') {
+        const weeksCount = parseInt(document.getElementById('weeks_count')?.value || '1', 10);
+        const checkedDays = document.querySelectorAll('#panel-weekly input[name="weekly_days[]"]:checked').length;
+        const tasksCount = document.querySelectorAll('#weekly-tasks-container .task-repeater-row').length || 1;
+        const totalOccurrences = weeksCount * checkedDays * tasksCount;
+
+        titleElem.innerText = `সাপ্তাহিক কাজের শিডিউল সারসংক্ষেপ`;
+        bodyElem.innerHTML = `🗓 সময়কাল: মোট <b>${weeksCount}</b> সপ্তাহ | প্রতি সপ্তাহে <b>${checkedDays}</b> দিন<br>` +
+                             `📋 প্রতিটি বারে কাজ: <b>${tasksCount}</b> টি | 🌟 সর্বমোট <b>${totalOccurrences}</b> টি কাজের অ্যাসাইনমেন্ট তৈরি হবে।`;
+        return;
+    }
+
+    if (currentRecurrence === 'monthly') {
+        const monthsCount = parseInt(document.getElementById('months_count')?.value || '1', 10);
+        const checkedDays = document.querySelectorAll('#panel-monthly input[name="monthly_days[]"]:checked').length;
+        const tasksCount = document.querySelectorAll('#monthly-tasks-container .task-repeater-row').length || 1;
+        const totalOccurrences = monthsCount * checkedDays * tasksCount;
+
+        titleElem.innerText = `মাসিক কাজের শিডিউল সারসংক্ষেপ`;
+        bodyElem.innerHTML = `📆 সময়কাল: মোট <b>${monthsCount}</b> মাস | প্রতি মাসে <b>${checkedDays}</b> দিন<br>` +
+                             `📋 প্রতিটি তারিখে কাজ: <b>${tasksCount}</b> টি | 🌟 সর্বমোট <b>${totalOccurrences}</b> টি কাজের অ্যাসাইনমেন্ট তৈরি হবে।`;
+        return;
+    }
+}
+
+// Preset helpers
 function formatTimeToBanglaPeriod(timeStr) {
     if (!timeStr) return '';
     const parts = timeStr.split(':');
@@ -221,9 +947,7 @@ function formatTimeToBanglaPeriod(timeStr) {
 function updateTimePreview() {
     const startInput = document.getElementById('start_time');
     const endInput = document.getElementById('end_time');
-    const dateInput = document.querySelector('input[name="scheduled_date"]');
     const badge = document.getElementById('time-preview-badge');
-    const warning = document.getElementById('past-time-warning');
 
     const startFormatted = formatTimeToBanglaPeriod(startInput?.value);
     const endFormatted = formatTimeToBanglaPeriod(endInput?.value);
@@ -239,29 +963,7 @@ function updateTimePreview() {
             badge.style.display = 'none';
         }
     }
-
-    if (warning && dateInput?.value && endInput?.value) {
-        const today = new Date();
-        const selectedDate = new Date(dateInput.value + 'T00:00:00');
-        const isToday = today.getFullYear() === selectedDate.getFullYear() &&
-                        today.getMonth() === selectedDate.getMonth() &&
-                        today.getDate() === selectedDate.getDate();
-
-        if (isToday) {
-            const endParts = endInput.value.split(':');
-            const endHour = parseInt(endParts[0], 10);
-            const endMinute = parseInt(endParts[1] || 0, 10);
-            const endDateTime = new Date();
-            endDateTime.setHours(endHour, endMinute, 0, 0);
-
-            if (today > endDateTime) {
-                warning.innerHTML = `⚠️ <b>সতর্কতা:</b> নির্বাচিত শেষ সময়সীমা (<b>${endFormatted}</b>) আজকের বর্তমান সময়ের পূর্বে অতিবাহিত হয়ে গেছে! কৃষক যাতে কাজ সম্পন্ন করতে পারে, সেজন্য শেষ সময়সীমা রাত পর্যন্ত নির্ধারণ করুন (যেমন রাত ১০:০০ PM বা 22:00) অথবা তারিখ পরিবর্তন করুন।`;
-                warning.style.display = 'block';
-                return;
-            }
-        }
-        warning.style.display = 'none';
-    }
+    calculateSummary();
 }
 
 function setTimePreset(start, end) {
@@ -289,13 +991,20 @@ function setFromNowPreset() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const startInput = document.getElementById('start_time');
-    const endInput = document.getElementById('end_time');
-    const dateInput = document.querySelector('input[name="scheduled_date"]');
+    switchRecurrence('{{ $activeRecurrence }}');
 
-    if (startInput) startInput.addEventListener('input', updateTimePreview);
-    if (endInput) endInput.addEventListener('input', updateTimePreview);
-    if (dateInput) dateInput.addEventListener('change', updateTimePreview);
+    // Attach listeners for inputs that affect calculations
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('input[type="date"], input[type="time"], select')) {
+            calculateSummary();
+        }
+    });
+
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('input[type="checkbox"], input[type="date"], select')) {
+            calculateSummary();
+        }
+    });
 
     updateTimePreview();
 });

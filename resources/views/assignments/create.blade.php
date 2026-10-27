@@ -235,12 +235,21 @@
                                         <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)" style="display:none;">✕ সরান</button>
                                     </div>
                                     <div class="form-grid">
-                                        <div class="field full">
+                                        <div>
                                             <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
                                             <select class="input" name="daily_tasks[0][task_template_id]">
                                                 <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
                                                 @foreach($tasks as $task)
                                                     <option value="{{ $task->id }}">{{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">ফার্ম লোকেশন (ঐচ্ছিক)</label>
+                                            <select class="input" name="daily_tasks[0][farm_location_id]">
+                                                <option value="">-- মূল লোকেশন (ডিফল্ট) --</option>
+                                                @foreach($locations as $loc)
+                                                    <option value="{{ $loc->id }}">{{ $loc->name }} ({{ $loc->location_code }}) — {{ $loc->type }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -376,33 +385,66 @@
                             </div>
                         </div>
 
-                        <!-- Step 3: Base Task Selection -->
+                        <!-- Step 3: Weekly Routine Tasks (সাপ্তাহিক রুটিনের কাজের তালিকা) -->
                         <div class="config-subcard" style="margin-top:14px;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                                <b class="subcard-title">📋 মূল কাজের ধরন ও অগ্রাধিকার</b>
-                                <span style="font-size:11.5px;color:var(--muted)">সকল সেশনে ডিফল্ট হিসেবে প্রযোজ্য হবে</span>
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                                <div>
+                                    <b class="subcard-title" style="color:#14241d;">📋 সাপ্তাহিক রুটিনের কাজের তালিকা (একাধিক কাজ ও সময়সূচী)</b>
+                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                        নির্বাচিত দিনগুলোতে যে যে কাজ সম্পন্ন হবে (যেমন: সকাল ৯-১০টা গাছে পানি, ১০-১১টা পুকুরে পানি)। একই কৃষক একই বা ভিন্ন লোকেশনে একাধিক কাজ করতে পারবেন।
+                                    </div>
+                                </div>
+                                <button type="button" class="btn soft" style="font-size:12px;padding:5px 10px;" onclick="addWeeklyRoutineRow()">
+                                    + রুটিনে আরেকটি কাজ যোগ করুন
+                                </button>
                             </div>
-                            <div class="form-grid">
-                                <div class="field full">
-                                    <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
-                                    <select class="input" id="weekly_default_template_id" onchange="applyDefaultTemplateToAll()">
-                                        <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
-                                        @foreach($tasks as $task)
-                                            <option value="{{ $task->id }}">{{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="label">ডিফল্ট অগ্রাধিকার</label>
-                                    <select class="input" id="weekly_default_priority" onchange="applyDefaultPriorityToAll()">
-                                        <option value="normal">সাধারণ (Normal)</option>
-                                        <option value="important">গুরুত্বপূর্ণ (Important)</option>
-                                        <option value="urgent">জরুরি (Urgent)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="label">কাজের নোট (ঐচ্ছিক)</label>
-                                    <input class="input" type="text" id="weekly_default_notes" placeholder="যেমন: নিয়মিত সাপ্তাহিক তদারকি" oninput="applyDefaultNotesToAll()">
+
+                            <div id="weekly-routine-tasks-container" style="display:flex;flex-direction:column;gap:12px;">
+                                <div class="weekly-routine-row task-repeater-row" data-index="0" style="background:#f8faf9;border:1px solid #d1fae5;border-radius:8px;padding:12px;">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                        <span class="row-badge" style="background:#08783f;color:#fff;">রুটিন কাজ #১</span>
+                                        <button type="button" class="btn-remove-row" onclick="removeWeeklyRoutineRow(this)" style="display:none;">✕ সরান</button>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div>
+                                            <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
+                                            <select class="input routine-template-select" onchange="onRoutineChange()">
+                                                <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
+                                                @foreach($tasks as $task)
+                                                    <option value="{{ $task->id }}">{{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">ফার্ম লোকেশন (ঐচ্ছিক)</label>
+                                            <select class="input routine-location-select" onchange="onRoutineChange()">
+                                                <option value="">-- মূল লোকেশন (ডিফল্ট) --</option>
+                                                @foreach($locations as $loc)
+                                                    <option value="{{ $loc->id }}">{{ $loc->name }} ({{ $loc->location_code }}) — {{ $loc->type }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">শুরুর সময় <span class="req">*</span></label>
+                                            <input class="input routine-start-time" type="time" value="09:00" onchange="onRoutineChange()">
+                                        </div>
+                                        <div>
+                                            <label class="label">শেষ সময়</label>
+                                            <input class="input routine-end-time" type="time" value="13:00" onchange="onRoutineChange()">
+                                        </div>
+                                        <div>
+                                            <label class="label">অগ্রাধিকার</label>
+                                            <select class="input routine-priority-select" onchange="onRoutineChange()">
+                                                <option value="normal">সাধারণ (Normal)</option>
+                                                <option value="important">গুরুত্বপূর্ণ (Important)</option>
+                                                <option value="urgent">জরুরি (Urgent)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">কাজের নোট (ঐচ্ছিক)</label>
+                                            <input class="input routine-notes-input" type="text" placeholder="যেমন: নিয়মিত সাপ্তাহিক তদারকি" oninput="onRoutineChange()">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -510,12 +552,21 @@
                                         <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)" style="display:none;">✕ সরান</button>
                                     </div>
                                     <div class="form-grid">
-                                        <div class="field full">
+                                        <div>
                                             <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
                                             <select class="input" name="monthly_tasks[0][task_template_id]">
                                                 <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
                                                 @foreach($tasks as $task)
                                                     <option value="{{ $task->id }}">{{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="label">ফার্ম লোকেশন (ঐচ্ছিক)</label>
+                                            <select class="input" name="monthly_tasks[0][farm_location_id]">
+                                                <option value="">-- মূল লোকেশন (ডিফল্ট) --</option>
+                                                @foreach($locations as $loc)
+                                                    <option value="{{ $loc->id }}">{{ $loc->name }} ({{ $loc->location_code }}) — {{ $loc->type }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -867,13 +918,24 @@
     gap: 8px;
 }
 .week-session-row {
-    padding: 10px 14px;
+    padding: 8px 12px;
     border-bottom: 1px solid #edf4f0;
     display: grid;
-    grid-template-columns: 170px 1.5fr 110px 110px 110px 40px;
-    gap: 10px;
+    grid-template-columns: 140px 1.2fr 1.2fr 95px 95px 105px 36px;
+    gap: 8px;
     align-items: center;
     transition: background 0.15s ease;
+}
+.week-sessions-table-head {
+    display: grid;
+    grid-template-columns: 140px 1.2fr 1.2fr 95px 95px 105px 36px;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f8faf9;
+    border-bottom: 1px solid #e0eae4;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #3d5a49;
 }
 .week-session-row:last-child {
     border-bottom: none;
@@ -901,6 +963,9 @@
     color: #ffffff;
 }
 @media (max-width: 900px) {
+    .week-sessions-table-head {
+        display: none !important;
+    }
     .week-session-row {
         grid-template-columns: 1fr;
         gap: 8px;
@@ -918,6 +983,14 @@ const taskTemplatesOptions = `
     <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
     @foreach($tasks as $task)
         <option value="{{ $task->id }}">{{ addslashes($task->name) }} ({{ $task->task_code }}) — {{ addslashes($task->category) }}</option>
+    @endforeach
+`;
+
+// Available Farm Locations for dynamic row creation
+const farmLocationsOptions = `
+    <option value="">-- মূল লোকেশন (ডিফল্ট) --</option>
+    @foreach($locations as $loc)
+        <option value="{{ $loc->id }}">{{ addslashes($loc->name) }} ({{ $loc->location_code }}) — {{ addslashes($loc->type) }}</option>
     @endforeach
 `;
 
@@ -989,10 +1062,16 @@ function addDailyTaskRow() {
                 <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)">✕ সরান</button>
             </div>
             <div class="form-grid">
-                <div class="field full">
+                <div>
                     <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
                     <select class="input" name="daily_tasks[${index}][task_template_id]" required>
                         ${taskTemplatesOptions}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">ফার্ম লোকেশন (ঐচ্ছিক)</label>
+                    <select class="input" name="daily_tasks[${index}][farm_location_id]">
+                        ${farmLocationsOptions}
                     </select>
                 </div>
                 <div>
@@ -1032,9 +1111,19 @@ function addDailyTaskRow() {
             'category' => $t->category,
         ];
     })->values();
+
+    $locationsListForJs = $locations->map(function($l) {
+        return [
+            'id' => $l->id,
+            'name' => $l->name,
+            'location_code' => $l->location_code,
+            'type' => $l->type,
+        ];
+    })->values();
 @endphp
-// Task Templates JSON list for interactive schedule generator
+// Task Templates & Farm Locations JSON lists for interactive schedule generator
 const taskTemplatesList = {!! json_encode($tasksListForJs) !!};
+const farmLocationsList = {!! json_encode($locationsListForJs) !!};
 
 const dayNamesBn = {
     'sun': 'রবিবার',
@@ -1335,9 +1424,225 @@ function buildTaskOptions(selectedId) {
     let options = '<option value="">-- কাজের ধরন নির্বাচন করুন --</option>';
     taskTemplatesList.forEach(t => {
         const isSel = (String(t.id) === String(selectedId)) ? 'selected' : '';
-        options += `<option value="${t.id}" ${isSel}>${t.name} (${t.task_code}) — ${t.category}</option>`;
+        options += `<option value="${t.id}" ${isSel}>${t.name} (${t.task_code})</option>`;
     });
     return options;
+}
+
+function buildLocationOptions(selectedId) {
+    let options = '<option value="">-- মূল লোকেশন (ডিফল্ট) --</option>';
+    farmLocationsList.forEach(l => {
+        const isSel = (String(l.id) === String(selectedId)) ? 'selected' : '';
+        options += `<option value="${l.id}" ${isSel}>${l.name} (${l.type})</option>`;
+    });
+    return options;
+}
+
+function getWeeklyRoutineTasks() {
+    const rows = document.querySelectorAll('#weekly-routine-tasks-container .weekly-routine-row');
+    const tasks = [];
+    rows.forEach(r => {
+        const tpl = r.querySelector('.routine-template-select')?.value;
+        const loc = r.querySelector('.routine-location-select')?.value;
+        const start = r.querySelector('.routine-start-time')?.value || '09:00';
+        const end = r.querySelector('.routine-end-time')?.value || '13:00';
+        const prio = r.querySelector('.routine-priority-select')?.value || 'normal';
+        const notes = r.querySelector('.routine-notes-input')?.value || '';
+        tasks.push({
+            templateId: tpl,
+            locationId: loc,
+            startTime: start,
+            endTime: end,
+            priority: prio,
+            notes: notes
+        });
+    });
+    if (tasks.length === 0) {
+        tasks.push({
+            templateId: taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '',
+            locationId: '',
+            startTime: '09:00',
+            endTime: '13:00',
+            priority: 'normal',
+            notes: ''
+        });
+    }
+    return tasks;
+}
+
+function addWeeklyRoutineRow() {
+    const container = document.getElementById('weekly-routine-tasks-container');
+    if (!container) return;
+    const count = container.querySelectorAll('.weekly-routine-row').length;
+    let defStart = '10:00';
+    let defEnd = '11:00';
+    if (count === 0) {
+        defStart = '09:00';
+        defEnd = '10:00';
+    } else if (count === 1) {
+        defStart = '10:00';
+        defEnd = '11:00';
+    } else if (count >= 2) {
+        defStart = '14:00';
+        defEnd = '16:00';
+    }
+
+    const rowHtml = `
+        <div class="weekly-routine-row task-repeater-row" data-index="${count}" style="background:#f8faf9;border:1px solid #d1fae5;border-radius:8px;padding:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span class="row-badge" style="background:#08783f;color:#fff;">রুটিন কাজ #${count + 1}</span>
+                <button type="button" class="btn-remove-row" onclick="removeWeeklyRoutineRow(this)">✕ সরান</button>
+            </div>
+            <div class="form-grid">
+                <div>
+                    <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
+                    <select class="input routine-template-select" onchange="onRoutineChange()" required>
+                        ${taskTemplatesOptions}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">ফার্ম লোকেশন (ঐচ্ছিক)</label>
+                    <select class="input routine-location-select" onchange="onRoutineChange()">
+                        ${farmLocationsOptions}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">শুরুর সময় <span class="req">*</span></label>
+                    <input class="input routine-start-time" type="time" value="${defStart}" onchange="onRoutineChange()" required>
+                </div>
+                <div>
+                    <label class="label">শেষ সময়</label>
+                    <input class="input routine-end-time" type="time" value="${defEnd}" onchange="onRoutineChange()">
+                </div>
+                <div>
+                    <label class="label">অগ্রাধিকার</label>
+                    <select class="input routine-priority-select" onchange="onRoutineChange()">
+                        <option value="normal">সাধারণ (Normal)</option>
+                        <option value="important">গুরুত্বপূর্ণ (Important)</option>
+                        <option value="urgent">জরুরি (Urgent)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">কাজের নোট (ঐচ্ছিক)</label>
+                    <input class="input routine-notes-input" type="text" placeholder="যেমন: নির্দিষ্ট অংশে কাজ" oninput="onRoutineChange()">
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', rowHtml);
+    updateWeeklyRoutineBadges();
+    regenerateWeeklySchedule(true);
+}
+
+function removeWeeklyRoutineRow(btn) {
+    const row = btn.closest('.weekly-routine-row');
+    if (row) {
+        row.remove();
+        updateWeeklyRoutineBadges();
+        regenerateWeeklySchedule(true);
+    }
+}
+
+function updateWeeklyRoutineBadges() {
+    const container = document.getElementById('weekly-routine-tasks-container');
+    if (!container) return;
+    const rows = container.querySelectorAll('.weekly-routine-row');
+    rows.forEach((r, i) => {
+        r.dataset.index = i;
+        const badge = r.querySelector('.row-badge');
+        if (badge) badge.innerText = `রুটিন কাজ #${i + 1}`;
+        const removeBtn = r.querySelector('.btn-remove-row');
+        if (removeBtn) {
+            removeBtn.style.display = rows.length > 1 ? 'inline-block' : 'none';
+        }
+    });
+}
+
+function onRoutineChange() {
+    updateFallbackInputs();
+    regenerateWeeklySchedule(false);
+}
+
+function renderSessionRowHtml(globalIndex, session, templateId, locationId, startTime, endTime, priority, notes, isExtra = false) {
+    const extraBadge = isExtra ? ' <span style="font-size:10px;color:#08783f;font-weight:700;">(+অতিরিক্ত)</span>' : '';
+    return `
+        <div class="week-session-row" id="session-row-${globalIndex}" data-date="${session.isoDate}" data-day="${session.dayKey}" data-week="${session.weekIndex}">
+            <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${session.isoDate}">
+            <input type="hidden" class="session-notes-input" name="custom_schedule[${globalIndex}][notes]" value="${notes || ''}">
+
+            <div>
+                <span class="badge" style="background:#eaf8ef;color:#08783f;font-weight:700;font-size:11px;margin-bottom:2px;display:inline-block;">${session.dayNameBn}</span>${extraBadge}
+                <div style="font-size:12px;font-weight:600;color:#1e293b;">${session.formattedDateBn}</div>
+                <div style="font-size:10px;color:var(--muted);">${session.isoDate}</div>
+                <button type="button" class="btn soft" style="font-size:10px;padding:2px 6px;margin-top:4px;color:#08783f;display:inline-block;" onclick="addSessionToDate('${session.isoDate}', '${session.dayKey}', ${session.weekIndex})">
+                    + কাজ যোগ
+                </button>
+            </div>
+
+            <div>
+                <select class="input session-template-select" name="custom_schedule[${globalIndex}][task_template_id]" style="font-size:12px;padding:5px 6px;width:100%;" required>
+                    ${buildTaskOptions(templateId)}
+                </select>
+            </div>
+
+            <div>
+                <select class="input session-location-select" name="custom_schedule[${globalIndex}][farm_location_id]" style="font-size:12px;padding:5px 6px;width:100%;">
+                    ${buildLocationOptions(locationId)}
+                </select>
+            </div>
+
+            <div>
+                <input class="input session-start-time" type="time" name="custom_schedule[${globalIndex}][start_time]" value="${startTime}" style="font-size:12px;padding:5px 6px;width:100%;" required onchange="calculateSummary()">
+            </div>
+
+            <div>
+                <input class="input session-end-time" type="time" name="custom_schedule[${globalIndex}][end_time]" value="${endTime}" style="font-size:12px;padding:5px 6px;width:100%;" onchange="calculateSummary()">
+            </div>
+
+            <div>
+                <select class="input session-priority-select" name="custom_schedule[${globalIndex}][priority]" style="font-size:12px;padding:5px 6px;width:100%;">
+                    <option value="normal" ${priority === 'normal' ? 'selected' : ''}>সাধারণ</option>
+                    <option value="important" ${priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ</option>
+                    <option value="urgent" ${priority === 'urgent' ? 'selected' : ''}>জরুরি</option>
+                </select>
+            </div>
+
+            <div style="text-align:right;">
+                <button type="button" class="btn-remove-session" title="এই সেশনটি বাদ দিন (Skip)" onclick="removeSessionRow(${globalIndex})">
+                    ✕
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function addSessionToDate(isoDate, dayKey, weekIndex) {
+    const weekBody = document.querySelector(`.week-group-card[data-week="${weekIndex}"] .week-sessions-body`);
+    if (!weekBody) return;
+
+    const globalIndex = Date.now() + Math.floor(Math.random() * 1000);
+    const dateObj = new Date(isoDate);
+    const dayNameBn = dayNamesBn[dayKey] || '';
+    const formattedDateBn = formatBnDate(dateObj);
+    const sessionObj = {
+        isoDate: isoDate,
+        dayKey: dayKey,
+        dayNameBn: dayNameBn,
+        formattedDateBn: formattedDateBn,
+        weekIndex: weekIndex
+    };
+
+    const defaultTpl = taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '';
+    const rowHtml = renderSessionRowHtml(globalIndex, sessionObj, defaultTpl, '', '14:00', '16:00', 'normal', '', true);
+
+    const dateRows = weekBody.querySelectorAll(`.week-session-row[data-date="${isoDate}"]`);
+    if (dateRows.length > 0) {
+        dateRows[dateRows.length - 1].insertAdjacentHTML('afterend', rowHtml);
+    } else {
+        weekBody.insertAdjacentHTML('beforeend', rowHtml);
+    }
+
+    calculateSummary();
 }
 
 function regenerateWeeklySchedule(forceReset = false) {
@@ -1349,24 +1654,26 @@ function regenerateWeeklySchedule(forceReset = false) {
         document.querySelectorAll('#weekly-schedule-groups-container .week-session-row').forEach(row => {
             const date = row.dataset.date;
             if (date) {
-                existingValues[date] = {
+                if (!existingValues[date]) {
+                    existingValues[date] = [];
+                }
+                existingValues[date].push({
                     templateId: row.querySelector('.session-template-select')?.value,
+                    locationId: row.querySelector('.session-location-select')?.value,
                     startTime: row.querySelector('.session-start-time')?.value,
                     endTime: row.querySelector('.session-end-time')?.value,
                     priority: row.querySelector('.session-priority-select')?.value,
                     notes: row.querySelector('.session-notes-input')?.value,
-                };
+                });
             }
         });
     }
 
-    const defaultTemplateId = document.getElementById('weekly_default_template_id')?.value || (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '');
-    const defaultPriority = document.getElementById('weekly_default_priority')?.value || 'normal';
-    const defaultNotes = document.getElementById('weekly_default_notes')?.value || '';
-
-    const defSelect = document.getElementById('weekly_default_template_id');
-    if (defSelect && !defSelect.value && defaultTemplateId) {
-        defSelect.value = defaultTemplateId;
+    const routineTasks = getWeeklyRoutineTasks();
+    const firstSelect = document.querySelector('#weekly-routine-tasks-container .routine-template-select');
+    if (firstSelect && !firstSelect.value && taskTemplatesList.length > 0) {
+        firstSelect.value = taskTemplatesList[0].id;
+        routineTasks[0].templateId = taskTemplatesList[0].id;
     }
 
     const weeks = computeWeeklySessions();
@@ -1386,7 +1693,15 @@ function regenerateWeeklySchedule(forceReset = false) {
 
     weeks.forEach(week => {
         const weekNumBn = toBnDigits(week.weekNum);
-        const sessionsCountBn = toBnDigits(week.sessions.length);
+        let sessionsCount = 0;
+        week.sessions.forEach(s => {
+            if (!forceReset && existingValues[s.isoDate]) {
+                sessionsCount += Math.max(routineTasks.length, existingValues[s.isoDate].length);
+            } else {
+                sessionsCount += routineTasks.length;
+            }
+        });
+        const sessionsCountBn = toBnDigits(sessionsCount);
 
         html += `
             <div class="week-group-card" data-week="${week.weekIndex}">
@@ -1403,9 +1718,10 @@ function regenerateWeeklySchedule(forceReset = false) {
                 </div>
 
                 <div class="week-sessions-table" style="background:#fff;">
-                    <div style="display:grid;grid-template-columns:170px 1.5fr 110px 110px 110px 40px;gap:10px;padding:8px 14px;background:#f8faf9;border-bottom:1px solid #e0eae4;font-size:11.5px;font-weight:700;color:#3d5a49;">
+                    <div class="week-sessions-table-head">
                         <div>তারিখ ও বার</div>
                         <div>কাজের ধরন (Template)</div>
+                        <div>ফার্ম লোকেশন</div>
                         <div>শুরুর সময়</div>
                         <div>শেষ সময়</div>
                         <div>অগ্রাধিকার</div>
@@ -1416,74 +1732,51 @@ function regenerateWeeklySchedule(forceReset = false) {
         `;
 
         week.sessions.forEach(session => {
-            let startTime = '09:00';
-            let endTime = '13:00';
+            const prevList = (!forceReset && existingValues[session.isoDate]) ? existingValues[session.isoDate] : null;
 
-            if (currentTimingMode === 'same') {
-                startTime = document.getElementById('base_weekly_start_time')?.value || '09:00';
-                endTime = document.getElementById('base_weekly_end_time')?.value || '13:00';
-            } else if (currentTimingMode === 'by_day') {
-                startTime = document.getElementById(`time_day_${session.dayKey}_start`)?.value || '09:00';
-                endTime = document.getElementById(`time_day_${session.dayKey}_end`)?.value || '13:00';
-            } else if (currentTimingMode === 'by_week') {
-                startTime = document.getElementById(`time_week_${session.weekIndex}_start`)?.value || '09:00';
-                endTime = document.getElementById(`time_week_${session.weekIndex}_end`)?.value || '13:00';
+            routineTasks.forEach((routineTask, rIdx) => {
+                let startTime = routineTask.startTime || '09:00';
+                let endTime = routineTask.endTime || '13:00';
+                let templateId = routineTask.templateId || (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '');
+                let locationId = routineTask.locationId || '';
+                let priority = routineTask.priority || 'normal';
+                let notes = routineTask.notes || '';
+
+                if (routineTasks.length === 1) {
+                    if (currentTimingMode === 'same') {
+                        startTime = document.getElementById('base_weekly_start_time')?.value || startTime;
+                        endTime = document.getElementById('base_weekly_end_time')?.value || endTime;
+                    } else if (currentTimingMode === 'by_day') {
+                        startTime = document.getElementById(`time_day_${session.dayKey}_start`)?.value || startTime;
+                        endTime = document.getElementById(`time_day_${session.dayKey}_end`)?.value || endTime;
+                    } else if (currentTimingMode === 'by_week') {
+                        startTime = document.getElementById(`time_week_${session.weekIndex}_start`)?.value || startTime;
+                        endTime = document.getElementById(`time_week_${session.weekIndex}_end`)?.value || endTime;
+                    }
+                }
+
+                if (prevList && prevList[rIdx]) {
+                    const prev = prevList[rIdx];
+                    if (prev.startTime) startTime = prev.startTime;
+                    if (prev.endTime !== undefined) endTime = prev.endTime;
+                    if (prev.templateId) templateId = prev.templateId;
+                    if (prev.locationId !== undefined) locationId = prev.locationId;
+                    if (prev.priority) priority = prev.priority;
+                    if (prev.notes !== undefined) notes = prev.notes;
+                }
+
+                html += renderSessionRowHtml(globalIndex, session, templateId, locationId, startTime, endTime, priority, notes);
+                globalIndex++;
+            });
+
+            // If extra sessions existed for this date beyond routineTasks.length, preserve them
+            if (prevList && prevList.length > routineTasks.length) {
+                for (let extraIdx = routineTasks.length; extraIdx < prevList.length; extraIdx++) {
+                    const extra = prevList[extraIdx];
+                    html += renderSessionRowHtml(globalIndex, session, extra.templateId, extra.locationId, extra.startTime, extra.endTime, extra.priority, extra.notes, true);
+                    globalIndex++;
+                }
             }
-
-            let templateId = defaultTemplateId;
-            let priority = defaultPriority;
-            let notes = defaultNotes;
-
-            if (!forceReset && existingValues[session.isoDate]) {
-                const prev = existingValues[session.isoDate];
-                if (prev.startTime) startTime = prev.startTime;
-                if (prev.endTime !== undefined) endTime = prev.endTime;
-                if (prev.templateId) templateId = prev.templateId;
-                if (prev.priority) priority = prev.priority;
-                if (prev.notes !== undefined) notes = prev.notes;
-            }
-
-            html += `
-                <div class="week-session-row" id="session-row-${globalIndex}" data-date="${session.isoDate}" data-day="${session.dayKey}" data-week="${session.weekIndex}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${session.isoDate}">
-                    <input type="hidden" class="session-notes-input" name="custom_schedule[${globalIndex}][notes]" value="${notes}">
-
-                    <div>
-                        <span class="badge" style="background:#eaf8ef;color:#08783f;font-weight:700;font-size:11.5px;margin-bottom:2px;display:inline-block;">${session.dayNameBn}</span>
-                        <div style="font-size:12px;font-weight:600;color:#1e293b;">${session.formattedDateBn}</div>
-                        <div style="font-size:10.5px;color:var(--muted);">${session.isoDate}</div>
-                    </div>
-
-                    <div>
-                        <select class="input session-template-select" name="custom_schedule[${globalIndex}][task_template_id]" style="font-size:12px;padding:6px 8px;width:100%;" required>
-                            ${buildTaskOptions(templateId)}
-                        </select>
-                    </div>
-
-                    <div>
-                        <input class="input session-start-time" type="time" name="custom_schedule[${globalIndex}][start_time]" value="${startTime}" style="font-size:12px;padding:5px 7px;width:100%;" required onchange="calculateSummary()">
-                    </div>
-
-                    <div>
-                        <input class="input session-end-time" type="time" name="custom_schedule[${globalIndex}][end_time]" value="${endTime}" style="font-size:12px;padding:5px 7px;width:100%;" onchange="calculateSummary()">
-                    </div>
-
-                    <div>
-                        <select class="input session-priority-select" name="custom_schedule[${globalIndex}][priority]" style="font-size:12px;padding:6px 8px;width:100%;">
-                            <option value="normal" ${priority === 'normal' ? 'selected' : ''}>সাধারণ</option>
-                            <option value="important" ${priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ</option>
-                            <option value="urgent" ${priority === 'urgent' ? 'selected' : ''}>জরুরি</option>
-                        </select>
-                    </div>
-
-                    <div style="text-align:right;">
-                        <button type="button" class="btn-remove-session" title="এই সেশনটি বাদ দিন (Skip)" onclick="removeSessionRow(${globalIndex})">
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            `;
-            globalIndex++;
         });
 
         html += `
@@ -1517,16 +1810,19 @@ function updateFallbackInputs() {
     const fallbackContainer = document.getElementById('weekly-fallback-inputs');
     if (!fallbackContainer) return;
 
-    const defaultTemplateId = document.getElementById('weekly_default_template_id')?.value || (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '');
-    const startTime = document.getElementById('base_weekly_start_time')?.value || '09:00';
-    const endTime = document.getElementById('base_weekly_end_time')?.value || '13:00';
-
-    fallbackContainer.innerHTML = `
-        <input type="hidden" name="weekly_tasks[0][task_template_id]" value="${defaultTemplateId}">
-        <input type="hidden" name="weekly_tasks[0][start_time]" value="${startTime}">
-        <input type="hidden" name="weekly_tasks[0][end_time]" value="${endTime}">
-        <input type="hidden" name="weekly_tasks[0][priority]" value="normal">
-    `;
+    const routineTasks = getWeeklyRoutineTasks();
+    let html = '';
+    routineTasks.forEach((t, i) => {
+        html += `
+            <input type="hidden" name="weekly_tasks[${i}][task_template_id]" value="${t.templateId}">
+            <input type="hidden" name="weekly_tasks[${i}][farm_location_id]" value="${t.locationId || ''}">
+            <input type="hidden" name="weekly_tasks[${i}][start_time]" value="${t.startTime}">
+            <input type="hidden" name="weekly_tasks[${i}][end_time]" value="${t.endTime}">
+            <input type="hidden" name="weekly_tasks[${i}][priority]" value="${t.priority}">
+            <input type="hidden" name="weekly_tasks[${i}][notes]" value="${t.notes}">
+        `;
+    });
+    fallbackContainer.innerHTML = html;
 }
 
 function addWeeklyTaskRow() {
@@ -1544,10 +1840,16 @@ function addMonthlyTaskRow() {
                 <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)">✕ সরান</button>
             </div>
             <div class="form-grid">
-                <div class="field full">
+                <div>
                     <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
                     <select class="input" name="monthly_tasks[${index}][task_template_id]" required>
                         ${taskTemplatesOptions}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">ফার্ম লোকেশন (ঐচ্ছিক)</label>
+                    <select class="input" name="monthly_tasks[${index}][farm_location_id]">
+                        ${farmLocationsOptions}
                     </select>
                 </div>
                 <div>

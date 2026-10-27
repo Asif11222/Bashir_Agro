@@ -61,6 +61,11 @@ class StoreTaskAssignmentRequest extends FormRequest
                 'integer',
                 Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
             ];
+            $rules['daily_tasks.*.farm_location_id'] = [
+                'nullable',
+                'integer',
+                Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
+            ];
             $rules['daily_tasks.*.start_time'] = ['required', 'date_format:H:i'];
             $rules['daily_tasks.*.end_time'] = ['nullable', 'date_format:H:i'];
             $rules['daily_tasks.*.priority'] = ['required', 'string', 'in:normal,important,urgent'];
@@ -81,6 +86,11 @@ class StoreTaskAssignmentRequest extends FormRequest
                     'integer',
                     Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
                 ];
+                $rules['weekly_tasks.*.farm_location_id'] = [
+                    'nullable',
+                    'integer',
+                    Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
+                ];
                 $rules['weekly_tasks.*.start_time'] = ['nullable', 'date_format:H:i'];
                 $rules['weekly_tasks.*.end_time'] = ['nullable', 'date_format:H:i'];
                 $rules['weekly_tasks.*.priority'] = ['nullable', 'string', 'in:normal,important,urgent'];
@@ -93,6 +103,11 @@ class StoreTaskAssignmentRequest extends FormRequest
                     'integer',
                     Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
                 ];
+                $rules['custom_schedule.*.farm_location_id'] = [
+                    'nullable',
+                    'integer',
+                    Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
+                ];
                 $rules['custom_schedule.*.start_time'] = ['required', 'date_format:H:i'];
                 $rules['custom_schedule.*.end_time'] = ['nullable', 'date_format:H:i'];
                 $rules['custom_schedule.*.priority'] = ['nullable', 'string', 'in:normal,important,urgent'];
@@ -103,6 +118,11 @@ class StoreTaskAssignmentRequest extends FormRequest
                     'required',
                     'integer',
                     Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
+                ];
+                $rules['weekly_tasks.*.farm_location_id'] = [
+                    'nullable',
+                    'integer',
+                    Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
                 ];
                 $rules['weekly_tasks.*.start_time'] = ['required', 'date_format:H:i'];
                 $rules['weekly_tasks.*.end_time'] = ['nullable', 'date_format:H:i'];
@@ -119,6 +139,11 @@ class StoreTaskAssignmentRequest extends FormRequest
                 'required',
                 'integer',
                 Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
+            ];
+            $rules['monthly_tasks.*.farm_location_id'] = [
+                'nullable',
+                'integer',
+                Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
             ];
             $rules['monthly_tasks.*.start_time'] = ['required', 'date_format:H:i'];
             $rules['monthly_tasks.*.end_time'] = ['nullable', 'date_format:H:i'];

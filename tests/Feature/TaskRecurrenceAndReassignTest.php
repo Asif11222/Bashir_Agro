@@ -420,4 +420,77 @@ class TaskRecurrenceAndReassignTest extends TestCase
         $this->assertEquals('cancelled', $a1->status);
         $this->assertEquals('cancelled', $a2->status);
     }
+
+    public function test_admin_can_create_multiple_tasks_on_same_day_for_same_farmer_with_same_or_different_locations(): void
+    {
+        $location2 = FarmLocation::create([
+            'location_code' => 'LOC-000002',
+            'name' => 'বাগান প্লট ২',
+            'type' => 'শাকসবজি',
+            'address' => 'ময়মনসিংহ',
+            'latitude' => 24.7500,
+            'longitude' => 90.4300,
+            'geofence_radius_meters' => 60,
+            'status' => 'active',
+            'created_by' => $this->admin->id,
+        ]);
+
+        $customSchedule = [
+            [
+                'scheduled_date' => '2026-11-01',
+                'task_template_id' => $this->task1->id,
+                'farm_location_id' => $this->location->id,
+                'start_time' => '09:00',
+                'end_time' => '10:00',
+                'priority' => 'normal',
+                'notes' => 'পুকুরে পানি ও খাদ্য',
+            ],
+            [
+                'scheduled_date' => '2026-11-01',
+                'task_template_id' => $this->task2->id,
+                'farm_location_id' => $location2->id,
+                'start_time' => '10:00',
+                'end_time' => '11:00',
+                'priority' => 'important',
+                'notes' => 'বাগানে গাছে পানি',
+            ],
+        ];
+
+        $response = $this->actingAs($this->admin)->post('/admin/assignments', [
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'recurrence_type' => 'weekly',
+            'start_date' => '2026-11-01',
+            'weeks_count' => 1,
+            'weekly_days' => ['sun'],
+            'weekly_timing_mode' => 'custom',
+            'custom_schedule' => $customSchedule,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect('/admin/assignments');
+
+        $assignments = TaskAssignment::where('farmer_id', $this->farmerA->id)
+            ->whereDate('scheduled_date', '2026-11-01')
+            ->orderBy('start_time')
+            ->get();
+
+        $this->assertCount(2, $assignments);
+
+        // First task: 09:00 - 10:00 at Location 1
+        $this->assertEquals($this->task1->id, $assignments[0]->task_template_id);
+        $this->assertEquals($this->location->id, $assignments[0]->farm_location_id);
+        $this->assertStringStartsWith('09:00', (string) $assignments[0]->start_time);
+        $this->assertStringStartsWith('10:00', (string) $assignments[0]->end_time);
+
+        // Second task: 10:00 - 11:00 at Location 2
+        $this->assertEquals($this->task2->id, $assignments[1]->task_template_id);
+        $this->assertEquals($location2->id, $assignments[1]->farm_location_id);
+        $this->assertStringStartsWith('10:00', (string) $assignments[1]->start_time);
+        $this->assertStringStartsWith('11:00', (string) $assignments[1]->end_time);
+
+        // Series ID check
+        $this->assertNotEmpty($assignments[0]->recurring_group_id);
+        $this->assertEquals($assignments[0]->recurring_group_id, $assignments[1]->recurring_group_id);
+    }
 }

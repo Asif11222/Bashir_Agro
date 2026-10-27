@@ -150,6 +150,102 @@ class TaskRecurrenceAndReassignTest extends TestCase
         $this->assertGreaterThanOrEqual(4, TaskAssignment::count());
     }
 
+    public function test_admin_can_create_weekly_recurring_assignments_with_custom_schedule_and_different_times_per_week(): void
+    {
+        // 4 weeks x 3 days (Sun, Tue, Thu) with different times per week
+        $customSchedule = [
+            // Week 1 (09:00 - 12:00)
+            ['scheduled_date' => '2026-11-01', 'task_template_id' => $this->task1->id, 'start_time' => '09:00', 'end_time' => '12:00', 'priority' => 'normal'],
+            ['scheduled_date' => '2026-11-03', 'task_template_id' => $this->task1->id, 'start_time' => '09:00', 'end_time' => '12:00', 'priority' => 'normal'],
+            ['scheduled_date' => '2026-11-05', 'task_template_id' => $this->task1->id, 'start_time' => '09:00', 'end_time' => '12:00', 'priority' => 'normal'],
+
+            // Week 2 (10:00 - 13:00)
+            ['scheduled_date' => '2026-11-08', 'task_template_id' => $this->task1->id, 'start_time' => '10:00', 'end_time' => '13:00', 'priority' => 'normal'],
+            ['scheduled_date' => '2026-11-10', 'task_template_id' => $this->task1->id, 'start_time' => '10:00', 'end_time' => '13:00', 'priority' => 'normal'],
+            ['scheduled_date' => '2026-11-12', 'task_template_id' => $this->task1->id, 'start_time' => '10:00', 'end_time' => '13:00', 'priority' => 'normal'],
+
+            // Week 3 (07:30 - 11:30)
+            ['scheduled_date' => '2026-11-15', 'task_template_id' => $this->task1->id, 'start_time' => '07:30', 'end_time' => '11:30', 'priority' => 'important'],
+            ['scheduled_date' => '2026-11-17', 'task_template_id' => $this->task1->id, 'start_time' => '07:30', 'end_time' => '11:30', 'priority' => 'important'],
+            ['scheduled_date' => '2026-11-19', 'task_template_id' => $this->task1->id, 'start_time' => '07:30', 'end_time' => '11:30', 'priority' => 'important'],
+
+            // Week 4 (16:00 - 19:00)
+            ['scheduled_date' => '2026-11-22', 'task_template_id' => $this->task1->id, 'start_time' => '16:00', 'end_time' => '19:00', 'priority' => 'urgent'],
+            ['scheduled_date' => '2026-11-24', 'task_template_id' => $this->task1->id, 'start_time' => '16:00', 'end_time' => '19:00', 'priority' => 'urgent'],
+            ['scheduled_date' => '2026-11-26', 'task_template_id' => $this->task1->id, 'start_time' => '16:00', 'end_time' => '19:00', 'priority' => 'urgent'],
+        ];
+
+        $response = $this->actingAs($this->admin)->post('/admin/assignments', [
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'recurrence_type' => 'weekly',
+            'start_date' => '2026-11-01',
+            'weeks_count' => 4,
+            'weekly_days' => ['sun', 'tue', 'thu'],
+            'weekly_timing_mode' => 'by_week',
+            'custom_schedule' => $customSchedule,
+        ]);
+
+        $response->assertRedirect('/admin/assignments');
+        $response->assertSessionHas('success');
+
+        $this->assertEquals(12, TaskAssignment::count());
+
+        // Check Week 1 assignment time
+        $w1Assignment = TaskAssignment::whereDate('scheduled_date', '2026-11-01')->first();
+        $this->assertNotNull($w1Assignment);
+        $this->assertEquals('09:00', substr($w1Assignment->start_time, 0, 5));
+        $this->assertEquals('12:00', substr($w1Assignment->end_time, 0, 5));
+
+        // Check Week 2 assignment time
+        $w2Assignment = TaskAssignment::whereDate('scheduled_date', '2026-11-08')->first();
+        $this->assertNotNull($w2Assignment);
+        $this->assertEquals('10:00', substr($w2Assignment->start_time, 0, 5));
+
+        // Check Week 3 assignment time
+        $w3Assignment = TaskAssignment::whereDate('scheduled_date', '2026-11-15')->first();
+        $this->assertNotNull($w3Assignment);
+        $this->assertEquals('07:30', substr($w3Assignment->start_time, 0, 5));
+        $this->assertEquals('important', $w3Assignment->priority);
+
+        // Check Week 4 assignment time
+        $w4Assignment = TaskAssignment::whereDate('scheduled_date', '2026-11-22')->first();
+        $this->assertNotNull($w4Assignment);
+        $this->assertEquals('16:00', substr($w4Assignment->start_time, 0, 5));
+        $this->assertEquals('urgent', $w4Assignment->priority);
+
+        // Check recurring group
+        $this->assertEquals(12, TaskAssignment::where('recurring_group_id', $w1Assignment->recurring_group_id)->count());
+        $this->assertEquals(12, $w1Assignment->recurrence_total_count);
+    }
+
+    public function test_admin_can_skip_or_remove_session_in_weekly_custom_schedule(): void
+    {
+        // 3 sessions instead of 4 (e.g. holiday removed)
+        $customSchedule = [
+            ['scheduled_date' => '2026-11-01', 'task_template_id' => $this->task1->id, 'start_time' => '09:00', 'end_time' => '12:00', 'priority' => 'normal'],
+            ['scheduled_date' => '2026-11-03', 'task_template_id' => $this->task1->id, 'start_time' => '14:00', 'end_time' => '17:00', 'priority' => 'normal'],
+            ['scheduled_date' => '2026-11-08', 'task_template_id' => $this->task1->id, 'start_time' => '10:00', 'end_time' => '13:00', 'priority' => 'normal'],
+        ];
+
+        $response = $this->actingAs($this->admin)->post('/admin/assignments', [
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'recurrence_type' => 'weekly',
+            'start_date' => '2026-11-01',
+            'weeks_count' => 2,
+            'weekly_days' => ['sun', 'tue'],
+            'weekly_timing_mode' => 'custom',
+            'custom_schedule' => $customSchedule,
+        ]);
+
+        $response->assertRedirect('/admin/assignments');
+        $this->assertEquals(3, TaskAssignment::count());
+
+        $first = TaskAssignment::orderBy('id', 'asc')->first();
+        $this->assertEquals(3, $first->recurrence_total_count);
+    }
+
     public function test_admin_can_create_monthly_recurring_assignments(): void
     {
         $response = $this->actingAs($this->admin)->post('/admin/assignments', [

@@ -85,7 +85,20 @@ class TaskAssignmentService
 
         $occurrences = [];
 
-        if ($recurrenceType === 'daily') {
+        if (!empty($data['custom_schedule']) && is_array($data['custom_schedule']) && count($data['custom_schedule']) > 0) {
+            foreach ($data['custom_schedule'] as $item) {
+                if (!empty($item['scheduled_date']) && !empty($item['start_time']) && !empty($item['task_template_id'])) {
+                    $occurrences[] = [
+                        'scheduled_date' => Carbon::parse($item['scheduled_date'])->toDateString(),
+                        'task_template_id' => (int) $item['task_template_id'],
+                        'start_time' => $item['start_time'],
+                        'end_time' => !empty($item['end_time']) ? $item['end_time'] : null,
+                        'priority' => $item['priority'] ?? 'normal',
+                        'notes' => $item['notes'] ?? ($data['notes'] ?? null),
+                    ];
+                }
+            }
+        } elseif ($recurrenceType === 'daily') {
             $startDate = Carbon::parse($data['start_date'])->startOfDay();
             $endDate = Carbon::parse($data['end_date'])->startOfDay();
             $dailyTasks = $data['daily_tasks'] ?? [];

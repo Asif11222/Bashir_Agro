@@ -272,16 +272,17 @@
 
                     <!-- Panel 3: Weekly (সাপ্তাহিক) -->
                     <div id="panel-weekly" class="rec-panel" style="{{ $activeRecurrence === 'weekly' ? '' : 'display:none;' }}">
+                        <!-- Step 1: Duration & Days -->
                         <div class="config-subcard">
                             <b class="subcard-title">🗓 সাপ্তাহিক সময়কাল ও বারের তালিকা</b>
                             <div class="form-grid" style="margin-top:10px;">
                                 <div>
                                     <label class="label">শুরুর তারিখ <span class="req">*</span></label>
-                                    <input class="input" type="date" name="start_date" id="weekly_start_date" value="{{ old('start_date', date('Y-m-d')) }}">
+                                    <input class="input" type="date" name="start_date" id="weekly_start_date" value="{{ old('start_date', date('Y-m-d')) }}" onchange="onWeeklyConfigChange()">
                                 </div>
                                 <div>
                                     <label class="label">কত সপ্তাহ চলবে? <span class="req">*</span></label>
-                                    <select class="input" name="weeks_count" id="weeks_count">
+                                    <select class="input" name="weeks_count" id="weeks_count" onchange="onWeeklyConfigChange()">
                                         <option value="1">১ সপ্তাহ</option>
                                         <option value="2">২ সপ্তাহ</option>
                                         <option value="4" selected>৪ সপ্তাহ (১ মাস)</option>
@@ -293,66 +294,141 @@
                                 <div class="field full">
                                     <label class="label">সপ্তাহের কোন কোন দিন কাজ হবে? <span class="req">*</span></label>
                                     <div class="weekday-picker">
-                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="sat"> <span>শনিবার</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="sun" checked> <span>রবিবার</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="mon"> <span>সোমবার</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="tue" checked> <span>মঙ্গলবার</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="wed"> <span>বুধবার</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="thu" checked> <span>বৃহস্পতিবার</span></label>
-                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="fri"> <span>শুক্রবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="sat" onchange="onWeeklyConfigChange()"> <span>শনিবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="sun" checked onchange="onWeeklyConfigChange()"> <span>রবিবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="mon" onchange="onWeeklyConfigChange()"> <span>সোমবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="tue" checked onchange="onWeeklyConfigChange()"> <span>মঙ্গলবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="wed" onchange="onWeeklyConfigChange()"> <span>বুধবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="thu" checked onchange="onWeeklyConfigChange()"> <span>বৃহস্পতিবার</span></label>
+                                        <label class="day-chip"><input type="checkbox" name="weekly_days[]" value="fri" onchange="onWeeklyConfigChange()"> <span>শুক্রবার</span></label>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Step 2: Timing Mode Switcher -->
+                        <div class="config-subcard" style="margin-top:14px;background:#fcfefd;border-color:#bbf7d0;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                                <div>
+                                    <b class="subcard-title" style="color:#166534;">⏱ সময় নির্ধারণের পদ্ধতি (Timing Mode)</b>
+                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">বিভিন্ন সপ্তাহে বা বিভিন্ন দিনে আলাদা সময় নির্ধারণ করতে নিচের যেকোনো একটি পদ্ধতি বেছে নিন</div>
+                                </div>
+                                <span class="badge success" id="timing-mode-badge" style="font-size:11px;">একই সময় মোড সক্রিয়</span>
+                            </div>
+
+                            <div class="timing-mode-group">
+                                <label class="timing-mode-btn active" id="btn-mode-same" onclick="setTimingMode('same')">
+                                    <input type="radio" name="weekly_timing_mode" value="same" checked>
+                                    <span>🕒 একই সময় (সকল সেশনে একই সময়)</span>
+                                </label>
+                                <label class="timing-mode-btn" id="btn-mode-by-day" onclick="setTimingMode('by_day')">
+                                    <input type="radio" name="weekly_timing_mode" value="by_day">
+                                    <span>📅 বার-ভিত্তিক সময় (যেমন রবি, মঙ্গল, বৃহস্পতি আলাদা)</span>
+                                </label>
+                                <label class="timing-mode-btn" id="btn-mode-by-week" onclick="setTimingMode('by_week')">
+                                    <input type="radio" name="weekly_timing_mode" value="by_week">
+                                    <span>🗓️ সপ্তাহ-ভিত্তিক সময় (সপ্তাহ ১, ২, ৩, ৪ আলাদা)</span>
+                                </label>
+                                <label class="timing-mode-btn" id="btn-mode-custom" onclick="setTimingMode('custom')">
+                                    <input type="radio" name="weekly_timing_mode" value="custom">
+                                    <span>✏️ প্রতিটি সেশন আলাদা কাস্টমাইজ</span>
+                                </label>
+                            </div>
+
+                            <!-- Mode A: Same time inputs -->
+                            <div id="timing-config-same" class="timing-config-box" style="margin-top:14px;">
+                                <div class="form-grid">
+                                    <div>
+                                        <label class="label">সাধারণ শুরুর সময় <span class="req">*</span></label>
+                                        <input class="input" type="time" id="base_weekly_start_time" value="09:00" onchange="applyBaseWeeklyTimes()">
+                                    </div>
+                                    <div>
+                                        <label class="label">সাধারণ শেষ সময়</label>
+                                        <input class="input" type="time" id="base_weekly_end_time" value="13:00" onchange="applyBaseWeeklyTimes()">
+                                    </div>
+                                    <div class="field full">
+                                        <span style="font-size:12px;color:var(--muted)">💡 এই সময়টি সব সপ্তাহের সকল নির্বাচিত বারে স্বয়ংক্রিয়ভাবে প্রযোজ্য হবে।</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mode B: Day-wise time inputs -->
+                            <div id="timing-config-by-day" class="timing-config-box" style="display:none;margin-top:14px;">
+                                <div style="font-size:12px;color:#166534;font-weight:600;margin-bottom:8px;">📌 প্রতিটি বারের জন্য আলাদা সময় নির্ধারণ করুন:</div>
+                                <div id="day-wise-inputs-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));gap:10px;">
+                                    <!-- Populated dynamically based on checked days -->
+                                </div>
+                            </div>
+
+                            <!-- Mode C: Week-wise time inputs -->
+                            <div id="timing-config-by-week" class="timing-config-box" style="display:none;margin-top:14px;">
+                                <div style="font-size:12px;color:#166534;font-weight:600;margin-bottom:8px;">📌 প্রতিটি সপ্তাহের জন্য আলাদা সময় নির্ধারণ করুন:</div>
+                                <div id="week-wise-inputs-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:10px;">
+                                    <!-- Populated dynamically based on weeks count -->
+                                </div>
+                            </div>
+
+                            <!-- Mode D: Custom note -->
+                            <div id="timing-config-custom" class="timing-config-box" style="display:none;margin-top:14px;">
+                                <div style="background:#e0f2fe;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;color:#0369a1;font-size:12.5px;">
+                                    ℹ️ নিচে প্রতিটি সেশনের টেবিল বা কার্ড থেকে সরাসরি যেকোনো দিনের সময় বা কাজের ধরন ইচ্ছামতো পরিবর্তন করতে পারবেন।
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Base Task Selection -->
+                        <div class="config-subcard" style="margin-top:14px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                <b class="subcard-title">📋 মূল কাজের ধরন ও অগ্রাধিকার</b>
+                                <span style="font-size:11.5px;color:var(--muted)">সকল সেশনে ডিফল্ট হিসেবে প্রযোজ্য হবে</span>
+                            </div>
+                            <div class="form-grid">
+                                <div class="field full">
+                                    <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
+                                    <select class="input" id="weekly_default_template_id" onchange="applyDefaultTemplateToAll()">
+                                        <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
+                                        @foreach($tasks as $task)
+                                            <option value="{{ $task->id }}">{{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="label">ডিফল্ট অগ্রাধিকার</label>
+                                    <select class="input" id="weekly_default_priority" onchange="applyDefaultPriorityToAll()">
+                                        <option value="normal">সাধারণ (Normal)</option>
+                                        <option value="important">গুরুত্বপূর্ণ (Important)</option>
+                                        <option value="urgent">জরুরি (Urgent)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="label">কাজের নোট (ঐচ্ছিক)</label>
+                                    <input class="input" type="text" id="weekly_default_notes" placeholder="যেমন: নিয়মিত সাপ্তাহিক তদারকি" oninput="applyDefaultNotesToAll()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Interactive Full Schedule Preview & Per-Session Time Customizer -->
                         <div style="margin-top:18px;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                                <b style="font-size:14px;color:#14241d;">📋 সাপ্তাহিক নির্ধারিত কাজের তালিকা:</b>
-                                <button type="button" class="btn soft" style="font-size:12px;padding:5px 10px;" onclick="addWeeklyTaskRow()">
-                                    + আরও একটি কাজ যোগ করুন
-                                </button>
-                            </div>
-
-                            <div id="weekly-tasks-container" style="display:flex;flex-direction:column;gap:10px;">
-                                <div class="task-repeater-row" data-index="0">
-                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                                        <span class="row-badge">কাজ #১</span>
-                                        <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)" style="display:none;">✕ সরান</button>
-                                    </div>
-                                    <div class="form-grid">
-                                        <div class="field full">
-                                            <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
-                                            <select class="input" name="weekly_tasks[0][task_template_id]">
-                                                <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
-                                                @foreach($tasks as $task)
-                                                    <option value="{{ $task->id }}">{{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="label">শুরুর সময় <span class="req">*</span></label>
-                                            <input class="input" type="time" name="weekly_tasks[0][start_time]" value="09:00">
-                                        </div>
-                                        <div>
-                                            <label class="label">শেষ সময়</label>
-                                            <input class="input" type="time" name="weekly_tasks[0][end_time]" value="13:00">
-                                        </div>
-                                        <div>
-                                            <label class="label">অগ্রাধিকার</label>
-                                            <select class="input" name="weekly_tasks[0][priority]">
-                                                <option value="normal">সাধারণ (Normal)</option>
-                                                <option value="important">গুরুত্বপূর্ণ (Important)</option>
-                                                <option value="urgent">জরুরি (Urgent)</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="label">নোট (ঐচ্ছিক)</label>
-                                            <input class="input" type="text" name="weekly_tasks[0][notes]" placeholder="যেমন: স্প্রে ও সার প্রয়োগ">
-                                        </div>
-                                    </div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                                <div>
+                                    <b style="font-size:14px;color:#14241d;">✨ সম্পূর্ণ শিডিউল ও প্রতিটি সেশনের সময়সূচী (Interactive Preview & Editor):</b>
+                                    <div style="font-size:12px;color:var(--muted);">প্রতিটি সেশনের সময়, অগ্রাধিকার বা কাজের ধরন আলাদাভাবে পরিবর্তন করতে পারবেন অথবা বাদ দিতে পারবেন</div>
+                                </div>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <button type="button" class="btn soft" style="font-size:12px;padding:5px 10px;" onclick="regenerateWeeklySchedule(true)">
+                                        🔄 নতুন করে সাজান (Reset)
+                                    </button>
                                 </div>
                             </div>
+
+                            <!-- Schedule Container: Grouped by Week -->
+                            <div id="weekly-schedule-groups-container">
+                                <!-- Generated dynamically by JS -->
+                            </div>
                         </div>
+
+                        <!-- Hidden fallback container to maintain backward-compatibility -->
+                        <div id="weekly-fallback-inputs" style="display:none;"></div>
                     </div>
 
                     <!-- Panel 4: Monthly (মাসিক) -->
@@ -726,6 +802,114 @@
     color: #14532d;
     line-height: 1.5;
 }
+.timing-mode-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+.timing-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    border: 1.5px solid #d2ded7;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #273b30;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.timing-mode-btn:hover {
+    border-color: #08783f;
+    background: #f0fdf4;
+}
+.timing-mode-btn.active,
+.timing-mode-btn:has(input:checked) {
+    background: #08783f !important;
+    border-color: #08783f !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(8, 120, 63, 0.25);
+}
+.timing-mode-btn input {
+    display: none;
+}
+.day-time-card, .week-time-card {
+    background: #ffffff;
+    border: 1px solid #d2ded7;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+.day-time-card b, .week-time-card b {
+    display: block;
+    font-size: 12.5px;
+    color: #166534;
+    margin-bottom: 6px;
+}
+.week-group-card {
+    background: #ffffff;
+    border: 1px solid #dcebe1;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.week-group-header {
+    background: #f5fbf7;
+    border-bottom: 1px solid #dcebe1;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.week-session-row {
+    padding: 10px 14px;
+    border-bottom: 1px solid #edf4f0;
+    display: grid;
+    grid-template-columns: 170px 1.5fr 110px 110px 110px 40px;
+    gap: 10px;
+    align-items: center;
+    transition: background 0.15s ease;
+}
+.week-session-row:last-child {
+    border-bottom: none;
+}
+.week-session-row:hover {
+    background: #fafdfb;
+}
+.btn-remove-session {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.15s ease;
+}
+.btn-remove-session:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+@media (max-width: 900px) {
+    .week-session-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        background: #fcfdfc;
+        border: 1px solid #edf4f0;
+        border-radius: 8px;
+        margin: 8px 10px;
+    }
+}
 </style>
 
 <script>
@@ -773,6 +957,10 @@ function switchRecurrence(type) {
         if (onceTemplateSelect) onceTemplateSelect.required = false;
         if (scheduledDateInput) scheduledDateInput.required = false;
         if (startTimeInput) startTimeInput.required = false;
+    }
+
+    if (type === 'weekly') {
+        regenerateWeeklySchedule();
     }
 
     calculateSummary();
@@ -835,48 +1023,510 @@ function addDailyTaskRow() {
     calculateSummary();
 }
 
-function addWeeklyTaskRow() {
-    const container = document.getElementById('weekly-tasks-container');
-    const index = container.querySelectorAll('.task-repeater-row').length;
-    const rowHtml = `
-        <div class="task-repeater-row" data-index="${index}">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span class="row-badge">কাজ #${index + 1}</span>
-                <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)">✕ সরান</button>
+// Task Templates JSON list for interactive schedule generator
+const taskTemplatesList = @json($tasks->map(fn($t) => [
+    'id' => $t->id,
+    'name' => $t->name,
+    'task_code' => $t->task_code,
+    'category' => $t->category,
+]));
+
+const dayNamesBn = {
+    'sun': 'রবিবার',
+    'mon': 'সোমবার',
+    'tue': 'মঙ্গলবার',
+    'wed': 'বুধবার',
+    'thu': 'বৃহস্পতিবার',
+    'fri': 'শুক্রবার',
+    'sat': 'শনিবার'
+};
+const dayIndices = {
+    'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6
+};
+const dayKeyFromIndex = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+const bnMonths = [
+    'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+    'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+];
+
+function formatBnDate(dateObj) {
+    const day = toBnDigits(dateObj.getDate());
+    const month = bnMonths[dateObj.getMonth()];
+    const year = toBnDigits(dateObj.getFullYear());
+    return `${day} ${month} ${year}`;
+}
+
+function formatISODate(d) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+let currentTimingMode = 'same'; // 'same', 'by_day', 'by_week', 'custom'
+
+function setTimingMode(mode) {
+    currentTimingMode = mode;
+    document.querySelectorAll('.timing-mode-btn').forEach(btn => {
+        const input = btn.querySelector('input');
+        if (input.value === mode) {
+            input.checked = true;
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    const badge = document.getElementById('timing-mode-badge');
+    if (badge) {
+        if (mode === 'same') badge.innerText = 'একই সময় মোড সক্রিয়';
+        else if (mode === 'by_day') badge.innerText = 'বার-ভিত্তিক মোড সক্রিয়';
+        else if (mode === 'by_week') badge.innerText = 'সপ্তাহ-ভিত্তিক মোড সক্রিয়';
+        else if (mode === 'custom') badge.innerText = 'প্রতিটি সেশন কাস্টমাইজ মোড';
+    }
+
+    const sameBox = document.getElementById('timing-config-same');
+    const dayBox = document.getElementById('timing-config-by-day');
+    const weekBox = document.getElementById('timing-config-by-week');
+    const customBox = document.getElementById('timing-config-custom');
+
+    if (sameBox) sameBox.style.display = (mode === 'same') ? 'block' : 'none';
+    if (dayBox) dayBox.style.display = (mode === 'by_day') ? 'block' : 'none';
+    if (weekBox) weekBox.style.display = (mode === 'by_week') ? 'block' : 'none';
+    if (customBox) customBox.style.display = (mode === 'custom') ? 'block' : 'none';
+
+    if (mode === 'by_day') {
+        renderDayWiseInputs();
+    } else if (mode === 'by_week') {
+        renderWeekWiseInputs();
+    }
+
+    regenerateWeeklySchedule();
+}
+
+function renderDayWiseInputs() {
+    const grid = document.getElementById('day-wise-inputs-grid');
+    if (!grid) return;
+
+    const checkedBoxes = Array.from(document.querySelectorAll('#panel-weekly input[name="weekly_days[]"]:checked'));
+    const selectedDayKeys = checkedBoxes.map(cb => cb.value);
+
+    let html = '';
+    selectedDayKeys.forEach(dayKey => {
+        const dayName = dayNamesBn[dayKey] || dayKey;
+        const prevStart = document.getElementById(`time_day_${dayKey}_start`)?.value || '09:00';
+        const prevEnd = document.getElementById(`time_day_${dayKey}_end`)?.value || '13:00';
+
+        html += `
+            <div class="day-time-card">
+                <b>🗓 ${dayName}</b>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <div style="flex:1;">
+                        <label style="font-size:11px;color:var(--muted)">শুরু:</label>
+                        <input class="input" type="time" id="time_day_${dayKey}_start" value="${prevStart}" onchange="onDayWiseTimeChange('${dayKey}')" style="padding:4px 6px;font-size:12px;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:11px;color:var(--muted)">শেষ:</label>
+                        <input class="input" type="time" id="time_day_${dayKey}_end" value="${prevEnd}" onchange="onDayWiseTimeChange('${dayKey}')" style="padding:4px 6px;font-size:12px;">
+                    </div>
+                </div>
             </div>
-            <div class="form-grid">
-                <div class="field full">
-                    <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
-                    <select class="input" name="weekly_tasks[${index}][task_template_id]" required>
-                        ${taskTemplatesOptions}
-                    </select>
-                </div>
-                <div>
-                    <label class="label">শুরুর সময় <span class="req">*</span></label>
-                    <input class="input" type="time" name="weekly_tasks[${index}][start_time]" value="09:00" required>
-                </div>
-                <div>
-                    <label class="label">শেষ সময়</label>
-                    <input class="input" type="time" name="weekly_tasks[${index}][end_time]" value="13:00">
-                </div>
-                <div>
-                    <label class="label">অগ্রাধিকার</label>
-                    <select class="input" name="weekly_tasks[${index}][priority]">
-                        <option value="normal">সাধারণ (Normal)</option>
-                        <option value="important">গুরুত্বপূর্ণ (Important)</option>
-                        <option value="urgent">জরুরি (Urgent)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="label">নোট (ঐচ্ছিক)</label>
-                    <input class="input" type="text" name="weekly_tasks[${index}][notes]">
+        `;
+    });
+
+    if (selectedDayKeys.length === 0) {
+        html = '<div style="color:var(--muted);font-size:12px;">কোনো দিন নির্বাচিত নেই। উপরে দিন নির্বাচন করুন।</div>';
+    }
+
+    grid.innerHTML = html;
+}
+
+function renderWeekWiseInputs() {
+    const grid = document.getElementById('week-wise-inputs-grid');
+    if (!grid) return;
+
+    const weeksCount = parseInt(document.getElementById('weeks_count')?.value || '1', 10);
+
+    let html = '';
+    for (let w = 0; w < weeksCount; w++) {
+        const weekNum = w + 1;
+        const prevStart = document.getElementById(`time_week_${w}_start`)?.value || '09:00';
+        const prevEnd = document.getElementById(`time_week_${w}_end`)?.value || '13:00';
+
+        html += `
+            <div class="week-time-card">
+                <b>🗓 সপ্তাহ ${toBnDigits(weekNum)} (Week ${weekNum})</b>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <div style="flex:1;">
+                        <label style="font-size:11px;color:var(--muted)">শুরু:</label>
+                        <input class="input" type="time" id="time_week_${w}_start" value="${prevStart}" onchange="onWeekWiseTimeChange(${w})" style="padding:4px 6px;font-size:12px;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:11px;color:var(--muted)">শেষ:</label>
+                        <input class="input" type="time" id="time_week_${w}_end" value="${prevEnd}" onchange="onWeekWiseTimeChange(${w})" style="padding:4px 6px;font-size:12px;">
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
-    container.insertAdjacentHTML('beforeend', rowHtml);
-    updateRowBadges(container);
+        `;
+    }
+
+    grid.innerHTML = html;
+}
+
+function onDayWiseTimeChange(dayKey) {
+    const startTime = document.getElementById(`time_day_${dayKey}_start`)?.value || '09:00';
+    const endTime = document.getElementById(`time_day_${dayKey}_end`)?.value || '13:00';
+
+    document.querySelectorAll(`.week-session-row[data-day="${dayKey}"]`).forEach(row => {
+        const startInput = row.querySelector('.session-start-time');
+        const endInput = row.querySelector('.session-end-time');
+        if (startInput) startInput.value = startTime;
+        if (endInput) endInput.value = endTime;
+    });
+
     calculateSummary();
+}
+
+function onWeekWiseTimeChange(weekIndex) {
+    const startTime = document.getElementById(`time_week_${weekIndex}_start`)?.value || '09:00';
+    const endTime = document.getElementById(`time_week_${weekIndex}_end`)?.value || '13:00';
+
+    document.querySelectorAll(`.week-group-card[data-week="${weekIndex}"] .week-session-row`).forEach(row => {
+        const startInput = row.querySelector('.session-start-time');
+        const endInput = row.querySelector('.session-end-time');
+        if (startInput) startInput.value = startTime;
+        if (endInput) endInput.value = endTime;
+    });
+
+    calculateSummary();
+}
+
+function promptSetWeekTime(weekIndex) {
+    const currentStart = document.getElementById(`time_week_${weekIndex}_start`)?.value || '09:00';
+    const currentEnd = document.getElementById(`time_week_${weekIndex}_end`)?.value || '13:00';
+
+    const newStart = prompt(`সপ্তাহ ${toBnDigits(weekIndex + 1)}-এর সকল সেশনের শুরুর সময় (HH:MM):`, currentStart);
+    if (!newStart) return;
+
+    const newEnd = prompt(`সপ্তাহ ${toBnDigits(weekIndex + 1)}-এর সকল সেশনের শেষ সময় (HH:MM):`, currentEnd);
+
+    const weekStartInput = document.getElementById(`time_week_${weekIndex}_start`);
+    const weekEndInput = document.getElementById(`time_week_${weekIndex}_end`);
+    if (weekStartInput) weekStartInput.value = newStart;
+    if (weekEndInput && newEnd) weekEndInput.value = newEnd;
+
+    document.querySelectorAll(`.week-group-card[data-week="${weekIndex}"] .week-session-row`).forEach(row => {
+        const startInput = row.querySelector('.session-start-time');
+        const endInput = row.querySelector('.session-end-time');
+        if (startInput) startInput.value = newStart;
+        if (endInput && newEnd) endInput.value = newEnd;
+    });
+
+    calculateSummary();
+}
+
+function applyBaseWeeklyTimes() {
+    if (currentTimingMode !== 'same') return;
+    const start = document.getElementById('base_weekly_start_time')?.value || '09:00';
+    const end = document.getElementById('base_weekly_end_time')?.value || '13:00';
+
+    document.querySelectorAll('#weekly-schedule-groups-container .session-start-time').forEach(el => el.value = start);
+    document.querySelectorAll('#weekly-schedule-groups-container .session-end-time').forEach(el => el.value = end);
+    updateFallbackInputs();
+    calculateSummary();
+}
+
+function applyDefaultTemplateToAll() {
+    const val = document.getElementById('weekly_default_template_id')?.value;
+    if (!val) return;
+    document.querySelectorAll('.session-template-select').forEach(select => {
+        select.value = val;
+    });
+    updateFallbackInputs();
+}
+
+function applyDefaultPriorityToAll() {
+    const val = document.getElementById('weekly_default_priority')?.value;
+    if (!val) return;
+    document.querySelectorAll('.session-priority-select').forEach(select => {
+        select.value = val;
+    });
+    updateFallbackInputs();
+}
+
+function applyDefaultNotesToAll() {
+    const val = document.getElementById('weekly_default_notes')?.value;
+    document.querySelectorAll('.session-notes-input').forEach(input => {
+        input.value = val;
+    });
+    updateFallbackInputs();
+}
+
+function onWeeklyConfigChange() {
+    if (currentTimingMode === 'by_day') {
+        renderDayWiseInputs();
+    } else if (currentTimingMode === 'by_week') {
+        renderWeekWiseInputs();
+    }
+    regenerateWeeklySchedule();
+}
+
+function computeWeeklySessions() {
+    const startInput = document.getElementById('weekly_start_date');
+    if (!startInput || !startInput.value) return [];
+
+    const parts = startInput.value.split('-').map(Number);
+    if (parts.length !== 3) return [];
+    const startDate = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0);
+
+    const weeksCount = parseInt(document.getElementById('weeks_count')?.value || '1', 10);
+    const checkedBoxes = Array.from(document.querySelectorAll('#panel-weekly input[name="weekly_days[]"]:checked'));
+    const selectedDayKeys = checkedBoxes.map(cb => cb.value);
+
+    const targetDays = selectedDayKeys.map(k => dayIndices[k]).filter(idx => idx !== undefined);
+    targetDays.sort((a, b) => a - b);
+
+    const weeks = [];
+
+    for (let w = 0; w < weeksCount; w++) {
+        const weekBase = new Date(startDate);
+        weekBase.setDate(startDate.getDate() + (w * 7));
+        const currentDayOfWeek = weekBase.getDay();
+        const sundayOfWeek = new Date(weekBase);
+        sundayOfWeek.setDate(weekBase.getDate() - currentDayOfWeek);
+
+        const weekSessions = [];
+
+        for (let dIdx of targetDays) {
+            const candDate = new Date(sundayOfWeek);
+            candDate.setDate(sundayOfWeek.getDate() + dIdx);
+
+            if (candDate >= startDate) {
+                const dayKey = dayKeyFromIndex[dIdx];
+                weekSessions.push({
+                    dateObj: candDate,
+                    isoDate: formatISODate(candDate),
+                    dayKey: dayKey,
+                    dayNameBn: dayNamesBn[dayKey],
+                    formattedDateBn: formatBnDate(candDate),
+                    weekIndex: w,
+                });
+            }
+        }
+
+        if (weekSessions.length > 0) {
+            weeks.push({
+                weekIndex: w,
+                weekNum: w + 1,
+                sessions: weekSessions
+            });
+        }
+    }
+    return weeks;
+}
+
+function buildTaskOptions(selectedId) {
+    let options = '<option value="">-- কাজের ধরন নির্বাচন করুন --</option>';
+    taskTemplatesList.forEach(t => {
+        const isSel = (String(t.id) === String(selectedId)) ? 'selected' : '';
+        options += `<option value="${t.id}" ${isSel}>${t.name} (${t.task_code}) — ${t.category}</option>`;
+    });
+    return options;
+}
+
+function regenerateWeeklySchedule(forceReset = false) {
+    const container = document.getElementById('weekly-schedule-groups-container');
+    if (!container) return;
+
+    const existingValues = {};
+    if (!forceReset) {
+        document.querySelectorAll('#weekly-schedule-groups-container .week-session-row').forEach(row => {
+            const date = row.dataset.date;
+            if (date) {
+                existingValues[date] = {
+                    templateId: row.querySelector('.session-template-select')?.value,
+                    startTime: row.querySelector('.session-start-time')?.value,
+                    endTime: row.querySelector('.session-end-time')?.value,
+                    priority: row.querySelector('.session-priority-select')?.value,
+                    notes: row.querySelector('.session-notes-input')?.value,
+                };
+            }
+        });
+    }
+
+    const defaultTemplateId = document.getElementById('weekly_default_template_id')?.value || (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '');
+    const defaultPriority = document.getElementById('weekly_default_priority')?.value || 'normal';
+    const defaultNotes = document.getElementById('weekly_default_notes')?.value || '';
+
+    const defSelect = document.getElementById('weekly_default_template_id');
+    if (defSelect && !defSelect.value && defaultTemplateId) {
+        defSelect.value = defaultTemplateId;
+    }
+
+    const weeks = computeWeeklySessions();
+
+    if (weeks.length === 0) {
+        container.innerHTML = `
+            <div style="background:#fef2f2;border:1px dashed #fca5a5;padding:16px;border-radius:8px;text-align:center;color:#991b1b;font-size:13px;">
+                ⚠️ কোনো সেশন পাওয়া যায়নি। অনুগ্রহ করে শুরুর তারিখ, সপ্তাহ সংখ্যা এবং অন্তত একটি দিন নির্বাচন করুন।
+            </div>
+        `;
+        calculateSummary();
+        return;
+    }
+
+    let globalIndex = 0;
+    let html = '';
+
+    weeks.forEach(week => {
+        const weekNumBn = toBnDigits(week.weekNum);
+        const sessionsCountBn = toBnDigits(week.sessions.length);
+
+        html += `
+            <div class="week-group-card" data-week="${week.weekIndex}">
+                <div class="week-group-header">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="row-badge" style="background:#08783f;color:#ffffff;padding:3px 10px;font-size:12px;">সপ্তাহ ${weekNumBn}</span>
+                        <span style="font-size:13px;font-weight:600;color:#1e3a29;">(মোট ${sessionsCountBn}টি সেশন)</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <button type="button" class="btn soft" style="font-size:11.5px;padding:3px 8px;" onclick="promptSetWeekTime(${week.weekIndex})">
+                            ⏱ এই সপ্তাহের সময় দ্রুত পরিবর্তন
+                        </button>
+                    </div>
+                </div>
+
+                <div class="week-sessions-table" style="background:#fff;">
+                    <div style="display:grid;grid-template-columns:170px 1.5fr 110px 110px 110px 40px;gap:10px;padding:8px 14px;background:#f8faf9;border-bottom:1px solid #e0eae4;font-size:11.5px;font-weight:700;color:#3d5a49;">
+                        <div>তারিখ ও বার</div>
+                        <div>কাজের ধরন (Template)</div>
+                        <div>শুরুর সময়</div>
+                        <div>শেষ সময়</div>
+                        <div>অগ্রাধিকার</div>
+                        <div style="text-align:right;">বাদ</div>
+                    </div>
+
+                    <div class="week-sessions-body">
+        `;
+
+        week.sessions.forEach(session => {
+            let startTime = '09:00';
+            let endTime = '13:00';
+
+            if (currentTimingMode === 'same') {
+                startTime = document.getElementById('base_weekly_start_time')?.value || '09:00';
+                endTime = document.getElementById('base_weekly_end_time')?.value || '13:00';
+            } else if (currentTimingMode === 'by_day') {
+                startTime = document.getElementById(`time_day_${session.dayKey}_start`)?.value || '09:00';
+                endTime = document.getElementById(`time_day_${session.dayKey}_end`)?.value || '13:00';
+            } else if (currentTimingMode === 'by_week') {
+                startTime = document.getElementById(`time_week_${session.weekIndex}_start`)?.value || '09:00';
+                endTime = document.getElementById(`time_week_${session.weekIndex}_end`)?.value || '13:00';
+            }
+
+            let templateId = defaultTemplateId;
+            let priority = defaultPriority;
+            let notes = defaultNotes;
+
+            if (!forceReset && existingValues[session.isoDate]) {
+                const prev = existingValues[session.isoDate];
+                if (prev.startTime) startTime = prev.startTime;
+                if (prev.endTime !== undefined) endTime = prev.endTime;
+                if (prev.templateId) templateId = prev.templateId;
+                if (prev.priority) priority = prev.priority;
+                if (prev.notes !== undefined) notes = prev.notes;
+            }
+
+            html += `
+                <div class="week-session-row" id="session-row-${globalIndex}" data-date="${session.isoDate}" data-day="${session.dayKey}" data-week="${session.weekIndex}">
+                    <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${session.isoDate}">
+                    <input type="hidden" class="session-notes-input" name="custom_schedule[${globalIndex}][notes]" value="${notes}">
+
+                    <div>
+                        <span class="badge" style="background:#eaf8ef;color:#08783f;font-weight:700;font-size:11.5px;margin-bottom:2px;display:inline-block;">${session.dayNameBn}</span>
+                        <div style="font-size:12px;font-weight:600;color:#1e293b;">${session.formattedDateBn}</div>
+                        <div style="font-size:10.5px;color:var(--muted);">${session.isoDate}</div>
+                    </div>
+
+                    <div>
+                        <select class="input session-template-select" name="custom_schedule[${globalIndex}][task_template_id]" style="font-size:12px;padding:6px 8px;width:100%;" required>
+                            ${buildTaskOptions(templateId)}
+                        </select>
+                    </div>
+
+                    <div>
+                        <input class="input session-start-time" type="time" name="custom_schedule[${globalIndex}][start_time]" value="${startTime}" style="font-size:12px;padding:5px 7px;width:100%;" required onchange="calculateSummary()">
+                    </div>
+
+                    <div>
+                        <input class="input session-end-time" type="time" name="custom_schedule[${globalIndex}][end_time]" value="${endTime}" style="font-size:12px;padding:5px 7px;width:100%;" onchange="calculateSummary()">
+                    </div>
+
+                    <div>
+                        <select class="input session-priority-select" name="custom_schedule[${globalIndex}][priority]" style="font-size:12px;padding:6px 8px;width:100%;">
+                            <option value="normal" ${priority === 'normal' ? 'selected' : ''}>সাধারণ</option>
+                            <option value="important" ${priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ</option>
+                            <option value="urgent" ${priority === 'urgent' ? 'selected' : ''}>জরুরি</option>
+                        </select>
+                    </div>
+
+                    <div style="text-align:right;">
+                        <button type="button" class="btn-remove-session" title="এই সেশনটি বাদ দিন (Skip)" onclick="removeSessionRow(${globalIndex})">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            `;
+            globalIndex++;
+        });
+
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+    updateFallbackInputs();
+    calculateSummary();
+}
+
+function removeSessionRow(index) {
+    const row = document.getElementById(`session-row-${index}`);
+    if (!row) return;
+
+    const parentGroup = row.closest('.week-group-card');
+    row.remove();
+
+    if (parentGroup && parentGroup.querySelectorAll('.week-session-row').length === 0) {
+        parentGroup.remove();
+    }
+
+    updateFallbackInputs();
+    calculateSummary();
+}
+
+function updateFallbackInputs() {
+    const fallbackContainer = document.getElementById('weekly-fallback-inputs');
+    if (!fallbackContainer) return;
+
+    const defaultTemplateId = document.getElementById('weekly_default_template_id')?.value || (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '');
+    const startTime = document.getElementById('base_weekly_start_time')?.value || '09:00';
+    const endTime = document.getElementById('base_weekly_end_time')?.value || '13:00';
+
+    fallbackContainer.innerHTML = `
+        <input type="hidden" name="weekly_tasks[0][task_template_id]" value="${defaultTemplateId}">
+        <input type="hidden" name="weekly_tasks[0][start_time]" value="${startTime}">
+        <input type="hidden" name="weekly_tasks[0][end_time]" value="${endTime}">
+        <input type="hidden" name="weekly_tasks[0][priority]" value="normal">
+    `;
+}
+
+function addWeeklyTaskRow() {
+    // Kept for backward compatibility
+    regenerateWeeklySchedule();
 }
 
 function addMonthlyTaskRow() {
@@ -980,14 +1630,14 @@ function calculateSummary() {
     }
 
     if (currentRecurrence === 'weekly') {
+        const sessionRows = document.querySelectorAll('#weekly-schedule-groups-container .week-session-row');
+        const totalSessions = sessionRows.length;
         const weeksCount = parseInt(document.getElementById('weeks_count')?.value || '1', 10);
         const checkedDays = document.querySelectorAll('#panel-weekly input[name="weekly_days[]"]:checked').length;
-        const tasksCount = document.querySelectorAll('#weekly-tasks-container .task-repeater-row').length || 1;
-        const totalOccurrences = weeksCount * checkedDays * tasksCount;
 
-        titleElem.innerText = `সাপ্তাহিক কাজের শিডিউল সারসংক্ষেপ`;
-        bodyElem.innerHTML = `🗓 সময়কাল: মোট <b>${weeksCount}</b> সপ্তাহ | প্রতি সপ্তাহে <b>${checkedDays}</b> দিন<br>` +
-                             `📋 প্রতিটি বারে কাজ: <b>${tasksCount}</b> টি | 🌟 সর্বমোট <b>${totalOccurrences}</b> টি কাজের অ্যাসাইনমেন্ট তৈরি হবে।`;
+        titleElem.innerText = `সাপ্তাহিক কাজের কাস্টম শিডিউল সারসংক্ষেপ`;
+        bodyElem.innerHTML = `🗓 সময়কাল: মোট <b>${toBnDigits(weeksCount)}</b> সপ্তাহ | প্রতি সপ্তাহে <b>${toBnDigits(checkedDays)}</b> দিন নির্বাচন করা হয়েছে<br>` +
+                             `🌟 সর্বমোট <b>${toBnDigits(totalSessions)}</b> টি নির্ধারিত কাজের সেশন প্রস্তুত রয়েছে।`;
         return;
     }
 
@@ -1178,6 +1828,9 @@ function setFromNowPreset() {
 document.addEventListener('DOMContentLoaded', function() {
     switchRecurrence('{{ $activeRecurrence }}');
     onMonthlyDayChange();
+    if ('{{ $activeRecurrence }}' === 'weekly') {
+        regenerateWeeklySchedule();
+    }
 
     // Attach listeners for inputs that affect calculations
     document.addEventListener('input', function(e) {

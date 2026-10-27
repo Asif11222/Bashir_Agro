@@ -70,16 +70,45 @@ class StoreTaskAssignmentRequest extends FormRequest
             $rules['weeks_count'] = ['required', 'integer', 'min:1', 'max:24'];
             $rules['weekly_days'] = ['required', 'array', 'min:1'];
             $rules['weekly_days.*'] = ['required', 'string', 'in:sat,sun,mon,tue,wed,thu,fri,0,1,2,3,4,5,6'];
-            $rules['weekly_tasks'] = ['required', 'array', 'min:1'];
-            $rules['weekly_tasks.*.task_template_id'] = [
-                'required',
-                'integer',
-                Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
-            ];
-            $rules['weekly_tasks.*.start_time'] = ['required', 'date_format:H:i'];
-            $rules['weekly_tasks.*.end_time'] = ['nullable', 'date_format:H:i'];
-            $rules['weekly_tasks.*.priority'] = ['required', 'string', 'in:normal,important,urgent'];
-            $rules['weekly_tasks.*.notes'] = ['nullable', 'string', 'max:500'];
+            $rules['weekly_timing_mode'] = ['nullable', 'string', 'in:same,by_day,by_week,custom'];
+
+            $hasCustomSchedule = $this->has('custom_schedule') && is_array($this->input('custom_schedule')) && count($this->input('custom_schedule')) > 0;
+
+            if ($hasCustomSchedule) {
+                $rules['weekly_tasks'] = ['nullable', 'array'];
+                $rules['weekly_tasks.*.task_template_id'] = [
+                    'nullable',
+                    'integer',
+                    Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
+                ];
+                $rules['weekly_tasks.*.start_time'] = ['nullable', 'date_format:H:i'];
+                $rules['weekly_tasks.*.end_time'] = ['nullable', 'date_format:H:i'];
+                $rules['weekly_tasks.*.priority'] = ['nullable', 'string', 'in:normal,important,urgent'];
+                $rules['weekly_tasks.*.notes'] = ['nullable', 'string', 'max:500'];
+
+                $rules['custom_schedule'] = ['required', 'array', 'min:1'];
+                $rules['custom_schedule.*.scheduled_date'] = ['required', 'date'];
+                $rules['custom_schedule.*.task_template_id'] = [
+                    'required',
+                    'integer',
+                    Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
+                ];
+                $rules['custom_schedule.*.start_time'] = ['required', 'date_format:H:i'];
+                $rules['custom_schedule.*.end_time'] = ['nullable', 'date_format:H:i'];
+                $rules['custom_schedule.*.priority'] = ['nullable', 'string', 'in:normal,important,urgent'];
+                $rules['custom_schedule.*.notes'] = ['nullable', 'string', 'max:500'];
+            } else {
+                $rules['weekly_tasks'] = ['required', 'array', 'min:1'];
+                $rules['weekly_tasks.*.task_template_id'] = [
+                    'required',
+                    'integer',
+                    Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
+                ];
+                $rules['weekly_tasks.*.start_time'] = ['required', 'date_format:H:i'];
+                $rules['weekly_tasks.*.end_time'] = ['nullable', 'date_format:H:i'];
+                $rules['weekly_tasks.*.priority'] = ['required', 'string', 'in:normal,important,urgent'];
+                $rules['weekly_tasks.*.notes'] = ['nullable', 'string', 'max:500'];
+            }
         } elseif ($recurrence === 'monthly') {
             $rules['start_date'] = ['required', 'date'];
             $rules['months_count'] = ['required', 'integer', 'min:1', 'max:12'];
@@ -161,6 +190,14 @@ class StoreTaskAssignmentRequest extends FormRequest
             'months_count.required' => 'মাস সংখ্যা উল্লেখ করা আবশ্যক।',
             'monthly_days.required' => 'মাসের অন্তত একটি দিন নির্বাচন করা আবশ্যক।',
             'monthly_tasks.required' => 'অন্তত একটি মাসিক কাজ নির্বাচন করতে হবে।',
+            'custom_schedule.required' => 'অন্তত একটি কাজের শিডিউল থাকা আবশ্যক।',
+            'custom_schedule.min' => 'অন্তত একটি কাজের শিডিউল থাকা আবশ্যক।',
+            'custom_schedule.*.scheduled_date.required' => 'কাজের তারিখ নির্ধারণ করা আবশ্যক।',
+            'custom_schedule.*.task_template_id.required' => 'কাজের ধরন নির্বাচন করা আবশ্যক।',
+            'custom_schedule.*.task_template_id.exists' => 'নির্বাচিত কাজের টেমপ্লেটটি সঠিক নয়।',
+            'custom_schedule.*.start_time.required' => 'শুরুর সময় প্রদান করা আবশ্যক।',
+            'custom_schedule.*.start_time.date_format' => 'শুরুর সময় HH:MM ফরম্যাটে প্রদান করুন।',
+            'custom_schedule.*.end_time.date_format' => 'শেষ সময় HH:MM ফরম্যাটে প্রদান করুন।',
         ];
     }
 }

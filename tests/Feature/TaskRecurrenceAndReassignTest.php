@@ -85,6 +85,13 @@ class TaskRecurrenceAndReassignTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_view_create_assignment_page(): void
+    {
+        $response = $this->actingAs($this->admin)->get('/admin/assignments/create');
+        $response->assertStatus(200);
+        $response->assertSee('নতুন কাজ বরাদ্দ করুন');
+    }
+
     public function test_admin_can_create_daily_recurring_assignments_with_multiple_tasks(): void
     {
         $response = $this->actingAs($this->admin)->post('/admin/assignments', [

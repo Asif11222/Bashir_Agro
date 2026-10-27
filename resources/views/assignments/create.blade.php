@@ -1023,13 +1023,18 @@ function addDailyTaskRow() {
     calculateSummary();
 }
 
+@php
+    $tasksListForJs = $tasks->map(function($t) {
+        return [
+            'id' => $t->id,
+            'name' => $t->name,
+            'task_code' => $t->task_code,
+            'category' => $t->category,
+        ];
+    })->values();
+@endphp
 // Task Templates JSON list for interactive schedule generator
-const taskTemplatesList = @json($tasks->map(fn($t) => [
-    'id' => $t->id,
-    'name' => $t->name,
-    'task_code' => $t->task_code,
-    'category' => $t->category,
-]));
+const taskTemplatesList = {!! json_encode($tasksListForJs) !!};
 
 const dayNamesBn = {
     'sun': 'রবিবার',

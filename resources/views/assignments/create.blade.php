@@ -1019,20 +1019,6 @@ function addDailyTaskRow() {
 const taskTemplatesList = {!! json_encode($tasksListForJs) !!};
 const farmLocationsList = {!! json_encode($locationsListForJs) !!};
 
-const dayNamesBn = {
-    'sun': 'রবিবার',
-    'mon': 'সোমবার',
-    'tue': 'মঙ্গলবার',
-    'wed': 'বুধবার',
-    'thu': 'বৃহস্পতিবার',
-    'fri': 'শুক্রবার',
-    'sat': 'শনিবার'
-};
-const dayIndices = {
-    'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6
-};
-const dayKeyFromIndex = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-
 const bnMonths = [
     'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
     'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'

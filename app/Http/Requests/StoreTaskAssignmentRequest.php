@@ -73,13 +73,13 @@ class StoreTaskAssignmentRequest extends FormRequest
         } elseif ($recurrence === 'weekly') {
             $rules['start_date'] = ['required', 'date'];
             $rules['weeks_count'] = ['required', 'integer', 'min:1', 'max:24'];
-            $rules['weekly_days'] = ['required', 'array', 'min:1'];
-            $rules['weekly_days.*'] = ['required', 'string', 'in:sat,sun,mon,tue,wed,thu,fri,0,1,2,3,4,5,6'];
             $rules['weekly_timing_mode'] = ['nullable', 'string', 'in:same,by_day,by_week,custom'];
 
             $hasCustomSchedule = $this->has('custom_schedule') && is_array($this->input('custom_schedule')) && count($this->input('custom_schedule')) > 0;
 
             if ($hasCustomSchedule) {
+                $rules['weekly_days'] = ['nullable', 'array'];
+                $rules['weekly_days.*'] = ['nullable', 'string', 'in:sat,sun,mon,tue,wed,thu,fri,0,1,2,3,4,5,6'];
                 $rules['weekly_tasks'] = ['nullable', 'array'];
                 $rules['weekly_tasks.*.task_template_id'] = [
                     'nullable',
@@ -113,6 +113,8 @@ class StoreTaskAssignmentRequest extends FormRequest
                 $rules['custom_schedule.*.priority'] = ['nullable', 'string', 'in:normal,important,urgent'];
                 $rules['custom_schedule.*.notes'] = ['nullable', 'string', 'max:500'];
             } else {
+                $rules['weekly_days'] = ['required', 'array', 'min:1'];
+                $rules['weekly_days.*'] = ['required', 'string', 'in:sat,sun,mon,tue,wed,thu,fri,0,1,2,3,4,5,6'];
                 $rules['weekly_tasks'] = ['required', 'array', 'min:1'];
                 $rules['weekly_tasks.*.task_template_id'] = [
                     'required',

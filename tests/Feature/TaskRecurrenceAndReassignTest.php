@@ -253,6 +253,82 @@ class TaskRecurrenceAndReassignTest extends TestCase
         $this->assertEquals(3, $first->recurrence_total_count);
     }
 
+    public function test_admin_can_create_weekly_assignments_with_independent_days_and_multiple_pool_tasks_per_week(): void
+    {
+        $secondLocation = FarmLocation::create([
+            'location_code' => 'LOC-000002',
+            'name' => 'বাগান প্লট ১',
+            'type' => 'সবজি বাগান',
+            'address' => 'ময়মনসিংহ',
+            'latitude' => 24.7480,
+            'longitude' => 90.4210,
+            'geofence_radius_meters' => 50,
+            'status' => 'active',
+            'created_by' => $this->admin->id,
+        ]);
+
+        // Week 1: Sun (2026-11-01), Mon (2026-11-02), Tue (2026-11-03) -> 2 tasks each = 6
+        // Week 2: Sun (2026-11-08), Fri (2026-11-13) -> 2 tasks each = 4
+        // Total = 10 assignments
+        $customSchedule = [
+            // Week 1 - Sunday (Sun)
+            ['scheduled_date' => '2026-11-01', 'task_template_id' => $this->task1->id, 'farm_location_id' => $this->location->id, 'start_time' => '09:00', 'end_time' => '10:00', 'priority' => 'normal', 'notes' => 'গাছে পানি'],
+            ['scheduled_date' => '2026-11-01', 'task_template_id' => $this->task2->id, 'farm_location_id' => $secondLocation->id, 'start_time' => '10:00', 'end_time' => '11:00', 'priority' => 'normal', 'notes' => 'পুকুরে পানি ও খাদ্য'],
+
+            // Week 1 - Monday (Mon)
+            ['scheduled_date' => '2026-11-02', 'task_template_id' => $this->task1->id, 'farm_location_id' => $this->location->id, 'start_time' => '09:00', 'end_time' => '10:00', 'priority' => 'normal'],
+            ['scheduled_date' => '2026-11-02', 'task_template_id' => $this->task2->id, 'farm_location_id' => $secondLocation->id, 'start_time' => '10:00', 'end_time' => '11:00', 'priority' => 'normal'],
+
+            // Week 1 - Tuesday (Tue) with custom time
+            ['scheduled_date' => '2026-11-03', 'task_template_id' => $this->task1->id, 'farm_location_id' => $this->location->id, 'start_time' => '08:30', 'end_time' => '09:30', 'priority' => 'important'],
+            ['scheduled_date' => '2026-11-03', 'task_template_id' => $this->task2->id, 'farm_location_id' => $secondLocation->id, 'start_time' => '09:30', 'end_time' => '10:30', 'priority' => 'important'],
+
+            // Week 2 - Sunday (Sun)
+            ['scheduled_date' => '2026-11-08', 'task_template_id' => $this->task1->id, 'farm_location_id' => $this->location->id, 'start_time' => '09:00', 'end_time' => '10:00', 'priority' => 'normal'],
+            ['scheduled_date' => '2026-11-08', 'task_template_id' => $this->task2->id, 'farm_location_id' => $secondLocation->id, 'start_time' => '10:00', 'end_time' => '11:00', 'priority' => 'normal'],
+
+            // Week 2 - Friday (Fri) with custom time
+            ['scheduled_date' => '2026-11-13', 'task_template_id' => $this->task1->id, 'farm_location_id' => $this->location->id, 'start_time' => '14:00', 'end_time' => '15:00', 'priority' => 'urgent'],
+            ['scheduled_date' => '2026-11-13', 'task_template_id' => $this->task2->id, 'farm_location_id' => $secondLocation->id, 'start_time' => '15:00', 'end_time' => '16:00', 'priority' => 'urgent'],
+        ];
+
+        $response = $this->actingAs($this->admin)->post('/admin/assignments', [
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'recurrence_type' => 'weekly',
+            'start_date' => '2026-11-01',
+            'weeks_count' => 2,
+            'weekly_days' => ['sun', 'mon', 'tue', 'fri'],
+            'custom_schedule' => $customSchedule,
+        ]);
+
+        $response->assertRedirect('/admin/assignments');
+        $response->assertSessionHas('success');
+
+        $this->assertEquals(10, TaskAssignment::count());
+
+        $first = TaskAssignment::orderBy('id', 'asc')->first();
+        $this->assertEquals(10, $first->recurrence_total_count);
+        $this->assertEquals('weekly', $first->recurrence_type);
+
+        // Check Tuesday custom time
+        $tueTask1 = TaskAssignment::whereDate('scheduled_date', '2026-11-03')->where('task_template_id', $this->task1->id)->first();
+        $this->assertNotNull($tueTask1);
+        $this->assertEquals('08:30', substr($tueTask1->start_time, 0, 5));
+        $this->assertEquals('09:30', substr($tueTask1->end_time, 0, 5));
+        $this->assertEquals('important', $tueTask1->priority);
+
+        // Check Friday custom time and location
+        $friTask2 = TaskAssignment::whereDate('scheduled_date', '2026-11-13')->where('task_template_id', $this->task2->id)->first();
+        $this->assertNotNull($friTask2);
+        $this->assertEquals('15:00', substr($friTask2->start_time, 0, 5));
+        $this->assertEquals($secondLocation->id, $friTask2->farm_location_id);
+        $this->assertEquals('urgent', $friTask2->priority);
+
+        // All 10 share the exact same group
+        $this->assertEquals(10, TaskAssignment::where('recurring_group_id', $first->recurring_group_id)->count());
+    }
+
     public function test_admin_can_create_monthly_recurring_assignments(): void
     {
         $response = $this->actingAs($this->admin)->post('/admin/assignments', [

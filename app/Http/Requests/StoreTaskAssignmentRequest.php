@@ -134,23 +134,63 @@ class StoreTaskAssignmentRequest extends FormRequest
         } elseif ($recurrence === 'monthly') {
             $rules['start_date'] = ['required', 'date'];
             $rules['months_count'] = ['required', 'integer', 'min:1', 'max:12'];
-            $rules['monthly_days'] = ['required', 'array', 'min:1'];
-            $rules['monthly_days.*'] = ['required', 'integer', 'min:1', 'max:31'];
-            $rules['monthly_tasks'] = ['required', 'array', 'min:1'];
-            $rules['monthly_tasks.*.task_template_id'] = [
-                'required',
-                'integer',
-                Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
-            ];
-            $rules['monthly_tasks.*.farm_location_id'] = [
-                'nullable',
-                'integer',
-                Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
-            ];
-            $rules['monthly_tasks.*.start_time'] = ['required', 'date_format:H:i'];
-            $rules['monthly_tasks.*.end_time'] = ['nullable', 'date_format:H:i'];
-            $rules['monthly_tasks.*.priority'] = ['required', 'string', 'in:normal,important,urgent'];
-            $rules['monthly_tasks.*.notes'] = ['nullable', 'string', 'max:500'];
+
+            $hasCustomSchedule = $this->has('custom_schedule') && is_array($this->input('custom_schedule')) && count($this->input('custom_schedule')) > 0;
+
+            if ($hasCustomSchedule) {
+                $rules['monthly_days'] = ['nullable', 'array'];
+                $rules['monthly_days.*'] = ['nullable', 'integer', 'min:1', 'max:31'];
+                $rules['monthly_tasks'] = ['nullable', 'array'];
+                $rules['monthly_tasks.*.task_template_id'] = [
+                    'nullable',
+                    'integer',
+                    Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
+                ];
+                $rules['monthly_tasks.*.farm_location_id'] = [
+                    'nullable',
+                    'integer',
+                    Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
+                ];
+                $rules['monthly_tasks.*.start_time'] = ['nullable', 'date_format:H:i'];
+                $rules['monthly_tasks.*.end_time'] = ['nullable', 'date_format:H:i'];
+                $rules['monthly_tasks.*.priority'] = ['nullable', 'string', 'in:normal,important,urgent'];
+                $rules['monthly_tasks.*.notes'] = ['nullable', 'string', 'max:500'];
+
+                $rules['custom_schedule'] = ['required', 'array', 'min:1'];
+                $rules['custom_schedule.*.scheduled_date'] = ['required', 'date'];
+                $rules['custom_schedule.*.task_template_id'] = [
+                    'required',
+                    'integer',
+                    Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
+                ];
+                $rules['custom_schedule.*.farm_location_id'] = [
+                    'nullable',
+                    'integer',
+                    Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
+                ];
+                $rules['custom_schedule.*.start_time'] = ['required', 'date_format:H:i'];
+                $rules['custom_schedule.*.end_time'] = ['nullable', 'date_format:H:i'];
+                $rules['custom_schedule.*.priority'] = ['nullable', 'string', 'in:normal,important,urgent'];
+                $rules['custom_schedule.*.notes'] = ['nullable', 'string', 'max:500'];
+            } else {
+                $rules['monthly_days'] = ['required', 'array', 'min:1'];
+                $rules['monthly_days.*'] = ['required', 'integer', 'min:1', 'max:31'];
+                $rules['monthly_tasks'] = ['required', 'array', 'min:1'];
+                $rules['monthly_tasks.*.task_template_id'] = [
+                    'required',
+                    'integer',
+                    Rule::exists('task_templates', 'id')->whereNull('deleted_at'),
+                ];
+                $rules['monthly_tasks.*.farm_location_id'] = [
+                    'nullable',
+                    'integer',
+                    Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
+                ];
+                $rules['monthly_tasks.*.start_time'] = ['required', 'date_format:H:i'];
+                $rules['monthly_tasks.*.end_time'] = ['nullable', 'date_format:H:i'];
+                $rules['monthly_tasks.*.priority'] = ['required', 'string', 'in:normal,important,urgent'];
+                $rules['monthly_tasks.*.notes'] = ['nullable', 'string', 'max:500'];
+            }
         }
 
         return $rules;

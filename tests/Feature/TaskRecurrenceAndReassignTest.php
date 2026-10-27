@@ -569,4 +569,96 @@ class TaskRecurrenceAndReassignTest extends TestCase
         $this->assertNotEmpty($assignments[0]->recurring_group_id);
         $this->assertEquals($assignments[0]->recurring_group_id, $assignments[1]->recurring_group_id);
     }
+
+    /**
+     * Test admin can create monthly assignments with custom_schedule across multiple months on 30-day basis.
+     */
+    public function test_admin_can_create_monthly_assignments_with_custom_schedule_on_30_day_basis(): void
+    {
+        $customSchedule = [
+            // Month 1 (November 2026): 1st & 15th
+            [
+                'scheduled_date' => '2026-11-01',
+                'task_template_id' => $this->task1->id,
+                'farm_location_id' => $this->location->id,
+                'start_time' => '10:00',
+                'end_time' => '12:00',
+                'priority' => 'normal',
+                'notes' => 'মাস ১ - ১লা তারিখ সার প্রয়োগ',
+            ],
+            [
+                'scheduled_date' => '2026-11-01',
+                'task_template_id' => $this->task2->id,
+                'farm_location_id' => $this->location->id,
+                'start_time' => '14:00',
+                'end_time' => '16:00',
+                'priority' => 'normal',
+                'notes' => 'মাস ১ - ১লা তারিখ অক্সিজেন পরীক্ষা',
+            ],
+            [
+                'scheduled_date' => '2026-11-15',
+                'task_template_id' => $this->task1->id,
+                'farm_location_id' => $this->location->id,
+                'start_time' => '10:00',
+                'end_time' => '12:00',
+                'priority' => 'important',
+                'notes' => 'মাস ১ - ১৫ই তারিখ সার প্রয়োগ',
+            ],
+            // Month 2 (December 2026): 1st & 15th (with different start time 09:00 on 1st)
+            [
+                'scheduled_date' => '2026-12-01',
+                'task_template_id' => $this->task1->id,
+                'farm_location_id' => $this->location->id,
+                'start_time' => '09:00',
+                'end_time' => '11:00',
+                'priority' => 'urgent',
+                'notes' => 'মাস ২ - ১লা তারিখ সকাল ৯টায় স্পেশাল সার',
+            ],
+            [
+                'scheduled_date' => '2026-12-15',
+                'task_template_id' => $this->task2->id,
+                'farm_location_id' => $this->location->id,
+                'start_time' => '15:00',
+                'end_time' => '17:00',
+                'priority' => 'normal',
+                'notes' => 'মাস ২ - ১৫ই তারিখ অক্সিজেন পরীক্ষা',
+            ],
+        ];
+
+        $response = $this->actingAs($this->admin)->post('/admin/assignments', [
+            'farmer_id' => $this->farmerA->id,
+            'farm_location_id' => $this->location->id,
+            'recurrence_type' => 'monthly',
+            'start_date' => '2026-11-01',
+            'months_count' => 2,
+            'monthly_days' => [1, 15],
+            'custom_schedule' => $customSchedule,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect('/admin/assignments');
+
+        $assignments = TaskAssignment::where('farmer_id', $this->farmerA->id)
+            ->orderBy('scheduled_date')
+            ->orderBy('start_time')
+            ->get();
+
+        $this->assertCount(5, $assignments);
+
+        // Check common recurrence group
+        $groupId = $assignments[0]->recurring_group_id;
+        $this->assertNotEmpty($groupId);
+        foreach ($assignments as $a) {
+            $this->assertEquals($groupId, $a->recurring_group_id);
+            $this->assertEquals('monthly', $a->recurrence_type);
+        }
+
+        // Check month 2 custom start time 09:00
+        $month2FirstTask = TaskAssignment::where('farmer_id', $this->farmerA->id)
+            ->whereDate('scheduled_date', '2026-12-01')
+            ->first();
+        $this->assertNotNull($month2FirstTask);
+        $this->assertStringStartsWith('09:00', (string) $month2FirstTask->start_time);
+        $this->assertEquals('urgent', $month2FirstTask->priority);
+    }
 }

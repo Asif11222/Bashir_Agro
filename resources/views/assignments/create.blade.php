@@ -388,125 +388,106 @@
 
                     <!-- Panel 4: Monthly (মাসিক) -->
                     <div id="panel-monthly" class="rec-panel" style="{{ $activeRecurrence === 'monthly' ? '' : 'display:none;' }}">
+                        <!-- Sub-step 1: সময়কাল ও মাসের সংখ্যা (Duration & Number of Months) -->
                         <div class="config-subcard">
-                            <b class="subcard-title">📆 মাসিক সময়কাল ও তারিখের তালিকা</b>
+                            <b class="subcard-title" style="color:#14241d;">🗓 ১. সময়কাল ও মাসের সংখ্যা</b>
                             <div class="form-grid" style="margin-top:10px;">
                                 <div>
                                     <label class="label">শুরুর তারিখ <span class="req">*</span></label>
-                                    <input class="input" type="date" name="start_date" id="monthly_start_date" value="{{ old('start_date', date('Y-m-d')) }}">
+                                    <input class="input" type="date" name="start_date" id="monthly_start_date" value="{{ old('start_date', date('Y-m-d')) }}" onchange="onMonthlyDurationOrStartChange()">
                                 </div>
                                 <div>
                                     <label class="label">কত মাস চলবে? <span class="req">*</span></label>
-                                    <select class="input" name="months_count" id="months_count">
-                                        <option value="1">১ মাস</option>
-                                        <option value="2">২ মাস</option>
+                                    <select class="input" name="months_count" id="months_count" onchange="onMonthlyDurationOrStartChange()">
+                                        <option value="1">১ মাস (১টি মাস)</option>
+                                        <option value="2">২ মাস (২টি মাস)</option>
                                         <option value="3" selected>৩ মাস (১ কোয়ার্টার)</option>
                                         <option value="6">৬ মাস (অর্ধবছর)</option>
                                         <option value="12">১২ মাস (১ বছর)</option>
                                     </select>
                                 </div>
-                                <div class="field full">
-                                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-                                        <label class="label" style="margin:0;">প্রতি মাসের কোন কোন তারিখে কাজ হবে? <span class="req">*</span></label>
-                                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                                            <span style="font-size:11.5px;color:var(--muted)">কুইক সিলেক্ট:</span>
-                                            <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;" onclick="setMonthlyPreset([1, 15])">১ ও ১৫</button>
-                                            <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;" onclick="setMonthlyPreset([5, 20])">৫ ও ২০</button>
-                                            <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;" onclick="setMonthlyPreset([10, 25])">১০ ও ২৫</button>
-                                            <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;" onclick="setMonthlyPreset([31])">মাসের শেষ দিন</button>
-                                            <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;color:#dc2626;" onclick="clearMonthlyDays()">সব মুছুন</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- 1 to 31 Calendar Grid Picker -->
-                                    <div class="month-day-grid" id="monthly-days-grid">
-                                        @php
-                                            $bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-                                        @endphp
-                                        @for($d = 1; $d <= 31; $d++)
-                                            @php
-                                                $dText = str_replace(range(0, 9), $bnDigits, (string)$d);
-                                            @endphp
-                                            <label class="month-day-cell {{ in_array($d, [1, 15]) ? 'selected' : '' }}" id="cell-day-{{ $d }}" title="{{ $dText }} তারিখ">
-                                                <input type="checkbox" name="monthly_days[]" value="{{ $d }}" {{ in_array($d, [1, 15]) ? 'checked' : '' }} onchange="onMonthlyDayChange()">
-                                                <span class="cell-num">{{ $dText }}</span>
-                                            </label>
-                                        @endfor
-                                        <div class="month-day-cell last-day-cell" id="cell-day-last" title="মাসের শেষ দিন (ফেব্রুয়ারিতে ২৮/২৯, অন্য মাসে ৩০ বা ৩১)" onclick="toggleDay31()">
-                                            <span class="cell-num">🏁 মাসের শেষ দিন (৩১)</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Custom Date Input Adder -->
-                                    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
-                                        <span style="font-size:12px;color:#3f5147;font-weight:600;">➕ কাস্টম দিন যোগ/বাদ দিন:</span>
-                                        <input type="text" id="custom_month_day_input" placeholder="১-৩১" style="width:75px;padding:5px 8px;font-size:13px;border:1px solid #c9d8cf;border-radius:6px;text-align:center;" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomMonthDay();}">
-                                        <button type="button" class="btn soft" style="font-size:12px;padding:5px 12px;font-weight:600;" onclick="addCustomMonthDay()">+ দিন যুক্ত করুন</button>
-                                        <span id="selected-days-badge" style="font-size:12px;color:#08783f;background:#edfcf2;border:1px solid #bbf7d0;padding:4px 10px;border-radius:6px;font-weight:600;">
-                                            নির্বাচিত: ১, ১৫ তারিখ (মোট ২ দিন)
-                                        </span>
-                                    </div>
+                                <div class="field full" style="font-size:12px;color:var(--muted);background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;">
+                                    💡 <b>নোট:</b> প্রতিটি মাস স্ট্যান্ডার্ড ৩০ দিনের হিসাবে পরিচালিত হবে (৩১ তারিখ বাদ)। প্রতি মাসের দিন ও সময়সূচী সম্পূর্ণ স্বাধীনভাবে নির্ধারণ বা এক ক্লিকে কপি করা যাবে।
                                 </div>
                             </div>
                         </div>
 
-                        <div style="margin-top:18px;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                                <b style="font-size:14px;color:#14241d;">📋 মাসিক নির্ধারিত কাজের তালিকা:</b>
-                                <button type="button" class="btn soft" style="font-size:12px;padding:5px 10px;" onclick="addMonthlyTaskRow()">
-                                    + আরও একটি কাজ যোগ করুন
+                        <!-- Sub-step 2: রুটিন কাজের পুল (Repetitive Tasks Pool) -->
+                        <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #d1fae5;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                                <div>
+                                    <b class="subcard-title" style="color:#166534;font-size:14px;">📋 ২. মাসিক রুটিন কাজের পুল (Monthly Tasks Pool)</b>
+                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                        প্রতি মাসে যে কাজগুলো পুনরাবৃত্তি হবে তা এখানে সংজ্ঞায়িত করুন (যেমন: কাজ ১: সার প্রয়োগ/গাছের পরিচর্যা, কাজ ২: স্প্রে বা স্বাস্থ্য পরীক্ষা)।
+                                    </div>
+                                </div>
+                                <button type="button" class="btn soft" style="font-size:12px;padding:6px 12px;background:#eaf8ef;color:#08783f;border:1px solid #86efac;font-weight:600;" onclick="addMonthlyPoolTaskRow()">
+                                    + নতুন কাজ যোগ করুন
                                 </button>
                             </div>
 
-                            <div id="monthly-tasks-container" style="display:flex;flex-direction:column;gap:10px;">
-                                <div class="task-repeater-row" data-index="0">
-                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                                        <span class="row-badge">কাজ #১</span>
-                                        <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)" style="display:none;">✕ সরান</button>
+                            <div id="monthly-tasks-pool-container" style="display:flex;flex-direction:column;gap:10px;">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Sub-step 3: প্রতিটি মাসের স্বাধীন তারিখ ও সময় নির্ধারণ (Month-by-Month Setup) -->
+                        <div style="margin-top:16px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                                <div>
+                                    <b style="font-size:14px;color:#14241d;">🗓️ ৩. মাসভিত্তিক কাজের তারিখ ও সময় নির্ধারণ (Independent Month-by-Month Setup):</b>
+                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                        প্রতি মাসের কোন কোন তারিখে কাজ হবে তা নির্বাচন করুন (১-৩০ তারিখ)। নির্বাচিত তারিখে কাজের পুল থেকে কাজগুলো যুক্ত হবে এবং প্রতিটি কাজের সময় কাস্টমাইজ করতে পারবেন।
                                     </div>
-                                    <div class="form-grid">
-                                        <div>
-                                            <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
-                                            <select class="input" name="monthly_tasks[0][task_template_id]">
-                                                <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
-                                                @foreach($tasks as $task)
-                                                    <option value="{{ $task->id }}">{{ $task->name }} ({{ $task->task_code }}) — {{ $task->category }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="label">ফার্ম লোকেশন (ঐচ্ছিক)</label>
-                                            <select class="input" name="monthly_tasks[0][farm_location_id]">
-                                                <option value="">-- মূল লোকেশন (ডিফল্ট) --</option>
-                                                @foreach($locations as $loc)
-                                                    <option value="{{ $loc->id }}">{{ $loc->name }} ({{ $loc->location_code }}) — {{ $loc->type }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="label">শুরুর সময় <span class="req">*</span></label>
-                                            <input class="input" type="time" name="monthly_tasks[0][start_time]" value="10:00">
-                                        </div>
-                                        <div>
-                                            <label class="label">শেষ সময়</label>
-                                            <input class="input" type="time" name="monthly_tasks[0][end_time]" value="14:00">
-                                        </div>
-                                        <div>
-                                            <label class="label">অগ্রাধিকার</label>
-                                            <select class="input" name="monthly_tasks[0][priority]">
-                                                <option value="normal">সাধারণ (Normal)</option>
-                                                <option value="important">গুরুত্বপূর্ণ (Important)</option>
-                                                <option value="urgent">জরুরি (Urgent)</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="label">নোট (ঐচ্ছিক)</label>
-                                            <input class="input" type="text" name="monthly_tasks[0][notes]" placeholder="যেমন: মাসিক স্বাস্থ্য পরীক্ষা বা ওজন গ্রহণ">
+                                </div>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <button type="button" class="btn soft" id="btn-copy-month1-to-all" style="font-size:12px;padding:5px 10px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;" onclick="copyMonth1ToAll()">
+                                        📋 মাস ১-এর শিডিউল সব মাসে কপি করুন
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Container for dynamically rendered month cards -->
+                            <div id="month-by-month-cards-container" style="display:flex;flex-direction:column;gap:14px;">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Sub-step 4: চূড়ান্ত শিডিউল সারাংশ ও প্রিভিউ (Final Schedule Summary & Preview) -->
+                        <div style="margin-top:16px;">
+                            <div class="config-subcard" style="background:#f8faf9;border:1px solid #dcebe1;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                                    <div>
+                                        <b style="font-size:13.5px;color:#1e3a29;">📊 চূড়ান্ত মাসিক বরাদ্দের তালিকা (Final Schedule Preview)</b>
+                                        <div id="monthly-schedule-summary-badge" style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                            হিসাব হচ্ছে...
                                         </div>
                                     </div>
+                                    <button type="button" class="btn soft" style="font-size:11.5px;padding:4px 8px;" onclick="toggleMonthlyFinalScheduleTable()">
+                                        👁️ সম্পূর্ণ তালিকা দেখুন / লুকান
+                                    </button>
+                                </div>
+                                <div id="monthly-final-schedule-table-box" style="display:none;margin-top:12px;max-height:350px;overflow-y:auto;border:1px solid #e2e8e5;border-radius:8px;background:#fff;">
+                                    <table style="width:100%;font-size:12px;border-collapse:collapse;text-align:left;">
+                                        <thead style="background:#f1f5f3;color:#2d4a3a;position:sticky;top:0;">
+                                            <tr>
+                                                <th style="padding:6px 10px;">মাস</th>
+                                                <th style="padding:6px 10px;">তারিখ ও বার</th>
+                                                <th style="padding:6px 10px;">কাজের ধরন</th>
+                                                <th style="padding:6px 10px;">ফার্ম লোকেশন</th>
+                                                <th style="padding:6px 10px;">সময়সূচী</th>
+                                                <th style="padding:6px 10px;">অগ্রাধিকার</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="monthly-final-schedule-table-body">
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Hidden inputs container for form submission -->
+                        <div id="monthly-hidden-form-inputs" style="display:none;"></div>
                     </div>
 
                     <!-- Live Summary Preview Box -->
@@ -667,18 +648,23 @@
 }
 .month-day-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(10, 1fr);
     gap: 6px;
     background: #ffffff;
     border: 1.5px solid #dcebe1;
     border-radius: 10px;
     padding: 10px;
-    max-width: 520px;
+    max-width: 580px;
 }
-@media (max-width: 600px) {
+@media (max-width: 640px) {
     .month-day-grid {
-        grid-template-columns: repeat(7, 1fr);
+        grid-template-columns: repeat(6, 1fr);
         max-width: 100%;
+    }
+}
+@media (max-width: 420px) {
+    .month-day-grid {
+        grid-template-columns: repeat(5, 1fr);
     }
 }
 .month-day-cell {
@@ -711,9 +697,44 @@
     color: #ffffff !important;
     box-shadow: 0 2px 4px rgba(8, 120, 63, 0.25);
 }
-.month-day-cell.last-day-cell {
-    grid-column: span 4;
-    font-size: 12px;
+.month-day-cell.disabled,
+.month-day-cell:has(input:disabled) {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #f1f5f3 !important;
+    border-color: #e2e8e5 !important;
+    color: #94a3b8 !important;
+    pointer-events: none;
+}
+.monthly-pool-card {
+    background: #ffffff;
+    border: 1px solid #d1fae5;
+    border-radius: 9px;
+    padding: 12px;
+}
+.month-card {
+    background: #ffffff;
+    border: 1.5px solid #dcebe1;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    transition: border-color 0.2s ease;
+}
+.month-card:hover {
+    border-color: #86efac;
+}
+.month-card-header {
+    background: #f5fbf7;
+    border-bottom: 1px solid #dcebe1;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.month-card-body {
+    padding: 14px;
 }
 .task-repeater-row {
     background: #ffffff;
@@ -928,6 +949,10 @@ function switchRecurrence(type) {
 
     if (type === 'weekly') {
         regenerateWeeklySchedule();
+    }
+
+    if (type === 'monthly') {
+        initMonthlySchedule();
     }
 
     calculateSummary();
@@ -1718,56 +1743,6 @@ function syncWeeklyCustomSchedule() {
     }
 }
 
-function addMonthlyTaskRow() {
-    const container = document.getElementById('monthly-tasks-container');
-    const index = container.querySelectorAll('.task-repeater-row').length;
-    const rowHtml = `
-        <div class="task-repeater-row" data-index="${index}">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span class="row-badge">কাজ #${index + 1}</span>
-                <button type="button" class="btn-remove-row" onclick="removeTaskRow(this)">✕ সরান</button>
-            </div>
-            <div class="form-grid">
-                <div>
-                    <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
-                    <select class="input" name="monthly_tasks[${index}][task_template_id]" required>
-                        ${taskTemplatesOptions}
-                    </select>
-                </div>
-                <div>
-                    <label class="label">ফার্ম লোকেশন (ঐচ্ছিক)</label>
-                    <select class="input" name="monthly_tasks[${index}][farm_location_id]">
-                        ${farmLocationsOptions}
-                    </select>
-                </div>
-                <div>
-                    <label class="label">শুরুর সময় <span class="req">*</span></label>
-                    <input class="input" type="time" name="monthly_tasks[${index}][start_time]" value="10:00" required>
-                </div>
-                <div>
-                    <label class="label">শেষ সময়</label>
-                    <input class="input" type="time" name="monthly_tasks[${index}][end_time]" value="14:00">
-                </div>
-                <div>
-                    <label class="label">অগ্রাধিকার</label>
-                    <select class="input" name="monthly_tasks[${index}][priority]">
-                        <option value="normal">সাধারণ (Normal)</option>
-                        <option value="important">গুরুত্বপূর্ণ (Important)</option>
-                        <option value="urgent">জরুরি (Urgent)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="label">নোট (ঐচ্ছিক)</label>
-                    <input class="input" type="text" name="monthly_tasks[${index}][notes]">
-                </div>
-            </div>
-        </div>
-    `;
-    container.insertAdjacentHTML('beforeend', rowHtml);
-    updateRowBadges(container);
-    calculateSummary();
-}
-
 function removeTaskRow(btn) {
     const row = btn.closest('.task-repeater-row');
     const container = row.parentElement;
@@ -1800,8 +1775,8 @@ function calculateSummary() {
         const startVal = startInput?.value || '০৮:০০';
         const endVal = endInput?.value || '২২:০০';
 
-        titleElem.innerText = `এককালীন কাজের বরাদ্দ সারসংক্ষেপ`;
-        bodyElem.innerHTML = `📅 নির্ধারিত তারিখ: <b>${dateVal}</b> | ⏱ সময়: <b>${startVal} হতে ${endVal}</b> | <b>সর্বমোট ১টি কাজ</b> তৈরি হবে।`;
+        if (titleElem) titleElem.innerText = `এককালীন কাজের বরাদ্দ সারসংক্ষেপ`;
+        if (bodyElem) bodyElem.innerHTML = `📅 নির্ধারিত তারিখ: <b>${dateVal}</b> | ⏱ সময়: <b>${startVal} হতে ${endVal}</b> | <b>সর্বমোট ১টি কাজ</b> তৈরি হবে।`;
         return;
     }
 
@@ -1817,9 +1792,11 @@ function calculateSummary() {
             const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
             const totalTasks = diffDays * tasksCount;
 
-            titleElem.innerText = `দৈনিক কাজের শিডিউল সারসংক্ষেপ`;
-            bodyElem.innerHTML = `📅 সময়কাল: <b>${startInput.value}</b> থেকে <b>${endInput.value}</b> (মোট <b>${diffDays}</b> দিন)<br>` +
-                                 `📋 প্রতিদিন কাজ: <b>${tasksCount}</b> টি | 🌟 সর্বমোট <b>${totalTasks}</b> টি কাজের অ্যাসাইনমেন্ট তৈরি হবে।`;
+            if (titleElem) titleElem.innerText = `দৈনিক কাজের শিডিউল সারসংক্ষেপ`;
+            if (bodyElem) {
+                bodyElem.innerHTML = `📅 সময়কাল: <b>${startInput.value}</b> থেকে <b>${endInput.value}</b> (মোট <b>${diffDays}</b> দিন)<br>` +
+                                     `📋 প্রতিদিন কাজ: <b>${tasksCount}</b> টি | 🌟 সর্বমোট <b>${totalTasks}</b> টি কাজের অ্যাসাইনমেন্ট তৈরি হবে।`;
+            }
         }
         return;
     }
@@ -1830,19 +1807,707 @@ function calculateSummary() {
     }
 
     if (currentRecurrence === 'monthly') {
-        const monthsCount = parseInt(document.getElementById('months_count')?.value || '1', 10);
-        const checkedDays = document.querySelectorAll('#panel-monthly input[name="monthly_days[]"]:checked').length;
-        const tasksCount = document.querySelectorAll('#monthly-tasks-container .task-repeater-row').length || 1;
-        const totalOccurrences = monthsCount * checkedDays * tasksCount;
-
-        titleElem.innerText = `মাসিক কাজের শিডিউল সারসংক্ষেপ`;
-        bodyElem.innerHTML = `📆 সময়কাল: মোট <b>${monthsCount}</b> মাস | প্রতি মাসে <b>${checkedDays}</b> দিন<br>` +
-                             `📋 প্রতিটি তারিখে কাজ: <b>${tasksCount}</b> টি | 🌟 সর্বমোট <b>${totalOccurrences}</b> টি কাজের অ্যাসাইনমেন্ট তৈরি হবে।`;
+        syncMonthlyCustomSchedule();
         return;
     }
 }
 
-// Monthly Days Handlers
+// ==========================================
+// --- Monthly Recurrence Engine (30-day basis) ---
+// ==========================================
+let monthlyTasksPool = [];
+let monthsState = [];
+let monthlyInitialized = false;
+
+function getMonthlyDateRange() {
+    const startInput = document.getElementById('monthly_start_date');
+    if (!startInput || !startInput.value) return null;
+    const parts = startInput.value.split('-').map(Number);
+    if (parts.length !== 3) return null;
+    const startDate = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0);
+    const monthsCount = parseInt(document.getElementById('months_count')?.value || '3', 10);
+    return { startDate, monthsCount };
+}
+
+function initMonthlySchedule() {
+    if (monthlyInitialized) {
+        syncMonthlyCustomSchedule();
+        return;
+    }
+
+    const range = getMonthlyDateRange();
+    const monthsCount = range ? range.monthsCount : 3;
+
+    // Initialize monthlyTasksPool if empty
+    if (monthlyTasksPool.length === 0) {
+        monthlyTasksPool = [
+            {
+                id: 'mpool_1',
+                templateId: taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '',
+                locationId: '',
+                startTime: '10:00',
+                endTime: '12:00',
+                priority: 'normal',
+                notes: ''
+            }
+        ];
+        if (taskTemplatesList.length > 1) {
+            monthlyTasksPool.push({
+                id: 'mpool_2',
+                templateId: taskTemplatesList[1].id,
+                locationId: '',
+                startTime: '14:00',
+                endTime: '16:00',
+                priority: 'normal',
+                notes: ''
+            });
+        }
+    }
+    renderMonthlyTasksPoolUI();
+
+    // Initialize monthsState
+    monthsState = [];
+    const startDate = range ? range.startDate : new Date();
+
+    for (let m = 0; m < monthsCount; m++) {
+        let defaultDays = [1, 15];
+        if (m === 0) {
+            const startDay = startDate.getDate();
+            if (startDay > 15) {
+                defaultDays = [Math.min(30, startDay), 30];
+            } else if (startDay > 1) {
+                defaultDays = [startDay, Math.min(30, startDay + 14)];
+            }
+        }
+        defaultDays = Array.from(new Set(defaultDays)).sort((a, b) => a - b);
+
+        const dateTasks = {};
+        defaultDays.forEach(dayNum => {
+            dateTasks[dayNum] = monthlyTasksPool.map(pt => ({
+                id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                poolId: pt.id,
+                templateId: pt.templateId,
+                locationId: pt.locationId,
+                startTime: pt.startTime,
+                endTime: pt.endTime,
+                priority: pt.priority,
+                notes: pt.notes
+            }));
+        });
+
+        monthsState.push({
+            selectedDates: defaultDays,
+            dateTasks: dateTasks
+        });
+    }
+
+    monthlyInitialized = true;
+    renderMonthByMonthCards();
+    syncMonthlyCustomSchedule();
+}
+
+function renderMonthlyTasksPoolUI() {
+    const container = document.getElementById('monthly-tasks-pool-container');
+    if (!container) return;
+
+    let html = '';
+    monthlyTasksPool.forEach((task, idx) => {
+        html += `
+            <div class="monthly-pool-card task-repeater-row" data-pool-index="${idx}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <span class="row-badge" style="background:#08783f;color:#fff;">মাসিক রুটিন কাজ #${idx + 1}</span>
+                    <button type="button" class="btn-remove-row" onclick="removeMonthlyPoolTaskRow(${idx})" style="${monthlyTasksPool.length > 1 ? '' : 'display:none;'}">✕ সরান</button>
+                </div>
+                <div class="form-grid">
+                    <div>
+                        <label class="label">কাজের ধরন (Template) <span class="req">*</span></label>
+                        <select class="input pool-template-select" onchange="onMonthlyPoolTaskChange(${idx}, 'templateId', this.value)" required>
+                            ${buildTaskOptions(task.templateId)}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">ফার্ম লোকেশন (প্লট / পুকুর)</label>
+                        <select class="input pool-location-select" onchange="onMonthlyPoolTaskChange(${idx}, 'locationId', this.value)">
+                            ${buildLocationOptions(task.locationId)}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">ডিফল্ট শুরুর সময় <span class="req">*</span></label>
+                        <input class="input pool-start-time" type="time" value="${task.startTime}" onchange="onMonthlyPoolTaskChange(${idx}, 'startTime', this.value)" required>
+                    </div>
+                    <div>
+                        <label class="label">ডিফল্ট শেষ সময়</label>
+                        <input class="input pool-end-time" type="time" value="${task.endTime || ''}" onchange="onMonthlyPoolTaskChange(${idx}, 'endTime', this.value)">
+                    </div>
+                    <div>
+                        <label class="label">অগ্রাধিকার</label>
+                        <select class="input pool-priority-select" onchange="onMonthlyPoolTaskChange(${idx}, 'priority', this.value)">
+                            <option value="normal" ${task.priority === 'normal' ? 'selected' : ''}>সাধারণ (Normal)</option>
+                            <option value="important" ${task.priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ (Important)</option>
+                            <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>জরুরি (Urgent)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">কাজের নোট (ঐচ্ছিক)</label>
+                        <input class="input pool-notes-input" type="text" value="${task.notes || ''}" placeholder="যেমন: সার প্রয়োগ / পরিদর্শন" oninput="onMonthlyPoolTaskChange(${idx}, 'notes', this.value)">
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function addMonthlyPoolTaskRow() {
+    const idx = monthlyTasksPool.length;
+    let defStart = '14:00';
+    let defEnd = '16:00';
+    if (idx === 1) { defStart = '10:00'; defEnd = '12:00'; }
+    else if (idx === 2) { defStart = '12:30'; defEnd = '14:00'; }
+
+    const newTask = {
+        id: 'mpool_' + Date.now() + '_' + idx,
+        templateId: taskTemplatesList.length > idx ? taskTemplatesList[idx].id : (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : ''),
+        locationId: '',
+        startTime: defStart,
+        endTime: defEnd,
+        priority: 'normal',
+        notes: ''
+    };
+
+    monthlyTasksPool.push(newTask);
+    renderMonthlyTasksPoolUI();
+
+    // Propagate into existing selected dates of all months
+    monthsState.forEach(mObj => {
+        mObj.selectedDates.forEach(d => {
+            if (!mObj.dateTasks[d]) mObj.dateTasks[d] = [];
+            mObj.dateTasks[d].push({
+                id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                poolId: newTask.id,
+                templateId: newTask.templateId,
+                locationId: newTask.locationId,
+                startTime: newTask.startTime,
+                endTime: newTask.endTime,
+                priority: newTask.priority,
+                notes: newTask.notes
+            });
+        });
+    });
+
+    renderMonthByMonthCards();
+    syncMonthlyCustomSchedule();
+}
+
+function removeMonthlyPoolTaskRow(index) {
+    if (monthlyTasksPool.length <= 1) return;
+    const removedId = monthlyTasksPool[index].id;
+    monthlyTasksPool.splice(index, 1);
+    renderMonthlyTasksPoolUI();
+
+    // Remove from months
+    monthsState.forEach(mObj => {
+        Object.keys(mObj.dateTasks).forEach(d => {
+            mObj.dateTasks[d] = mObj.dateTasks[d].filter(t => t.poolId !== removedId);
+        });
+    });
+
+    renderMonthByMonthCards();
+    syncMonthlyCustomSchedule();
+}
+
+function onMonthlyPoolTaskChange(index, field, value) {
+    if (!monthlyTasksPool[index]) return;
+    const poolItem = monthlyTasksPool[index];
+    poolItem[field] = value;
+
+    // Propagate template / location changes to existing date tasks that originated from this pool task
+    monthsState.forEach(mObj => {
+        Object.keys(mObj.dateTasks).forEach(d => {
+            mObj.dateTasks[d].forEach(t => {
+                if (t.poolId === poolItem.id) {
+                    if (field === 'templateId' || field === 'locationId') {
+                        t[field] = value;
+                    }
+                }
+            });
+        });
+    });
+
+    renderMonthByMonthCards();
+    syncMonthlyCustomSchedule();
+}
+
+function onMonthlyDurationOrStartChange() {
+    const range = getMonthlyDateRange();
+    if (!range) return;
+
+    const { startDate, monthsCount } = range;
+    while (monthsState.length < monthsCount) {
+        const m = monthsState.length;
+        let defaultDays = [1, 15];
+        if (m === 0) {
+            const startDay = startDate.getDate();
+            if (startDay > 15) {
+                defaultDays = [Math.min(30, startDay), 30];
+            } else if (startDay > 1) {
+                defaultDays = [startDay, Math.min(30, startDay + 14)];
+            }
+        }
+        defaultDays = Array.from(new Set(defaultDays)).sort((a, b) => a - b);
+
+        const dateTasks = {};
+        defaultDays.forEach(dayNum => {
+            dateTasks[dayNum] = monthlyTasksPool.map(pt => ({
+                id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                poolId: pt.id,
+                templateId: pt.templateId,
+                locationId: pt.locationId,
+                startTime: pt.startTime,
+                endTime: pt.endTime,
+                priority: pt.priority,
+                notes: pt.notes
+            }));
+        });
+
+        monthsState.push({
+            selectedDates: defaultDays,
+            dateTasks: dateTasks
+        });
+    }
+
+    if (monthsState.length > monthsCount) {
+        monthsState = monthsState.slice(0, monthsCount);
+    }
+
+    renderMonthByMonthCards();
+    syncMonthlyCustomSchedule();
+}
+
+function renderMonthByMonthCards() {
+    const container = document.getElementById('month-by-month-cards-container');
+    if (!container) return;
+
+    const range = getMonthlyDateRange();
+    if (!range) return;
+    const { startDate, monthsCount } = range;
+
+    let html = '';
+    for (let m = 0; m < monthsCount; m++) {
+        if (!monthsState[m]) {
+            monthsState[m] = { selectedDates: [], dateTasks: {} };
+        }
+
+        const monthAnchor = new Date(startDate.getFullYear(), startDate.getMonth() + m, 1);
+        const monthTitleBn = `${bnMonths[monthAnchor.getMonth()]} ${toBnDigits(monthAnchor.getFullYear())}`;
+        const isMonth1 = (m === 0);
+        const copyBtnHtml = !isMonth1 ? `
+            <button type="button" class="btn soft" style="font-size:11.5px;padding:3px 8px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;" onclick="copyFromPreviousMonth(${m})">
+                📋 মাস ${toBnDigits(m)} থেকে কপি করুন
+            </button>
+        ` : '';
+
+        html += `
+            <div class="month-card" id="month-card-${m}" data-month-index="${m}">
+                <div class="month-card-header">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span class="row-badge" style="background:#08783f;color:#ffffff;padding:3px 10px;font-size:12px;">মাস ${toBnDigits(m + 1)}</span>
+                        <b style="font-size:13px;color:#1e3a29;">${monthTitleBn} (৩০ দিনের চক্র)</b>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        ${copyBtnHtml}
+                    </div>
+                </div>
+                <div class="month-card-body" id="month-card-body-${m}">
+                    ${renderMonthCardBodyHtml(m, startDate, monthAnchor)}
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+function renderMonthCardBody(m) {
+    const bodyContainer = document.getElementById(`month-card-body-${m}`);
+    if (!bodyContainer) {
+        renderMonthByMonthCards();
+        return;
+    }
+    const range = getMonthlyDateRange();
+    if (!range) return;
+    const { startDate } = range;
+    const monthAnchor = new Date(startDate.getFullYear(), startDate.getMonth() + m, 1);
+
+    bodyContainer.innerHTML = renderMonthCardBodyHtml(m, startDate, monthAnchor);
+}
+
+function renderMonthCardBodyHtml(m, startDate, monthAnchor) {
+    const mObj = monthsState[m] || { selectedDates: [], dateTasks: {} };
+    const selectedDates = mObj.selectedDates || [];
+    const isFirstMonth = (m === 0);
+    const startDayNum = startDate.getDate();
+
+    // 1. Quick Presets & 1-30 Grid
+    let gridHtml = `
+        <div style="margin-bottom:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                <label class="label" style="margin:0;font-size:12.5px;color:#1e3a29;">
+                    মাস ${toBnDigits(m + 1)}-এর কাজের তারিখ নির্বাচন করুন (১-৩০ তারিখ):
+                </label>
+                <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                    <span style="font-size:11px;color:var(--muted)">কুইক সিলেক্ট:</span>
+                    <button type="button" class="btn soft" style="font-size:11px;padding:2px 7px;" onclick="setMonthCardPreset(${m}, [1, 15])">১ ও ১৫</button>
+                    <button type="button" class="btn soft" style="font-size:11px;padding:2px 7px;" onclick="setMonthCardPreset(${m}, [5, 20])">৫ ও ২০</button>
+                    <button type="button" class="btn soft" style="font-size:11px;padding:2px 7px;" onclick="setMonthCardPreset(${m}, [10, 25])">১০ ও ২৫</button>
+                    <button type="button" class="btn soft" style="font-size:11px;padding:2px 7px;" onclick="setMonthCardPreset(${m}, [1, 10, 20, 30])">প্রতি ১০ দিন</button>
+                    <button type="button" class="btn soft" style="font-size:11px;padding:2px 7px;color:#dc2626;" onclick="clearMonthCardDates(${m})">সব মুছুন</button>
+                </div>
+            </div>
+
+            <!-- 1 to 30 Calendar Grid -->
+            <div class="month-day-grid">
+    `;
+
+    for (let d = 1; d <= 30; d++) {
+        const isPast = (isFirstMonth && d < startDayNum);
+        const isChecked = selectedDates.includes(d);
+        const dTextBn = toBnDigits(d);
+
+        gridHtml += `
+            <label class="month-day-cell ${isChecked ? 'selected' : ''} ${isPast ? 'disabled' : ''}" title="${dTextBn} তারিখ ${isPast ? '(শুরুর পূর্বে)' : ''}">
+                <input type="checkbox" value="${d}" ${isChecked ? 'checked' : ''} ${isPast ? 'disabled' : ''} onchange="onMonthDateToggle(${m}, ${d}, this.checked)">
+                <span class="cell-num">${dTextBn}</span>
+            </label>
+        `;
+    }
+
+    gridHtml += `
+            </div>
+        </div>
+    `;
+
+    // 2. Schedule Boxes for each checked date
+    let schedulesHtml = '';
+    if (selectedDates.length === 0) {
+        schedulesHtml = `
+            <div style="background:#f8faf9;border:1px dashed #c9d8cf;padding:12px;border-radius:8px;text-align:center;color:var(--muted);font-size:12.5px;">
+                এই মাসে কোনো তারিখ নির্বাচিত নেই। উপরে কাঙ্ক্ষিত তারিখে ক্লিক করুন।
+            </div>
+        `;
+    } else {
+        const daysInActualMonth = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 0).getDate();
+
+        selectedDates.forEach(d => {
+            const actualDay = Math.min(d, daysInActualMonth);
+            const candDate = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), actualDay);
+            const isoDate = formatISODate(candDate);
+            const formattedFullDate = formatBnDate(candDate);
+            const dayOfWeekBn = dayNamesBn[dayOrder[(candDate.getDay() + 1) % 7]] || '';
+
+            const tasks = mObj.dateTasks[d] || [];
+
+            let taskRowsHtml = '';
+            tasks.forEach((t, tIdx) => {
+                taskRowsHtml += `
+                    <div class="day-task-grid-row" data-task-index="${tIdx}">
+                        <div>
+                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'templateId', this.value)" required>
+                                ${buildTaskOptions(t.templateId)}
+                            </select>
+                        </div>
+                        <div>
+                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'locationId', this.value)">
+                                ${buildLocationOptions(t.locationId)}
+                            </select>
+                        </div>
+                        <div>
+                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.startTime}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'startTime', this.value)" required>
+                        </div>
+                        <div>
+                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.endTime || ''}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'endTime', this.value)">
+                        </div>
+                        <div>
+                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'priority', this.value)">
+                                <option value="normal" ${t.priority === 'normal' ? 'selected' : ''}>সাধারণ</option>
+                                <option value="important" ${t.priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ</option>
+                                <option value="urgent" ${t.priority === 'urgent' ? 'selected' : ''}>জরুরি</option>
+                            </select>
+                        </div>
+                        <div style="text-align:right;">
+                            <button type="button" class="btn-remove-session" title="এই কাজ বাদ দিন" onclick="removeTaskFromMonthDate(${m}, ${d}, ${tIdx})">✕</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            schedulesHtml += `
+                <div class="day-schedule-card">
+                    <div class="day-schedule-header">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <span class="badge" style="background:#08783f;color:#fff;font-size:11.5px;padding:3px 8px;">🗓 ${toBnDigits(d)} তারিখ</span>
+                            <b style="font-size:12.5px;color:#1e293b;">${formattedFullDate}</b>
+                            <span style="font-size:11px;color:var(--muted);">(${dayOfWeekBn} | ${isoDate})</span>
+                        </div>
+                        <button type="button" class="btn soft" style="font-size:11px;padding:2px 8px;color:#08783f;border:1px solid #86efac;" onclick="addExtraTaskToMonthDate(${m}, ${d})">
+                            + অতিরিক্ত কাজ যোগ করুন
+                        </button>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;">
+                        ${taskRowsHtml}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    return gridHtml + schedulesHtml;
+}
+
+function onMonthDateToggle(m, dateNum, isChecked) {
+    if (!monthsState[m]) {
+        monthsState[m] = { selectedDates: [], dateTasks: {} };
+    }
+
+    if (isChecked) {
+        if (!monthsState[m].selectedDates.includes(dateNum)) {
+            monthsState[m].selectedDates.push(dateNum);
+            monthsState[m].selectedDates.sort((a, b) => a - b);
+        }
+        if (!monthsState[m].dateTasks[dateNum] || monthsState[m].dateTasks[dateNum].length === 0) {
+            monthsState[m].dateTasks[dateNum] = monthlyTasksPool.map(pt => ({
+                id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                poolId: pt.id,
+                templateId: pt.templateId,
+                locationId: pt.locationId,
+                startTime: pt.startTime,
+                endTime: pt.endTime,
+                priority: pt.priority,
+                notes: pt.notes
+            }));
+        }
+    } else {
+        monthsState[m].selectedDates = monthsState[m].selectedDates.filter(d => d !== dateNum);
+    }
+
+    renderMonthCardBody(m);
+    syncMonthlyCustomSchedule();
+}
+
+function setMonthCardPreset(m, daysArray) {
+    if (!monthsState[m]) {
+        monthsState[m] = { selectedDates: [], dateTasks: {} };
+    }
+
+    const range = getMonthlyDateRange();
+    const isFirstMonth = (m === 0);
+    const startDayNum = range ? range.startDate.getDate() : 1;
+
+    // Filter out past days if in first month
+    const validDays = daysArray.filter(d => d >= 1 && d <= 30 && (!isFirstMonth || d >= startDayNum));
+
+    monthsState[m].selectedDates = [...validDays].sort((a, b) => a - b);
+
+    validDays.forEach(d => {
+        if (!monthsState[m].dateTasks[d] || monthsState[m].dateTasks[d].length === 0) {
+            monthsState[m].dateTasks[d] = monthlyTasksPool.map(pt => ({
+                id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                poolId: pt.id,
+                templateId: pt.templateId,
+                locationId: pt.locationId,
+                startTime: pt.startTime,
+                endTime: pt.endTime,
+                priority: pt.priority,
+                notes: pt.notes
+            }));
+        }
+    });
+
+    renderMonthCardBody(m);
+    syncMonthlyCustomSchedule();
+}
+
+function clearMonthCardDates(m) {
+    if (!monthsState[m]) return;
+    monthsState[m].selectedDates = [];
+    renderMonthCardBody(m);
+    syncMonthlyCustomSchedule();
+}
+
+function onMonthDateTaskFieldChange(m, dateNum, tIdx, field, value) {
+    if (monthsState[m] && monthsState[m].dateTasks[dateNum] && monthsState[m].dateTasks[dateNum][tIdx]) {
+        monthsState[m].dateTasks[dateNum][tIdx][field] = value;
+        syncMonthlyCustomSchedule();
+    }
+}
+
+function removeTaskFromMonthDate(m, dateNum, tIdx) {
+    if (monthsState[m] && monthsState[m].dateTasks[dateNum]) {
+        monthsState[m].dateTasks[dateNum].splice(tIdx, 1);
+        if (monthsState[m].dateTasks[dateNum].length === 0) {
+            onMonthDateToggle(m, dateNum, false);
+            return;
+        }
+        renderMonthCardBody(m);
+        syncMonthlyCustomSchedule();
+    }
+}
+
+function addExtraTaskToMonthDate(m, dateNum) {
+    if (!monthsState[m]) return;
+    if (!monthsState[m].dateTasks[dateNum]) monthsState[m].dateTasks[dateNum] = [];
+
+    const count = monthsState[m].dateTasks[dateNum].length;
+    let defStart = '14:00';
+    let defEnd = '16:00';
+    if (count === 1) { defStart = '10:00'; defEnd = '12:00'; }
+    else if (count === 2) { defStart = '12:30'; defEnd = '14:00'; }
+
+    const defTpl = taskTemplatesList.length > count ? taskTemplatesList[count].id : (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '');
+
+    monthsState[m].dateTasks[dateNum].push({
+        id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        poolId: null,
+        templateId: defTpl,
+        locationId: '',
+        startTime: defStart,
+        endTime: defEnd,
+        priority: 'normal',
+        notes: ''
+    });
+
+    renderMonthCardBody(m);
+    syncMonthlyCustomSchedule();
+}
+
+function copyFromPreviousMonth(m) {
+    if (m <= 0 || !monthsState[m - 1]) return;
+    const prev = monthsState[m - 1];
+
+    monthsState[m] = {
+        selectedDates: [...prev.selectedDates],
+        dateTasks: JSON.parse(JSON.stringify(prev.dateTasks))
+    };
+
+    renderMonthCardBody(m);
+    syncMonthlyCustomSchedule();
+}
+
+function copyMonth1ToAll() {
+    if (!monthsState[0]) return;
+    const month0 = monthsState[0];
+    const range = getMonthlyDateRange();
+    if (!range) return;
+
+    for (let m = 1; m < range.monthsCount; m++) {
+        monthsState[m] = {
+            selectedDates: [...month0.selectedDates],
+            dateTasks: JSON.parse(JSON.stringify(month0.dateTasks))
+        };
+    }
+
+    renderMonthByMonthCards();
+    syncMonthlyCustomSchedule();
+}
+
+function toggleMonthlyFinalScheduleTable() {
+    const box = document.getElementById('monthly-final-schedule-table-box');
+    if (box) {
+        box.style.display = (box.style.display === 'none') ? 'block' : 'none';
+    }
+}
+
+function syncMonthlyCustomSchedule() {
+    const hiddenContainer = document.getElementById('monthly-hidden-form-inputs');
+    const summaryBadge = document.getElementById('monthly-schedule-summary-badge');
+    const tableBody = document.getElementById('monthly-final-schedule-table-body');
+    const range = getMonthlyDateRange();
+    if (!range) return;
+
+    const { startDate, monthsCount } = range;
+    let globalIndex = 0;
+    let hiddenHtml = '';
+    let tableHtml = '';
+    const uniqueMonthlyDaysSet = new Set();
+    let totalWorkDays = 0;
+
+    for (let m = 0; m < monthsCount; m++) {
+        if (!monthsState[m]) continue;
+        const monthAnchor = new Date(startDate.getFullYear(), startDate.getMonth() + m, 1);
+        const daysInActualMonth = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 0).getDate();
+        const selectedDates = monthsState[m].selectedDates || [];
+        totalWorkDays += selectedDates.length;
+
+        selectedDates.forEach(d => {
+            uniqueMonthlyDaysSet.add(d);
+            const actualDay = Math.min(d, daysInActualMonth);
+            const candDate = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), actualDay);
+
+            if (candDate < startDate) return; // skip past dates
+
+            const isoDate = formatISODate(candDate);
+            const dayOfWeekBn = dayNamesBn[dayOrder[(candDate.getDay() + 1) % 7]] || '';
+            const fullDateBn = formatBnDate(candDate);
+
+            const dateTasks = monthsState[m].dateTasks[d] || [];
+            dateTasks.forEach(task => {
+                if (!task.templateId || !task.startTime) return;
+
+                const tplObj = taskTemplatesList.find(t => String(t.id) === String(task.templateId));
+                const locObj = farmLocationsList.find(l => String(l.id) === String(task.locationId));
+                const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : 'চিহ্নিত কাজ';
+                const locName = locObj ? `${locObj.name} (${locObj.type})` : 'মূল লোকেশন';
+
+                hiddenHtml += `
+                    <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${isoDate}">
+                    <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${task.templateId}">
+                    <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${task.locationId || ''}">
+                    <input type="hidden" name="custom_schedule[${globalIndex}][start_time]" value="${task.startTime}">
+                    <input type="hidden" name="custom_schedule[${globalIndex}][end_time]" value="${task.endTime || ''}">
+                    <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${task.priority || 'normal'}">
+                    <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${task.notes || ''}">
+                `;
+
+                tableHtml += `
+                    <tr style="border-bottom:1px solid #edf4f0;">
+                        <td style="padding:6px 10px;font-weight:600;color:#08783f;">মাস ${toBnDigits(m + 1)}</td>
+                        <td style="padding:6px 10px;"><b>${fullDateBn}</b> (${dayOfWeekBn})</td>
+                        <td style="padding:6px 10px;">${tplName}</td>
+                        <td style="padding:6px 10px;color:var(--muted);">${locName}</td>
+                        <td style="padding:6px 10px;font-weight:600;">${task.startTime} - ${task.endTime || '--:--'}</td>
+                        <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${task.priority}</span></td>
+                    </tr>
+                `;
+
+                globalIndex++;
+            });
+        });
+    }
+
+    // Also append unique monthly_days[] inputs for compatibility
+    uniqueMonthlyDaysSet.forEach(d => {
+        hiddenHtml += `<input type="hidden" name="monthly_days[]" value="${d}">`;
+    });
+
+    if (hiddenContainer) hiddenContainer.innerHTML = hiddenHtml;
+    if (tableBody) tableBody.innerHTML = tableHtml || '<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--muted);">কোনো কাজ বা তারিখ নির্ধারিত হয়নি</td></tr>';
+
+    const summaryText = `📆 সময়কাল: মোট <b>${toBnDigits(monthsCount)}</b> মাস | মোট <b>${toBnDigits(totalWorkDays)}</b> দিন কাজ | সর্বমোট <b>${toBnDigits(globalIndex)}</b> টি কাজের সেশন প্রস্তুত`;
+    if (summaryBadge) summaryBadge.innerHTML = summaryText;
+
+    if (currentRecurrence === 'monthly') {
+        const titleElem = document.getElementById('summary-title-text');
+        const bodyElem = document.getElementById('summary-body-text');
+        if (titleElem) titleElem.innerText = `মাসিক কাজের কাস্টম শিডিউল সারসংক্ষেপ`;
+        if (bodyElem) {
+            bodyElem.innerHTML = summaryText + `<br><span style="font-size:12px;color:var(--muted)">প্রতিটি মাসের তারিখ ও সময়সূচী স্বয়ংক্রিয়ভাবে সংরক্ষিত হবে।</span>`;
+        }
+    }
+}
+
+// Preset helpers
 function toBnDigits(num) {
     const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
     return String(num).replace(/[0-9]/g, d => bn[d]);
@@ -1855,99 +2520,6 @@ function parseBnOrEnInt(str) {
     return parseInt(normalized, 10);
 }
 
-function onMonthlyDayChange() {
-    let has31 = false;
-    document.querySelectorAll('#panel-monthly .month-day-cell').forEach(cell => {
-        const input = cell.querySelector('input');
-        if (input) {
-            if (input.checked) {
-                cell.classList.add('selected');
-                if (input.value === '31') has31 = true;
-            } else {
-                cell.classList.remove('selected');
-            }
-        }
-    });
-
-    const lastDayCell = document.getElementById('cell-day-last');
-    if (lastDayCell) {
-        if (has31) {
-            lastDayCell.classList.add('selected');
-        } else {
-            lastDayCell.classList.remove('selected');
-        }
-    }
-
-    updateMonthlyDaysBadge();
-    calculateSummary();
-}
-
-function toggleDay31() {
-    const input31 = document.querySelector('#panel-monthly input[name="monthly_days[]"][value="31"]');
-    if (input31) {
-        input31.checked = !input31.checked;
-        onMonthlyDayChange();
-    }
-}
-
-function updateMonthlyDaysBadge() {
-    const checked = Array.from(document.querySelectorAll('#panel-monthly input[name="monthly_days[]"]:checked'))
-        .map(i => parseInt(i.value, 10))
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .sort((a, b) => a - b);
-
-    const badge = document.getElementById('selected-days-badge');
-    if (!badge) return;
-
-    if (checked.length === 0) {
-        badge.innerText = 'কোনো দিন নির্বাচিত নেই';
-        badge.style.color = '#dc2626';
-        badge.style.background = '#fef2f2';
-        badge.style.borderColor = '#fecaca';
-    } else {
-        const daysStr = checked.map(d => d === 31 ? 'মাসের শেষ দিন (৩১)' : `${toBnDigits(d)} তারিখ`).join(', ');
-        badge.innerText = `নির্বাচিত: ${daysStr} (মোট ${toBnDigits(checked.length)} দিন)`;
-        badge.style.color = '#08783f';
-        badge.style.background = '#edfcf2';
-        badge.style.borderColor = '#bbf7d0';
-    }
-}
-
-function setMonthlyPreset(days) {
-    document.querySelectorAll('#panel-monthly input[name="monthly_days[]"]').forEach(input => {
-        const val = parseInt(input.value, 10);
-        input.checked = days.includes(val);
-    });
-    onMonthlyDayChange();
-}
-
-function clearMonthlyDays() {
-    document.querySelectorAll('#panel-monthly input[name="monthly_days[]"]').forEach(input => {
-        input.checked = false;
-    });
-    onMonthlyDayChange();
-}
-
-function addCustomMonthDay() {
-    const input = document.getElementById('custom_month_day_input');
-    if (!input || !input.value.trim()) return;
-
-    const val = parseBnOrEnInt(input.value);
-    if (isNaN(val) || val < 1 || val > 31) {
-        alert('অনুগ্রহ করে ১ থেকে ৩১ এর মধ্যে একটি সঠিক দিন প্রদান করুন।');
-        return;
-    }
-
-    const targetInput = document.querySelector(`#panel-monthly input[name="monthly_days[]"][value="${val}"]`);
-    if (targetInput) {
-        targetInput.checked = true;
-    }
-
-    input.value = '';
-    onMonthlyDayChange();
-}
-
-// Preset helpers
 function formatTimeToBanglaPeriod(timeStr) {
     if (!timeStr) return '';
     const parts = timeStr.split(':');
@@ -2015,9 +2587,11 @@ function setFromNowPreset() {
 
 document.addEventListener('DOMContentLoaded', function() {
     switchRecurrence('{{ $activeRecurrence }}');
-    onMonthlyDayChange();
     if ('{{ $activeRecurrence }}' === 'weekly') {
         initWeeklySchedule();
+    }
+    if ('{{ $activeRecurrence }}' === 'monthly') {
+        initMonthlySchedule();
     }
 
     // Attach listeners for inputs that affect calculations
@@ -2042,6 +2616,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (inputs.length === 0) {
                     e.preventDefault();
                     alert('⚠️ সাপ্তাহিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি সপ্তাহের দিন এবং কাজের ধরন নির্বাচন করুন।');
+                    return false;
+                }
+            }
+            if (currentRecurrence === 'monthly') {
+                syncMonthlyCustomSchedule();
+                const inputs = document.querySelectorAll('#monthly-hidden-form-inputs input[name^="custom_schedule"]');
+                if (inputs.length === 0) {
+                    e.preventDefault();
+                    alert('⚠️ মাসিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি মাসের তারিখ এবং কাজের ধরন নির্বাচন করুন।');
                     return false;
                 }
             }

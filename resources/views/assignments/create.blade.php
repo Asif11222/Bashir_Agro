@@ -28,10 +28,51 @@
     <form method="POST" action="{{ route('admin.assignments.store') }}" id="assignmentForm">
         @csrf
 
-        <div class="form-layout-2col">
-            <div class="form-main-col">
-                <!-- Step 1: Base Target Selection (Farmer & Location) -->
-                <section class="card">
+        <div class="form-main-col" style="max-width: 100%;">
+            <!-- Step 0: বরাদ্দ নির্দেশিকা ও নিয়ম (Moved to top-left) -->
+            <section class="card" style="margin-bottom: 2px;">
+                <div class="card-title">
+                    <div class="title-left">
+                        <span class="iconbox" style="background:#eaf8ef;color:#08783f">ℹ</span>
+                        <div>
+                            <h2 style="font-size:15.5px;margin:0;">বরাদ্দ নির্দেশিকা ও নিয়ম</h2>
+                            <div class="sub">পুনরাবৃত্তি ও ব্যবস্থাপনা নীতি</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="guidance-grid">
+                    <div style="background:#f4fbf6;border:1px solid #d4eedd;padding:12px;border-radius:9px;">
+                        <b style="color:#08783f;display:flex;align-items:center;gap:6px;">
+                            <span>🔄</span> স্বয়ংক্রিয় সিরিজ বরাদ্দ
+                        </b>
+                        <p style="margin:6px 0 0;font-size:12.5px;color:#3f5147;line-height:1.5;">
+                            দৈনিক, সাপ্তাহিক বা মাসিক শিডিউলে নির্ধারিত সকল কাজ স্বয়ংক্রিয়ভাবে কৃষকের মোবাইল অ্যাপে ক্যালেন্ডার অনুযায়ী নির্দিষ্ট দিনে পৌঁছে যাবে।
+                        </p>
+                    </div>
+
+                    <div style="background:#eef6ff;border:1px solid #bfdbfe;padding:12px;border-radius:9px;">
+                        <b style="color:#1d4ed8;display:flex;align-items:center;gap:6px;">
+                            <span>🏥</span> কৃষক অসুস্থ হলে করণীয়
+                        </b>
+                        <p style="margin:6px 0 0;font-size:12.5px;color:#3f5147;line-height:1.5;">
+                            যদি কোনো কৃষক হঠাৎ অসুস্থ হন, তবে বরাদ্দের বিস্তারিত পেজ থেকে এক ক্লিকেই <b>বিকল্প কৃষক প্রতিস্থাপন (Reassign)</b> করতে পারবেন—শুধুমাত্র ওইদিনের জন্য অথবা ভবিষ্যৎ সকল কাজের জন্য।
+                        </p>
+                    </div>
+
+                    <div style="background:#fff9ed;border:1px solid #fce3b8;padding:12px;border-radius:9px;">
+                        <b style="color:#a16207;display:flex;align-items:center;gap:6px;">
+                            <span>⏱</span> একই দিনে একাধিক কাজ
+                        </b>
+                        <p style="margin:6px 0 0;font-size:12.5px;color:#3f5147;line-height:1.5;">
+                            সময় ভিন্ন হলে একই দিনে একই কাজ একাধিকবার বরাদ্দ করা যায় (যেমন: সকালের খাদ্য ও বিকালের খাদ্য)।
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 1: Base Target Selection (Farmer & Location) -->
+            <section class="card">
                     <div class="card-title">
                         <div class="title-left">
                             <span class="iconbox">👤</span>
@@ -643,51 +684,6 @@
                         <textarea class="input" name="notes" rows="2" placeholder="মাঠ পর্যায়ে কৃষকের প্রতি সাধারণ নির্দেশনা বা সতর্কতা থাকলে লিখুন...">{{ old('notes') }}</textarea>
                     </div>
                 </section>
-            </div>
-
-            <!-- Sidebar Guidance -->
-            <div class="form-side-col">
-                <section class="card sticky-side-card">
-                    <div class="card-title">
-                        <div class="title-left">
-                            <span class="iconbox" style="background:#eaf8ef;color:#08783f">ℹ</span>
-                            <div>
-                                <h3 style="font-size:15px;margin:0;color:var(--ink)">বরাদ্দ নির্দেশিকা ও নিয়ম</h3>
-                                <div class="sub">পুনরাবৃত্তি ও ব্যবস্থাপনা নীতি</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:#3f5147;line-height:1.5;">
-                        <div style="background:#f4fbf6;border:1px solid #d4eedd;padding:12px;border-radius:9px;">
-                            <b style="color:#08783f;display:flex;align-items:center;gap:6px;">
-                                <span>🔄</span> স্বয়ংক্রিয় সিরিজ বরাদ্দ
-                            </b>
-                            <p style="margin:6px 0 0;font-size:12.5px;">
-                                দৈনিক, সাপ্তাহিক বা মাসিক শিডিউলে নির্ধারিত সকল কাজ স্বয়ংক্রিয়ভাবে কৃষকের মোবাইল অ্যাপে ক্যালেন্ডার অনুযায়ী নির্দিষ্ট দিনে পৌঁছে যাবে।
-                            </p>
-                        </div>
-
-                        <div style="background:#eef6ff;border:1px solid #bfdbfe;padding:12px;border-radius:9px;">
-                            <b style="color:#1d4ed8;display:flex;align-items:center;gap:6px;">
-                                <span>🏥</span> কৃষক অসুস্থ হলে করণীয়
-                            </b>
-                            <p style="margin:6px 0 0;font-size:12.5px;">
-                                যদি কোনো কৃষক হঠাৎ অসুস্থ হন, তবে বরাদ্দের বিস্তারিত পেজ থেকে এক ক্লিকেই <b>বিকল্প কৃষক প্রতিস্থাপন (Reassign)</b> করতে পারবেন—শুধুমাত্র ওইদিনের জন্য অথবা ভবিষ্যৎ সকল কাজের জন্য।
-                            </p>
-                        </div>
-
-                        <div style="background:#fff9ed;border:1px solid #fce3b8;padding:12px;border-radius:9px;">
-                            <b style="color:#a16207;display:flex;align-items:center;gap:6px;">
-                                <span>⏱</span> একই দিনে একাধিক কাজ
-                            </b>
-                            <p style="margin:6px 0 0;font-size:12.5px;">
-                                সময় ভিন্ন হলে একই দিনে একই কাজ একাধিকবার বরাদ্দ করা যায় (যেমন: সকালের খাদ্য ও বিকালের খাদ্য)।
-                            </p>
-                        </div>
-                    </div>
-                </section>
-            </div>
         </div>
 
         <div class="sticky-actions">
@@ -992,6 +988,16 @@
 .week-card-body {
     padding: 14px;
 }
+.guidance-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+@media (max-width: 900px) {
+    .guidance-grid {
+        grid-template-columns: 1fr;
+    }
+}
 .day-schedule-card {
     background: #fbfdfc;
     border: 1px solid #d1fae5;
@@ -999,6 +1005,8 @@
     border-radius: 8px;
     padding: 10px 12px;
     margin-top: 10px;
+    overflow-x: auto;
+    box-sizing: border-box;
 }
 .day-schedule-header {
     display: flex;
@@ -1010,7 +1018,7 @@
 }
 .day-task-grid-row {
     display: grid;
-    grid-template-columns: 1.6fr 1.4fr 100px 100px 32px;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) minmax(125px, 130px) minmax(125px, 130px) 32px;
     gap: 8px;
     align-items: center;
     background: #ffffff;
@@ -1018,6 +1026,11 @@
     border-radius: 6px;
     padding: 6px 10px;
     margin-bottom: 6px;
+    box-sizing: border-box;
+    width: 100%;
+}
+.day-task-grid-row > div {
+    min-width: 0;
 }
 .locked-task-badge {
     display: flex;
@@ -1034,6 +1047,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-height: 31px;
+    min-width: 0;
+    width: 100%;
     box-sizing: border-box;
 }
 .locked-loc-badge {
@@ -1050,6 +1065,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-height: 31px;
+    min-width: 0;
+    width: 100%;
     box-sizing: border-box;
 }
 .day-task-grid-row:last-child {
@@ -1912,24 +1929,24 @@ function renderWeekCardBodyHtml(w, startDate, weekSat) {
                     // Routine task: locked badges, NO delete button
                     taskColHtml = `
                         <div class="locked-task-badge" title="রুটিন কাজ: ${tplObj ? tplObj.name : ''}">
-                            <span style="font-size:12px;">🔒</span> <span style="overflow:hidden;text-overflow:ellipsis;">${tplName}</span>
+                            <span style="font-size:12px;flex-shrink:0;">🔒</span> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1;">${tplName}</span>
                         </div>
                     `;
                     locColHtml = `
                         <div class="locked-loc-badge" title="রুটিন লোকেশন: ${locObj ? locObj.name : ''}">
-                            <span style="font-size:12px;">📍</span> <span style="overflow:hidden;text-overflow:ellipsis;">${locName}</span>
+                            <span style="font-size:12px;flex-shrink:0;">📍</span> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1;">${locName}</span>
                         </div>
                     `;
                     actionColHtml = `<div></div>`;
                 } else {
                     // Extra task: editable dropdowns, WITH delete button
                     taskColHtml = `
-                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'templateId', this.value)">
+                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;box-sizing:border-box;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'templateId', this.value)">
                             ${buildTaskOptions(t.templateId)}
                         </select>
                     `;
                     locColHtml = `
-                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'locationId', this.value)">
+                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;box-sizing:border-box;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'locationId', this.value)">
                             ${buildLocationOptions(t.locationId)}
                         </select>
                     `;
@@ -1945,10 +1962,10 @@ function renderWeekCardBodyHtml(w, startDate, weekSat) {
                         <div>${taskColHtml}</div>
                         <div>${locColHtml}</div>
                         <div>
-                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.startTime}" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'startTime', this.value)">
+                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;box-sizing:border-box;" value="${t.startTime}" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'startTime', this.value)">
                         </div>
                         <div>
-                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.endTime || ''}" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'endTime', this.value)">
+                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;box-sizing:border-box;" value="${t.endTime || ''}" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'endTime', this.value)">
                         </div>
                         ${actionColHtml}
                     </div>
@@ -2897,24 +2914,24 @@ function renderMonthCardBodyHtml(m, startDate, monthAnchor) {
                     // Routine task: locked badges, NO delete button
                     taskColHtml = `
                         <div class="locked-task-badge" title="মাসিক রুটিন কাজ: ${tplObj ? tplObj.name : ''}">
-                            <span style="font-size:12px;">🔒</span> <span style="overflow:hidden;text-overflow:ellipsis;">${tplName}</span>
+                            <span style="font-size:12px;flex-shrink:0;">🔒</span> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1;">${tplName}</span>
                         </div>
                     `;
                     locColHtml = `
                         <div class="locked-loc-badge" title="রুটিন লোকেশন: ${locObj ? locObj.name : ''}">
-                            <span style="font-size:12px;">📍</span> <span style="overflow:hidden;text-overflow:ellipsis;">${locName}</span>
+                            <span style="font-size:12px;flex-shrink:0;">📍</span> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1;">${locName}</span>
                         </div>
                     `;
                     actionColHtml = `<div></div>`;
                 } else {
                     // Extra task: editable dropdowns, WITH delete button
                     taskColHtml = `
-                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'templateId', this.value)">
+                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;box-sizing:border-box;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'templateId', this.value)">
                             ${buildTaskOptions(t.templateId)}
                         </select>
                     `;
                     locColHtml = `
-                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'locationId', this.value)">
+                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;box-sizing:border-box;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'locationId', this.value)">
                             ${buildLocationOptions(t.locationId)}
                         </select>
                     `;
@@ -2930,10 +2947,10 @@ function renderMonthCardBodyHtml(m, startDate, monthAnchor) {
                         <div>${taskColHtml}</div>
                         <div>${locColHtml}</div>
                         <div>
-                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.startTime}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'startTime', this.value)">
+                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;box-sizing:border-box;" value="${t.startTime}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'startTime', this.value)">
                         </div>
                         <div>
-                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.endTime || ''}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'endTime', this.value)">
+                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;box-sizing:border-box;" value="${t.endTime || ''}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'endTime', this.value)">
                         </div>
                         ${actionColHtml}
                     </div>

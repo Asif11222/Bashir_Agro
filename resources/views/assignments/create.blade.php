@@ -1160,7 +1160,7 @@ function addDailyTaskRow() {
             <div class="form-grid">
                 <div>
                     <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
-                    <select class="input" name="daily_tasks[${index}][task_template_id]" required>
+                    <select class="input" name="daily_tasks[${index}][task_template_id]">
                         ${taskTemplatesOptions}
                     </select>
                 </div>
@@ -1172,7 +1172,7 @@ function addDailyTaskRow() {
                 </div>
                 <div>
                     <label class="label">শুরুর সময় <span class="req">*</span></label>
-                    <input class="input" type="time" name="daily_tasks[${index}][start_time]" value="14:00" required>
+                    <input class="input" type="time" name="daily_tasks[${index}][start_time]" value="14:00">
                 </div>
                 <div>
                     <label class="label">শেষ সময়</label>
@@ -1402,7 +1402,7 @@ function renderWeeklyUniformTasksUI() {
                 <div class="form-grid">
                     <div>
                         <label class="label">কাজের ধরন (Template) <span class="req">*</span></label>
-                        <select class="input" onchange="onWeeklyUniformTaskChange(${idx}, 'templateId', this.value)" required>
+                        <select class="input" onchange="onWeeklyUniformTaskChange(${idx}, 'templateId', this.value)">
                             ${buildTaskOptions(task.templateId)}
                         </select>
                     </div>
@@ -1414,7 +1414,7 @@ function renderWeeklyUniformTasksUI() {
                     </div>
                     <div>
                         <label class="label">শুরুর সময় <span class="req">*</span></label>
-                        <input class="input" type="time" value="${task.startTime}" onchange="onWeeklyUniformTaskChange(${idx}, 'startTime', this.value)" required>
+                        <input class="input" type="time" value="${task.startTime}" onchange="onWeeklyUniformTaskChange(${idx}, 'startTime', this.value)">
                     </div>
                     <div>
                         <label class="label">শেষ সময়</label>
@@ -1503,8 +1503,28 @@ function initWeeklySchedule() {
 
     // Initialize weeksState
     weeksState = [];
+    const startDate = range ? range.startDate : new Date();
+    const startSat = range ? range.startSat : new Date();
+
     for (let w = 0; w < weeksCount; w++) {
-        const defaultDays = (w === 0) ? ['sun', 'mon', 'tue'] : ['sun', 'fri'];
+        const weekSat = new Date(startSat);
+        weekSat.setDate(startSat.getDate() + (w * 7));
+
+        const availableDays = dayOrder.filter(dayKey => {
+            const dayOffset = dayOffsetFromSat[dayKey];
+            const candDate = new Date(weekSat);
+            candDate.setDate(weekSat.getDate() + dayOffset);
+            return candDate >= startDate;
+        });
+
+        let defaultDays = [];
+        if (w === 0) {
+            defaultDays = availableDays.slice(0, Math.min(3, availableDays.length));
+        } else {
+            const pref = ['sun', 'fri'].filter(d => availableDays.includes(d));
+            defaultDays = pref.length > 0 ? pref : availableDays.slice(0, Math.min(2, availableDays.length));
+        }
+
         const dayTasks = {};
         defaultDays.forEach(dayKey => {
             dayTasks[dayKey] = tasksPool.map(pt => ({
@@ -1545,7 +1565,7 @@ function renderTasksPoolUI() {
                 <div class="form-grid">
                     <div>
                         <label class="label">কাজের ধরন (Template) <span class="req">*</span></label>
-                        <select class="input pool-template-select" onchange="onPoolTaskChange(${idx}, 'templateId', this.value)" required>
+                        <select class="input pool-template-select" onchange="onPoolTaskChange(${idx}, 'templateId', this.value)">
                             ${buildTaskOptions(task.templateId)}
                         </select>
                     </div>
@@ -1557,7 +1577,7 @@ function renderTasksPoolUI() {
                     </div>
                     <div>
                         <label class="label">ডিফল্ট শুরুর সময় <span class="req">*</span></label>
-                        <input class="input pool-start-time" type="time" value="${task.startTime}" onchange="onPoolTaskChange(${idx}, 'startTime', this.value)" required>
+                        <input class="input pool-start-time" type="time" value="${task.startTime}" onchange="onPoolTaskChange(${idx}, 'startTime', this.value)">
                     </div>
                     <div>
                         <label class="label">ডিফল্ট শেষ সময়</label>
@@ -1667,9 +1687,27 @@ function onWeeklyDurationOrStartChange() {
     const range = getWeeklyDateRange();
     if (!range) return;
 
-    const { weeksCount } = range;
+    const { startDate, startSat, weeksCount } = range;
     while (weeksState.length < weeksCount) {
-        const defaultDays = ['sun', 'mon', 'tue'];
+        const w = weeksState.length;
+        const weekSat = new Date(startSat);
+        weekSat.setDate(startSat.getDate() + (w * 7));
+
+        const availableDays = dayOrder.filter(dayKey => {
+            const dayOffset = dayOffsetFromSat[dayKey];
+            const candDate = new Date(weekSat);
+            candDate.setDate(weekSat.getDate() + dayOffset);
+            return candDate >= startDate;
+        });
+
+        let defaultDays = [];
+        if (w === 0) {
+            defaultDays = availableDays.slice(0, Math.min(3, availableDays.length));
+        } else {
+            const pref = ['sun', 'fri'].filter(d => availableDays.includes(d));
+            defaultDays = pref.length > 0 ? pref : availableDays.slice(0, Math.min(2, availableDays.length));
+        }
+
         const dayTasks = {};
         defaultDays.forEach(dayKey => {
             dayTasks[dayKey] = tasksPool.map(pt => ({
@@ -1693,6 +1731,19 @@ function onWeeklyDurationOrStartChange() {
         weeksState = weeksState.slice(0, weeksCount);
     }
 
+    // Clean up any past days from existing weeks if start date changed
+    weeksState.forEach((wObj, w) => {
+        const weekSat = new Date(startSat);
+        weekSat.setDate(startSat.getDate() + (w * 7));
+        wObj.selectedDays = (wObj.selectedDays || []).filter(dayKey => {
+            const dayOffset = dayOffsetFromSat[dayKey];
+            const candDate = new Date(weekSat);
+            candDate.setDate(weekSat.getDate() + dayOffset);
+            return candDate >= startDate;
+        });
+    });
+
+    renderWeeklyUniformDaysUI();
     renderWeekByWeekCards();
     syncWeeklyCustomSchedule();
 }
@@ -1810,6 +1861,8 @@ function renderWeekCardBodyHtml(w, startDate, weekSat) {
             const dayOffset = dayOffsetFromSat[dayKey];
             const candDate = new Date(weekSat);
             candDate.setDate(weekSat.getDate() + dayOffset);
+            if (candDate < startDate) return; // Never render schedule box for past days
+
             const isoDate = formatISODate(candDate);
             const formattedFullDate = formatBnDate(candDate);
             const dayName = dayNamesBn[dayKey];
@@ -1821,7 +1874,7 @@ function renderWeekCardBodyHtml(w, startDate, weekSat) {
                 taskRowsHtml += `
                     <div class="day-task-grid-row" data-task-index="${tIdx}">
                         <div>
-                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'templateId', this.value)" required>
+                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'templateId', this.value)">
                                 ${buildTaskOptions(t.templateId)}
                             </select>
                         </div>
@@ -1831,7 +1884,7 @@ function renderWeekCardBodyHtml(w, startDate, weekSat) {
                             </select>
                         </div>
                         <div>
-                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.startTime}" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'startTime', this.value)" required>
+                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.startTime}" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'startTime', this.value)">
                         </div>
                         <div>
                             <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.endTime || ''}" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'endTime', this.value)">
@@ -2328,7 +2381,7 @@ function renderMonthlyUniformTasksUI() {
                 <div class="form-grid">
                     <div>
                         <label class="label">কাজের ধরন (Template) <span class="req">*</span></label>
-                        <select class="input" onchange="onMonthlyUniformTaskChange(${idx}, 'templateId', this.value)" required>
+                        <select class="input" onchange="onMonthlyUniformTaskChange(${idx}, 'templateId', this.value)">
                             ${buildTaskOptions(task.templateId)}
                         </select>
                     </div>
@@ -2340,7 +2393,7 @@ function renderMonthlyUniformTasksUI() {
                     </div>
                     <div>
                         <label class="label">শুরুর সময় <span class="req">*</span></label>
-                        <input class="input" type="time" value="${task.startTime}" onchange="onMonthlyUniformTaskChange(${idx}, 'startTime', this.value)" required>
+                        <input class="input" type="time" value="${task.startTime}" onchange="onMonthlyUniformTaskChange(${idx}, 'startTime', this.value)">
                     </div>
                     <div>
                         <label class="label">শেষ সময়</label>
@@ -2483,7 +2536,7 @@ function renderMonthlyTasksPoolUI() {
                 <div class="form-grid">
                     <div>
                         <label class="label">কাজের ধরন (Template) <span class="req">*</span></label>
-                        <select class="input pool-template-select" onchange="onMonthlyPoolTaskChange(${idx}, 'templateId', this.value)" required>
+                        <select class="input pool-template-select" onchange="onMonthlyPoolTaskChange(${idx}, 'templateId', this.value)">
                             ${buildTaskOptions(task.templateId)}
                         </select>
                     </div>
@@ -2495,7 +2548,7 @@ function renderMonthlyTasksPoolUI() {
                     </div>
                     <div>
                         <label class="label">ডিফল্ট শুরুর সময় <span class="req">*</span></label>
-                        <input class="input pool-start-time" type="time" value="${task.startTime}" onchange="onMonthlyPoolTaskChange(${idx}, 'startTime', this.value)" required>
+                        <input class="input pool-start-time" type="time" value="${task.startTime}" onchange="onMonthlyPoolTaskChange(${idx}, 'startTime', this.value)">
                     </div>
                     <div>
                         <label class="label">ডিফল্ট শেষ সময়</label>
@@ -2776,7 +2829,7 @@ function renderMonthCardBodyHtml(m, startDate, monthAnchor) {
                 taskRowsHtml += `
                     <div class="day-task-grid-row" data-task-index="${tIdx}">
                         <div>
-                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'templateId', this.value)" required>
+                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'templateId', this.value)">
                                 ${buildTaskOptions(t.templateId)}
                             </select>
                         </div>
@@ -2786,7 +2839,7 @@ function renderMonthCardBodyHtml(m, startDate, monthAnchor) {
                             </select>
                         </div>
                         <div>
-                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.startTime}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'startTime', this.value)" required>
+                            <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.startTime}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'startTime', this.value)">
                         </div>
                         <div>
                             <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.endTime || ''}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'endTime', this.value)">
@@ -3225,12 +3278,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
+            if (currentRecurrence === 'daily') {
+                const dailyTemplates = document.querySelectorAll('#daily-tasks-container select[name$="[task_template_id]"]');
+                let hasValid = false;
+                dailyTemplates.forEach(s => {
+                    if (s.value) hasValid = true;
+                });
+                if (!hasValid) {
+                    e.preventDefault();
+                    alert('⚠️ দৈনিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি কাজের ধরন (Template) নির্বাচন করুন।');
+                    return false;
+                }
+            }
             if (currentRecurrence === 'weekly') {
                 syncWeeklyCustomSchedule();
                 const inputs = document.querySelectorAll('#weekly-hidden-form-inputs input[name^="custom_schedule"]');
                 if (inputs.length === 0) {
                     e.preventDefault();
-                    alert('⚠️ সাপ্তাহিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি সপ্তাহের দিন এবং কাজের ধরন নির্বাচন করুন।');
+                    if (weeklyTimingMode === 'uniform') {
+                        if (weeklyUniformDays.length === 0) {
+                            alert('⚠️ অনুগ্রহ করে রুটিন শিডিউলের জন্য সপ্তাহের অন্তত একটি কাজের দিন নির্বাচন করুন।');
+                        } else {
+                            alert('⚠️ অনুগ্রহ করে রুটিন শিডিউলে কাজের ধরন (Template) ও সময় নির্বাচন করুন।');
+                        }
+                    } else {
+                        alert('⚠️ সাপ্তাহিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি সপ্তাহের দিন এবং কাজের ধরন (Template) নির্বাচন করুন।');
+                    }
                     return false;
                 }
             }
@@ -3239,7 +3312,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const inputs = document.querySelectorAll('#monthly-hidden-form-inputs input[name^="custom_schedule"]');
                 if (inputs.length === 0) {
                     e.preventDefault();
-                    alert('⚠️ মাসিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি মাসের তারিখ এবং কাজের ধরন নির্বাচন করুন।');
+                    if (monthlyTimingMode === 'uniform') {
+                        if (monthlyUniformDays.length === 0) {
+                            alert('⚠️ অনুগ্রহ করে রুটিন শিডিউলের জন্য মাসের অন্তত একটি তারিখ নির্বাচন করুন।');
+                        } else {
+                            alert('⚠️ অনুগ্রহ করে রুটিন শিডিউলে কাজের ধরন (Template) ও সময় নির্বাচন করুন।');
+                        }
+                    } else {
+                        alert('⚠️ মাসিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি মাসের তারিখ এবং কাজের ধরন (Template) নির্বাচন করুন।');
+                    }
                     return false;
                 }
             }

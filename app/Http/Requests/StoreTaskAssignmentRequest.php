@@ -73,7 +73,7 @@ class StoreTaskAssignmentRequest extends FormRequest
         } elseif ($recurrence === 'weekly') {
             $rules['start_date'] = ['required', 'date'];
             $rules['weeks_count'] = ['required', 'integer', 'min:1', 'max:24'];
-            $rules['weekly_timing_mode'] = ['nullable', 'string', 'in:same,by_day,by_week,custom'];
+            $rules['weekly_timing_mode'] = ['nullable', 'string', 'in:uniform,same,by_day,by_week,custom'];
 
             $hasCustomSchedule = $this->has('custom_schedule') && is_array($this->input('custom_schedule')) && count($this->input('custom_schedule')) > 0;
 
@@ -134,6 +134,7 @@ class StoreTaskAssignmentRequest extends FormRequest
         } elseif ($recurrence === 'monthly') {
             $rules['start_date'] = ['required', 'date'];
             $rules['months_count'] = ['required', 'integer', 'min:1', 'max:12'];
+            $rules['monthly_timing_mode'] = ['nullable', 'string', 'in:uniform,same,by_day,by_week,custom'];
 
             $hasCustomSchedule = $this->has('custom_schedule') && is_array($this->input('custom_schedule')) && count($this->input('custom_schedule')) > 0;
 

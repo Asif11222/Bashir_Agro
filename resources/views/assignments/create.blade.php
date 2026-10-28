@@ -308,44 +308,112 @@
                             </div>
                         </div>
 
-                        <!-- Sub-step 2: রুটিন কাজের তালিকা (Repetitive Tasks Pool) -->
-                        <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #d1fae5;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-                                <div>
-                                    <b class="subcard-title" style="color:#166534;font-size:14px;">📋 ২. রুটিন কাজের পুল (Repetitive Tasks Pool)</b>
-                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">
-                                        প্রতি সপ্তাহে যে কাজগুলো পুনরাবৃত্তি হবে তা এখানে সংজ্ঞায়িত করুন (যেমন: কাজ ১: গাছে পানি, কাজ ২: পুকুরে খাদ্য ও পানি)। প্রয়োজনে যেকোনো কাজ যোগ বা বাদ দিতে পারেন।
-                                    </div>
-                                </div>
-                                <button type="button" class="btn soft" style="font-size:12px;padding:6px 12px;background:#eaf8ef;color:#08783f;border:1px solid #86efac;font-weight:600;" onclick="addWeeklyPoolTaskRow()">
-                                    + নতুন কাজ যোগ করুন
-                                </button>
+                        <!-- Sub-step 2: সাপ্তাহিক সময়সূচীর ধরণ (Weekly Timing & Schedule Mode) -->
+                        <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #dcebe1;">
+                            <b class="subcard-title" style="color:#14241d;">⏱️ ২. সাপ্তাহিক সময়সূচীর ধরণ (Schedule & Timing Mode) <span class="req">*</span></b>
+                            <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                কাজের দিন ও সময় কি সব সপ্তাহে একই থাকবে নাকি প্রতি সপ্তাহে আলাদা কাস্টমাইজ করবেন তা নির্ধারণ করুন:
                             </div>
-
-                            <div id="weekly-tasks-pool-container" style="display:flex;flex-direction:column;gap:10px;">
-                                <!-- Populated dynamically by JS -->
+                            <div class="schedule-mode-switcher">
+                                <label class="mode-option-card {{ old('weekly_timing_mode', 'uniform') === 'uniform' ? 'active' : '' }}" id="card-weekly-mode-uniform" onclick="onWeeklyModeChange('uniform')">
+                                    <input type="radio" name="weekly_timing_mode" value="uniform" {{ old('weekly_timing_mode', 'uniform') === 'uniform' ? 'checked' : '' }}>
+                                    <div>
+                                        <b style="font-size:13.5px;color:#14241d;display:block;">🟢 প্রতি সপ্তাহে একই দিন ও সময় (সাধারণ রুটিন)</b>
+                                        <span style="font-size:11.5px;color:var(--muted);line-height:1.4;display:block;margin-top:2px;">
+                                            সব সপ্তাহে একই বারে এবং একই সময়ে কাজগুলো পুনরাবৃত্তি হবে (দ্রুত ও সহজ)
+                                        </span>
+                                    </div>
+                                </label>
+                                <label class="mode-option-card {{ old('weekly_timing_mode') === 'custom' ? 'active' : '' }}" id="card-weekly-mode-custom" onclick="onWeeklyModeChange('custom')">
+                                    <input type="radio" name="weekly_timing_mode" value="custom" {{ old('weekly_timing_mode') === 'custom' ? 'checked' : '' }}>
+                                    <div>
+                                        <b style="font-size:13.5px;color:#14241d;display:block;">🔵 সপ্তাহভেদে ভিন্ন দিন বা ভিন্ন সময় (কাস্টম রুটিন)</b>
+                                        <span style="font-size:11.5px;color:var(--muted);line-height:1.4;display:block;margin-top:2px;">
+                                            প্রতিটি সপ্তাহের দিন ও কাজের সময় আলাদাভাবে স্বাধীনভাবে নির্ধারণ করবেন (উন্নত নিয়ন্ত্রণ)
+                                        </span>
+                                    </div>
+                                </label>
                             </div>
                         </div>
 
-                        <!-- Sub-step 3: প্রতিটি সপ্তাহের স্বাধীন দিন ও সময় নির্ধারণ (Week-by-Week Setup) -->
-                        <div style="margin-top:16px;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-                                <div>
-                                    <b style="font-size:14px;color:#14241d;">🗓️ ৩. সপ্তাহভিত্তিক কাজের দিন ও সময় নির্ধারণ (Independent Week-by-Week Setup):</b>
-                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">
-                                        প্রতিটি সপ্তাহের কোন কোন দিনে কাজ হবে তা টিক দিন। নির্বাচিত দিনগুলোতে পুলের কাজগুলো বসবে এবং প্রতিটি কাজের সময় ইচ্ছামতো কাস্টমাইজ করতে পারবেন।
+                        <!-- Uniform Mode Container (মোড ক: একই দিন ও সময়) -->
+                        <div id="weekly-uniform-section" style="{{ old('weekly_timing_mode', 'uniform') === 'uniform' ? '' : 'display:none;' }}">
+                            <!-- Sub-step 3A: প্রতি সপ্তাহের কাজের দিনসমূহ নির্বাচন করুন -->
+                            <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #d1fae5;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                                    <b class="subcard-title" style="color:#166534;font-size:14px;">🗓️ ৩. প্রতি সপ্তাহের কাজের দিনসমূহ নির্বাচন করুন <span class="req">*</span></b>
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:3px 8px;" onclick="setWeeklyUniformDaysPreset('all')">সব দিন</button>
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:3px 8px;" onclick="setWeeklyUniformDaysPreset('workdays')">কাজের দিন (শনি-বৃহঃ)</button>
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:3px 8px;" onclick="setWeeklyUniformDaysPreset('weekend')">ছুটির দিন (শুক্র)</button>
                                     </div>
                                 </div>
-                                <div style="display:flex;gap:8px;align-items:center;">
-                                    <button type="button" class="btn soft" id="btn-copy-week1-to-all" style="font-size:12px;padding:5px 10px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;" onclick="copyWeek1ToAll()">
-                                        📋 সপ্তাহ ১-এর শিডিউল সব সপ্তাহে কপি করুন
-                                    </button>
+                                <div class="weekday-picker" id="weekly-uniform-day-chips" style="margin-top:10px;">
+                                    <!-- Populated dynamically by JS -->
                                 </div>
                             </div>
 
-                            <!-- Container for dynamically rendered week cards -->
-                            <div id="week-by-week-cards-container" style="display:flex;flex-direction:column;gap:14px;">
-                                <!-- Populated dynamically by JS -->
+                            <!-- Sub-step 4A: প্রতি সপ্তাহে পুনরাবৃত্তি হওয়া কাজের তালিকা ও সময়সূচী -->
+                            <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #d1fae5;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                                    <div>
+                                        <b class="subcard-title" style="color:#166534;font-size:14px;">📋 ৪. প্রতি সপ্তাহে পুনরাবৃত্তি হওয়ার কাজের তালিকা ও সময়সূচী <span class="req">*</span></b>
+                                        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                            নির্বাচিত দিনগুলোতে যে কাজগুলো চলবে তা নির্ধারণ করুন। শুরুর সময় ও শেষ সময় প্রদান করুন।
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn soft" style="font-size:12px;padding:6px 12px;background:#eaf8ef;color:#08783f;border:1px solid #86efac;font-weight:600;" onclick="addWeeklyUniformTaskRow()">
+                                        + নতুন কাজ যোগ করুন
+                                    </button>
+                                </div>
+
+                                <div id="weekly-uniform-tasks-container" style="display:flex;flex-direction:column;gap:10px;">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Mode Container (মোড খ: সপ্তাহভেদে ভিন্ন দিন বা সময়) -->
+                        <div id="weekly-custom-section" style="{{ old('weekly_timing_mode') === 'custom' ? '' : 'display:none;' }}">
+                            <!-- Sub-step 2B: রুটিন কাজের তালিকা (Repetitive Tasks Pool) -->
+                            <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #d1fae5;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                                    <div>
+                                        <b class="subcard-title" style="color:#166534;font-size:14px;">📋 ৩. রুটিন কাজের পুল (Repetitive Tasks Pool)</b>
+                                        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                            প্রতি সপ্তাহে যে কাজগুলো পুনরাবৃত্তি হবে তা এখানে সংজ্ঞায়িত করুন (যেমন: কাজ ১: গাছে পানি, কাজ ২: পুকুরে খাদ্য ও পানি)। প্রয়োজনে যেকোনো কাজ যোগ বা বাদ দিতে পারেন।
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn soft" style="font-size:12px;padding:6px 12px;background:#eaf8ef;color:#08783f;border:1px solid #86efac;font-weight:600;" onclick="addWeeklyPoolTaskRow()">
+                                        + নতুন কাজ যোগ করুন
+                                    </button>
+                                </div>
+
+                                <div id="weekly-tasks-pool-container" style="display:flex;flex-direction:column;gap:10px;">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
+                            </div>
+
+                            <!-- Sub-step 3B: প্রতিটি সপ্তাহের স্বাধীন দিন ও সময় নির্ধারণ (Week-by-Week Setup) -->
+                            <div style="margin-top:16px;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                                    <div>
+                                        <b style="font-size:14px;color:#14241d;">🗓️ ৪. সপ্তাহভিত্তিক কাজের দিন ও সময় নির্ধারণ (Independent Week-by-Week Setup):</b>
+                                        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                            প্রতিটি সপ্তাহের কোন কোন দিনে কাজ হবে তা টিক দিন। নির্বাচিত দিনগুলোতে পুলের কাজগুলো বসবে এবং প্রতিটি কাজের সময় ইচ্ছামতো কাস্টমাইজ করতে পারবেন।
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;align-items:center;">
+                                        <button type="button" class="btn soft" id="btn-copy-week1-to-all" style="font-size:12px;padding:5px 10px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;" onclick="copyWeek1ToAll()">
+                                            📋 সপ্তাহ ১-এর শিডিউল সব সপ্তাহে কপি করুন
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Container for dynamically rendered week cards -->
+                                <div id="week-by-week-cards-container" style="display:flex;flex-direction:column;gap:14px;">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
                             </div>
                         </div>
 
@@ -412,44 +480,115 @@
                             </div>
                         </div>
 
-                        <!-- Sub-step 2: রুটিন কাজের পুল (Repetitive Tasks Pool) -->
-                        <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #d1fae5;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-                                <div>
-                                    <b class="subcard-title" style="color:#166534;font-size:14px;">📋 ২. মাসিক রুটিন কাজের পুল (Monthly Tasks Pool)</b>
-                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">
-                                        প্রতি মাসে যে কাজগুলো পুনরাবৃত্তি হবে তা এখানে সংজ্ঞায়িত করুন (যেমন: কাজ ১: সার প্রয়োগ/গাছের পরিচর্যা, কাজ ২: স্প্রে বা স্বাস্থ্য পরীক্ষা)।
-                                    </div>
-                                </div>
-                                <button type="button" class="btn soft" style="font-size:12px;padding:6px 12px;background:#eaf8ef;color:#08783f;border:1px solid #86efac;font-weight:600;" onclick="addMonthlyPoolTaskRow()">
-                                    + নতুন কাজ যোগ করুন
-                                </button>
+                        <!-- Sub-step 2: মাসিক সময়সূচীর ধরণ (Monthly Timing & Schedule Mode) -->
+                        <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #dcebe1;">
+                            <b class="subcard-title" style="color:#14241d;">⏱️ ২. মাসিক সময়সূচীর ধরণ (Schedule & Timing Mode) <span class="req">*</span></b>
+                            <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                কাজের তারিখ ও সময় কি প্রতি মাসে একই থাকবে নাকি প্রতি মাসে আলাদা কাস্টমাইজ করবেন তা নির্ধারণ করুন:
                             </div>
-
-                            <div id="monthly-tasks-pool-container" style="display:flex;flex-direction:column;gap:10px;">
-                                <!-- Populated dynamically by JS -->
+                            <div class="schedule-mode-switcher">
+                                <label class="mode-option-card {{ old('monthly_timing_mode', 'uniform') === 'uniform' ? 'active' : '' }}" id="card-monthly-mode-uniform" onclick="onMonthlyModeChange('uniform')">
+                                    <input type="radio" name="monthly_timing_mode" value="uniform" {{ old('monthly_timing_mode', 'uniform') === 'uniform' ? 'checked' : '' }}>
+                                    <div>
+                                        <b style="font-size:13.5px;color:#14241d;display:block;">🟢 প্রতি মাসে একই তারিখ ও সময় (সাধারণ রুটিন)</b>
+                                        <span style="font-size:11.5px;color:var(--muted);line-height:1.4;display:block;margin-top:2px;">
+                                            সব মাসে একই তারিখে (১-৩০) এবং একই সময়ে কাজগুলো পুনরাবৃত্তি হবে (দ্রুত ও সহজ)
+                                        </span>
+                                    </div>
+                                </label>
+                                <label class="mode-option-card {{ old('monthly_timing_mode') === 'custom' ? 'active' : '' }}" id="card-monthly-mode-custom" onclick="onMonthlyModeChange('custom')">
+                                    <input type="radio" name="monthly_timing_mode" value="custom" {{ old('monthly_timing_mode') === 'custom' ? 'checked' : '' }}>
+                                    <div>
+                                        <b style="font-size:13.5px;color:#14241d;display:block;">🔵 মাসভেদে ভিন্ন তারিখ বা ভিন্ন সময় (কাস্টম রুটিন)</b>
+                                        <span style="font-size:11.5px;color:var(--muted);line-height:1.4;display:block;margin-top:2px;">
+                                            প্রতিটি মাসের তারিখ ও কাজের সময় আলাদাভাবে স্বাধীনভাবে নির্ধারণ করবেন (উন্নত নিয়ন্ত্রণ)
+                                        </span>
+                                    </div>
+                                </label>
                             </div>
                         </div>
 
-                        <!-- Sub-step 3: প্রতিটি মাসের স্বাধীন তারিখ ও সময় নির্ধারণ (Month-by-Month Setup) -->
-                        <div style="margin-top:16px;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-                                <div>
-                                    <b style="font-size:14px;color:#14241d;">🗓️ ৩. মাসভিত্তিক কাজের তারিখ ও সময় নির্ধারণ (Independent Month-by-Month Setup):</b>
-                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">
-                                        প্রতি মাসের কোন কোন তারিখে কাজ হবে তা নির্বাচন করুন (১-৩০ তারিখ)। নির্বাচিত তারিখে কাজের পুল থেকে কাজগুলো যুক্ত হবে এবং প্রতিটি কাজের সময় কাস্টমাইজ করতে পারবেন।
+                        <!-- Monthly Uniform Mode Container (মোড ক: একই তারিখ ও সময়) -->
+                        <div id="monthly-uniform-section" style="{{ old('monthly_timing_mode', 'uniform') === 'uniform' ? '' : 'display:none;' }}">
+                            <!-- Sub-step 3A: প্রতি মাসের কাজের তারিখসমূহ নির্বাচন করুন (১-৩০ তারিখ) -->
+                            <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #d1fae5;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                                    <b class="subcard-title" style="color:#166534;font-size:14px;">🗓️ ৩. প্রতি মাসের কাজের তারিখসমূহ নির্বাচন করুন (১-৩০ তারিখ) <span class="req">*</span></b>
+                                    <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                                        <span style="font-size:11px;color:var(--muted)">কুইক সিলেক্ট:</span>
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:2px 7px;" onclick="setMonthlyUniformDaysPreset([1, 15])">১ ও ১৫</button>
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:2px 7px;" onclick="setMonthlyUniformDaysPreset([5, 20])">৫ ও ২০</button>
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:2px 7px;" onclick="setMonthlyUniformDaysPreset([10, 25])">১০ ও ২৫</button>
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:2px 7px;" onclick="setMonthlyUniformDaysPreset([1, 10, 20, 30])">প্রতি ১০ দিন</button>
+                                        <button type="button" class="btn soft" style="font-size:11px;padding:2px 7px;color:#dc2626;" onclick="clearMonthlyUniformDays()">সব মুছুন</button>
                                     </div>
                                 </div>
-                                <div style="display:flex;gap:8px;align-items:center;">
-                                    <button type="button" class="btn soft" id="btn-copy-month1-to-all" style="font-size:12px;padding:5px 10px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;" onclick="copyMonth1ToAll()">
-                                        📋 মাস ১-এর শিডিউল সব মাসে কপি করুন
-                                    </button>
+                                <div class="month-day-grid" id="monthly-uniform-day-grid">
+                                    <!-- Populated dynamically by JS -->
                                 </div>
                             </div>
 
-                            <!-- Container for dynamically rendered month cards -->
-                            <div id="month-by-month-cards-container" style="display:flex;flex-direction:column;gap:14px;">
-                                <!-- Populated dynamically by JS -->
+                            <!-- Sub-step 4A: প্রতি মাসে পুনরাবৃত্তি হওয়া কাজের তালিকা ও সময়সূচী -->
+                            <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #d1fae5;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                                    <div>
+                                        <b class="subcard-title" style="color:#166534;font-size:14px;">📋 ৪. প্রতি মাসে পুনরাবৃত্তি হওয়ার কাজের তালিকা ও সময়সূচী <span class="req">*</span></b>
+                                        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                            প্রতি মাসের নির্বাচিত তারিখগুলোতে যে কাজগুলো চলবে তা নির্ধারণ করুন।
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn soft" style="font-size:12px;padding:6px 12px;background:#eaf8ef;color:#08783f;border:1px solid #86efac;font-weight:600;" onclick="addMonthlyUniformTaskRow()">
+                                        + নতুন কাজ যোগ করুন
+                                    </button>
+                                </div>
+
+                                <div id="monthly-uniform-tasks-container" style="display:flex;flex-direction:column;gap:10px;">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Monthly Custom Mode Container (মোড খ: মাসভেদে ভিন্ন তারিখ বা সময়) -->
+                        <div id="monthly-custom-section" style="{{ old('monthly_timing_mode') === 'custom' ? '' : 'display:none;' }}">
+                            <!-- Sub-step 2B: রুটিন কাজের পুল (Repetitive Tasks Pool) -->
+                            <div class="config-subcard" style="margin-top:14px;background:#ffffff;border:1.5px solid #d1fae5;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                                    <div>
+                                        <b class="subcard-title" style="color:#166534;font-size:14px;">📋 ৩. মাসিক রুটিন কাজের পুল (Monthly Tasks Pool)</b>
+                                        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                            প্রতি মাসে যে কাজগুলো পুনরাবৃত্তি হবে তা এখানে সংজ্ঞায়িত করুন (যেমন: কাজ ১: সার প্রয়োগ/গাছের পরিচর্যা, কাজ ২: স্প্রে বা স্বাস্থ্য পরীক্ষা)।
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn soft" style="font-size:12px;padding:6px 12px;background:#eaf8ef;color:#08783f;border:1px solid #86efac;font-weight:600;" onclick="addMonthlyPoolTaskRow()">
+                                        + নতুন কাজ যোগ করুন
+                                    </button>
+                                </div>
+
+                                <div id="monthly-tasks-pool-container" style="display:flex;flex-direction:column;gap:10px;">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
+                            </div>
+
+                            <!-- Sub-step 3B: প্রতিটি মাসের স্বাধীন তারিখ ও সময় নির্ধারণ (Month-by-Month Setup) -->
+                            <div style="margin-top:16px;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                                    <div>
+                                        <b style="font-size:14px;color:#14241d;">🗓️ ৪. মাসভিত্তিক কাজের তারিখ ও সময় নির্ধারণ (Independent Month-by-Month Setup):</b>
+                                        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                            প্রতি মাসের কোন কোন তারিখে কাজ হবে তা নির্বাচন করুন (১-৩০ তারিখ)। নির্বাচিত তারিখে কাজের পুল থেকে কাজগুলো যুক্ত হবে এবং প্রতিটি কাজের সময় কাস্টমাইজ করতে পারবেন।
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;align-items:center;">
+                                        <button type="button" class="btn soft" id="btn-copy-month1-to-all" style="font-size:12px;padding:5px 10px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;" onclick="copyMonth1ToAll()">
+                                            📋 মাস ১-এর শিডিউল সব মাসে কপি করুন
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Container for dynamically rendered month cards -->
+                                <div id="month-by-month-cards-container" style="display:flex;flex-direction:column;gap:14px;">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
                             </div>
                         </div>
 
@@ -620,6 +759,44 @@
     font-size: 13.5px;
     color: #14241d;
     display: block;
+}
+.schedule-mode-switcher {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 10px;
+}
+@media (max-width: 768px) {
+    .schedule-mode-switcher {
+        grid-template-columns: 1fr;
+    }
+}
+.mode-option-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #ffffff;
+    border: 2px solid #dcebe1;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+.mode-option-card:hover {
+    border-color: #8fa298;
+    background: #f8fbf9;
+}
+.mode-option-card.active,
+.mode-option-card:has(input:checked) {
+    border-color: #08783f !important;
+    background: #edfcf2 !important;
+    box-shadow: 0 2px 6px rgba(8, 120, 63, 0.12);
+}
+.mode-option-card input[type="radio"] {
+    margin-top: 3px;
+    accent-color: #08783f;
+    cursor: pointer;
 }
 .weekday-picker {
     display: flex;
@@ -1124,12 +1301,179 @@ function getWeeklyDateRange() {
     return { startDate, startSat, weeksCount };
 }
 
+let weeklyTimingMode = '{{ old('weekly_timing_mode', 'uniform') }}';
+let weeklyUniformDays = ['sat', 'mon', 'wed'];
+let weeklyUniformTasks = [
+    {
+        id: 'wutask_1',
+        templateId: '',
+        locationId: '',
+        startTime: '09:00',
+        endTime: '10:00',
+        priority: 'normal',
+        notes: ''
+    }
+];
 let tasksPool = [];
 let weeksState = [];
 let weeklyInitialized = false;
 
+function onWeeklyModeChange(mode) {
+    weeklyTimingMode = mode;
+    const uniformCard = document.getElementById('card-weekly-mode-uniform');
+    const customCard = document.getElementById('card-weekly-mode-custom');
+    const uniformSection = document.getElementById('weekly-uniform-section');
+    const customSection = document.getElementById('weekly-custom-section');
+
+    if (uniformCard) {
+        const inp = uniformCard.querySelector('input');
+        if (inp) inp.checked = (mode === 'uniform');
+        if (mode === 'uniform') uniformCard.classList.add('active');
+        else uniformCard.classList.remove('active');
+    }
+    if (customCard) {
+        const inp = customCard.querySelector('input');
+        if (inp) inp.checked = (mode === 'custom');
+        if (mode === 'custom') customCard.classList.add('active');
+        else customCard.classList.remove('active');
+    }
+
+    if (uniformSection) uniformSection.style.display = (mode === 'uniform') ? 'block' : 'none';
+    if (customSection) customSection.style.display = (mode === 'custom') ? 'block' : 'none';
+
+    syncWeeklyCustomSchedule();
+}
+
+function renderWeeklyUniformDaysUI() {
+    const container = document.getElementById('weekly-uniform-day-chips');
+    if (!container) return;
+
+    let html = '';
+    dayOrder.forEach(dayKey => {
+        const isChecked = weeklyUniformDays.includes(dayKey);
+        const dayName = dayNamesBn[dayKey];
+        html += `
+            <label class="day-chip ${isChecked ? 'active' : ''}">
+                <input type="checkbox" value="${dayKey}" ${isChecked ? 'checked' : ''} onchange="toggleWeeklyUniformDay('${dayKey}', this.checked)">
+                <span>${dayName}</span>
+            </label>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function toggleWeeklyUniformDay(dayKey, isChecked) {
+    if (isChecked) {
+        if (!weeklyUniformDays.includes(dayKey)) {
+            weeklyUniformDays.push(dayKey);
+            weeklyUniformDays.sort((a, b) => dayOffsetFromSat[a] - dayOffsetFromSat[b]);
+        }
+    } else {
+        weeklyUniformDays = weeklyUniformDays.filter(d => d !== dayKey);
+    }
+    renderWeeklyUniformDaysUI();
+    syncWeeklyCustomSchedule();
+}
+
+function setWeeklyUniformDaysPreset(preset) {
+    if (preset === 'all') {
+        weeklyUniformDays = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
+    } else if (preset === 'workdays') {
+        weeklyUniformDays = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu'];
+    } else if (preset === 'weekend') {
+        weeklyUniformDays = ['fri'];
+    }
+    renderWeeklyUniformDaysUI();
+    syncWeeklyCustomSchedule();
+}
+
+function renderWeeklyUniformTasksUI() {
+    const container = document.getElementById('weekly-uniform-tasks-container');
+    if (!container) return;
+
+    let html = '';
+    weeklyUniformTasks.forEach((task, idx) => {
+        html += `
+            <div class="weekly-uniform-task-card task-repeater-row" data-task-index="${idx}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <span class="row-badge" style="background:#08783f;color:#fff;">কাজ #${idx + 1}</span>
+                    <button type="button" class="btn-remove-row" onclick="removeWeeklyUniformTaskRow(${idx})" style="${weeklyUniformTasks.length > 1 ? '' : 'display:none;'}">✕ সরান</button>
+                </div>
+                <div class="form-grid">
+                    <div>
+                        <label class="label">কাজের ধরন (Template) <span class="req">*</span></label>
+                        <select class="input" onchange="onWeeklyUniformTaskChange(${idx}, 'templateId', this.value)" required>
+                            ${buildTaskOptions(task.templateId)}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">ফার্ম লোকেশন (প্লট / পুকুর)</label>
+                        <select class="input" onchange="onWeeklyUniformTaskChange(${idx}, 'locationId', this.value)">
+                            ${buildLocationOptions(task.locationId)}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">শুরুর সময় <span class="req">*</span></label>
+                        <input class="input" type="time" value="${task.startTime}" onchange="onWeeklyUniformTaskChange(${idx}, 'startTime', this.value)" required>
+                    </div>
+                    <div>
+                        <label class="label">শেষ সময়</label>
+                        <input class="input" type="time" value="${task.endTime || ''}" onchange="onWeeklyUniformTaskChange(${idx}, 'endTime', this.value)">
+                    </div>
+                    <div>
+                        <label class="label">অগ্রাধিকার</label>
+                        <select class="input" onchange="onWeeklyUniformTaskChange(${idx}, 'priority', this.value)">
+                            <option value="normal" ${task.priority === 'normal' ? 'selected' : ''}>সাধারণ (Normal)</option>
+                            <option value="important" ${task.priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ (Important)</option>
+                            <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>জরুরি (Urgent)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">কাজের নোট (ঐচ্ছিক)</label>
+                        <input class="input" type="text" value="${task.notes || ''}" placeholder="যেমন: সকালের সেচ / পরিদর্শন" oninput="onWeeklyUniformTaskChange(${idx}, 'notes', this.value)">
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function addWeeklyUniformTaskRow() {
+    weeklyUniformTasks.push({
+        id: 'wutask_' + Date.now(),
+        templateId: '',
+        locationId: '',
+        startTime: '10:00',
+        endTime: '11:00',
+        priority: 'normal',
+        notes: ''
+    });
+    renderWeeklyUniformTasksUI();
+    syncWeeklyCustomSchedule();
+}
+
+function removeWeeklyUniformTaskRow(idx) {
+    if (weeklyUniformTasks.length > 1) {
+        weeklyUniformTasks.splice(idx, 1);
+        renderWeeklyUniformTasksUI();
+        syncWeeklyCustomSchedule();
+    }
+}
+
+function onWeeklyUniformTaskChange(idx, field, value) {
+    if (weeklyUniformTasks[idx]) {
+        weeklyUniformTasks[idx][field] = value;
+        syncWeeklyCustomSchedule();
+    }
+}
+
 function initWeeklySchedule() {
     if (weeklyInitialized) {
+        renderWeeklyUniformDaysUI();
+        renderWeeklyUniformTasksUI();
+        renderTasksPoolUI();
+        renderWeekByWeekCards();
         syncWeeklyCustomSchedule();
         return;
     }
@@ -1137,12 +1481,12 @@ function initWeeklySchedule() {
     const range = getWeeklyDateRange();
     const weeksCount = range ? range.weeksCount : 4;
 
-    // Initialize tasks pool if empty
+    // Initialize tasks pool if empty: ONLY 1 task with unselected templateId!
     if (tasksPool.length === 0) {
         tasksPool = [
             {
                 id: 'pool_1',
-                templateId: taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '',
+                templateId: '',
                 locationId: '',
                 startTime: '09:00',
                 endTime: '10:00',
@@ -1150,19 +1494,12 @@ function initWeeklySchedule() {
                 notes: ''
             }
         ];
-        if (taskTemplatesList.length > 1) {
-            tasksPool.push({
-                id: 'pool_2',
-                templateId: taskTemplatesList[1].id,
-                locationId: '',
-                startTime: '10:00',
-                endTime: '11:00',
-                priority: 'normal',
-                notes: ''
-            });
-        }
     }
     renderTasksPoolUI();
+
+    // Render Uniform UI
+    renderWeeklyUniformDaysUI();
+    renderWeeklyUniformTasksUI();
 
     // Initialize weeksState
     weeksState = [];
@@ -1668,58 +2005,110 @@ function syncWeeklyCustomSchedule() {
     const uniqueDaysSet = new Set();
     let totalWorkDays = 0;
 
-    for (let w = 0; w < weeksCount; w++) {
-        if (!weeksState[w]) continue;
-        const weekSat = new Date(startSat);
-        weekSat.setDate(startSat.getDate() + (w * 7));
+    if (weeklyTimingMode === 'uniform') {
+        for (let w = 0; w < weeksCount; w++) {
+            const weekSat = new Date(startSat);
+            weekSat.setDate(startSat.getDate() + (w * 7));
 
-        const selectedDays = weeksState[w].selectedDays || [];
-        totalWorkDays += selectedDays.length;
+            weeklyUniformDays.forEach(dayKey => {
+                uniqueDaysSet.add(dayKey);
+                const dayOffset = dayOffsetFromSat[dayKey];
+                const candDate = new Date(weekSat);
+                candDate.setDate(weekSat.getDate() + dayOffset);
 
-        selectedDays.forEach(dayKey => {
-            uniqueDaysSet.add(dayKey);
-            const dayOffset = dayOffsetFromSat[dayKey];
-            const candDate = new Date(weekSat);
-            candDate.setDate(weekSat.getDate() + dayOffset);
+                if (candDate < startDate) return; // skip past dates before start date
 
-            if (candDate < startDate) return; // skip past dates
+                const isoDate = formatISODate(candDate);
+                const dayNameBn = dayNamesBn[dayKey] || dayKey;
+                totalWorkDays++;
 
-            const isoDate = formatISODate(candDate);
-            const dayNameBn = dayNamesBn[dayKey] || dayKey;
+                weeklyUniformTasks.forEach(task => {
+                    if (!task.templateId || !task.startTime) return;
 
-            const dayTasks = weeksState[w].dayTasks[dayKey] || [];
-            dayTasks.forEach(task => {
-                if (!task.templateId || !task.startTime) return;
+                    const tplObj = taskTemplatesList.find(t => String(t.id) === String(task.templateId));
+                    const locObj = farmLocationsList.find(l => String(l.id) === String(task.locationId));
+                    const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : 'চিহ্নিত কাজ';
+                    const locName = locObj ? `${locObj.name} (${locObj.type})` : 'মূল লোকেশন';
 
-                const tplObj = taskTemplatesList.find(t => String(t.id) === String(task.templateId));
-                const locObj = farmLocationsList.find(l => String(l.id) === String(task.locationId));
-                const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : 'চিহ্নিত কাজ';
-                const locName = locObj ? `${locObj.name} (${locObj.type})` : 'মূল লোকেশন';
+                    hiddenHtml += `
+                        <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${isoDate}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${task.templateId}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${task.locationId || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][start_time]" value="${task.startTime}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][end_time]" value="${task.endTime || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${task.priority || 'normal'}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${task.notes || ''}">
+                    `;
 
-                hiddenHtml += `
-                    <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${isoDate}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${task.templateId}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${task.locationId || ''}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][start_time]" value="${task.startTime}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][end_time]" value="${task.endTime || ''}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${task.priority || 'normal'}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${task.notes || ''}">
-                `;
+                    tableHtml += `
+                        <tr style="border-bottom:1px solid #edf4f0;">
+                            <td style="padding:6px 10px;font-weight:600;color:#08783f;">সপ্তাহ ${toBnDigits(w + 1)}</td>
+                            <td style="padding:6px 10px;"><b>${dayNameBn}</b> (${isoDate})</td>
+                            <td style="padding:6px 10px;">${tplName}</td>
+                            <td style="padding:6px 10px;color:var(--muted);">${locName}</td>
+                            <td style="padding:6px 10px;font-weight:600;">${task.startTime} - ${task.endTime || '--:--'}</td>
+                            <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${task.priority}</span></td>
+                        </tr>
+                    `;
 
-                tableHtml += `
-                    <tr style="border-bottom:1px solid #edf4f0;">
-                        <td style="padding:6px 10px;font-weight:600;color:#08783f;">সপ্তাহ ${toBnDigits(w + 1)}</td>
-                        <td style="padding:6px 10px;"><b>${dayNameBn}</b> (${isoDate})</td>
-                        <td style="padding:6px 10px;">${tplName}</td>
-                        <td style="padding:6px 10px;color:var(--muted);">${locName}</td>
-                        <td style="padding:6px 10px;font-weight:600;">${task.startTime} - ${task.endTime || '--:--'}</td>
-                        <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${task.priority}</span></td>
-                    </tr>
-                `;
-
-                globalIndex++;
+                    globalIndex++;
+                });
             });
-        });
+        }
+    } else {
+        for (let w = 0; w < weeksCount; w++) {
+            if (!weeksState[w]) continue;
+            const weekSat = new Date(startSat);
+            weekSat.setDate(startSat.getDate() + (w * 7));
+
+            const selectedDays = weeksState[w].selectedDays || [];
+            totalWorkDays += selectedDays.length;
+
+            selectedDays.forEach(dayKey => {
+                uniqueDaysSet.add(dayKey);
+                const dayOffset = dayOffsetFromSat[dayKey];
+                const candDate = new Date(weekSat);
+                candDate.setDate(weekSat.getDate() + dayOffset);
+
+                if (candDate < startDate) return; // skip past dates
+
+                const isoDate = formatISODate(candDate);
+                const dayNameBn = dayNamesBn[dayKey] || dayKey;
+
+                const dayTasks = weeksState[w].dayTasks[dayKey] || [];
+                dayTasks.forEach(task => {
+                    if (!task.templateId || !task.startTime) return;
+
+                    const tplObj = taskTemplatesList.find(t => String(t.id) === String(task.templateId));
+                    const locObj = farmLocationsList.find(l => String(l.id) === String(task.locationId));
+                    const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : 'চিহ্নিত কাজ';
+                    const locName = locObj ? `${locObj.name} (${locObj.type})` : 'মূল লোকেশন';
+
+                    hiddenHtml += `
+                        <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${isoDate}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${task.templateId}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${task.locationId || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][start_time]" value="${task.startTime}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][end_time]" value="${task.endTime || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${task.priority || 'normal'}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${task.notes || ''}">
+                    `;
+
+                    tableHtml += `
+                        <tr style="border-bottom:1px solid #edf4f0;">
+                            <td style="padding:6px 10px;font-weight:600;color:#08783f;">সপ্তাহ ${toBnDigits(w + 1)}</td>
+                            <td style="padding:6px 10px;"><b>${dayNameBn}</b> (${isoDate})</td>
+                            <td style="padding:6px 10px;">${tplName}</td>
+                            <td style="padding:6px 10px;color:var(--muted);">${locName}</td>
+                            <td style="padding:6px 10px;font-weight:600;">${task.startTime} - ${task.endTime || '--:--'}</td>
+                            <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${task.priority}</span></td>
+                        </tr>
+                    `;
+
+                    globalIndex++;
+                });
+            });
+        }
     }
 
     // Also append unique weekly_days[] inputs for compatibility
@@ -1736,9 +2125,11 @@ function syncWeeklyCustomSchedule() {
     if (currentRecurrence === 'weekly') {
         const titleElem = document.getElementById('summary-title-text');
         const bodyElem = document.getElementById('summary-body-text');
-        if (titleElem) titleElem.innerText = `সাপ্তাহিক কাজের কাস্টম শিডিউল সারসংক্ষেপ`;
+        if (titleElem) titleElem.innerText = `সাপ্তাহিক কাজের শিডিউল সারসংক্ষেপ`;
         if (bodyElem) {
-            bodyElem.innerHTML = summaryText + `<br><span style="font-size:12px;color:var(--muted)">প্রতিটি সপ্তাহের দিন ও সময়সূচী স্বয়ংক্রিয়ভাবে সংরক্ষিত হবে।</span>`;
+            const modeBn = (weeklyTimingMode === 'uniform') ? 'প্রতি সপ্তাহে একই দিন ও সময় (সাধারণ)' : 'সপ্তাহভেদে ভিন্ন দিন/সময় (কাস্টম)';
+            bodyElem.innerHTML = `🗓️ সময়কাল: <b>${formatBnDate(startDate)}</b> থেকে <b>${toBnDigits(weeksCount)}</b> সপ্তাহ (মোড: <b>${modeBn}</b>)<br>` +
+                                 `📋 নির্ধারিত কাজ: মোট <b>${toBnDigits(globalIndex)}</b> টি অ্যাসাইনমেন্ট তৈরি হবে।`;
         }
     }
 }
@@ -1815,6 +2206,19 @@ function calculateSummary() {
 // ==========================================
 // --- Monthly Recurrence Engine (30-day basis) ---
 // ==========================================
+let monthlyTimingMode = '{{ old('monthly_timing_mode', 'uniform') }}';
+let monthlyUniformDays = [1, 15];
+let monthlyUniformTasks = [
+    {
+        id: 'mutask_1',
+        templateId: '',
+        locationId: '',
+        startTime: '10:00',
+        endTime: '12:00',
+        priority: 'normal',
+        notes: ''
+    }
+];
 let monthlyTasksPool = [];
 let monthsState = [];
 let monthlyInitialized = false;
@@ -1829,8 +2233,173 @@ function getMonthlyDateRange() {
     return { startDate, monthsCount };
 }
 
+function onMonthlyModeChange(mode) {
+    monthlyTimingMode = mode;
+    const uniformCard = document.getElementById('card-monthly-mode-uniform');
+    const customCard = document.getElementById('card-monthly-mode-custom');
+    const uniformSection = document.getElementById('monthly-uniform-section');
+    const customSection = document.getElementById('monthly-custom-section');
+
+    if (uniformCard) {
+        const inp = uniformCard.querySelector('input');
+        if (inp) inp.checked = (mode === 'uniform');
+        if (mode === 'uniform') uniformCard.classList.add('active');
+        else uniformCard.classList.remove('active');
+    }
+    if (customCard) {
+        const inp = customCard.querySelector('input');
+        if (inp) inp.checked = (mode === 'custom');
+        if (mode === 'custom') customCard.classList.add('active');
+        else customCard.classList.remove('active');
+    }
+
+    if (uniformSection) uniformSection.style.display = (mode === 'uniform') ? 'block' : 'none';
+    if (customSection) customSection.style.display = (mode === 'custom') ? 'block' : 'none';
+
+    syncMonthlyCustomSchedule();
+}
+
+function renderMonthlyUniformDaysUI() {
+    const container = document.getElementById('monthly-uniform-day-grid');
+    if (!container) return;
+
+    const range = getMonthlyDateRange();
+    const startDate = range ? range.startDate : new Date();
+    const startDayNum = startDate.getDate();
+
+    let gridHtml = '';
+    for (let d = 1; d <= 30; d++) {
+        const isPast = (d < startDayNum);
+        const isChecked = monthlyUniformDays.includes(d);
+        const dTextBn = toBnDigits(d);
+
+        gridHtml += `
+            <label class="month-day-cell ${isChecked ? 'selected' : ''} ${isPast ? 'disabled' : ''}" title="${dTextBn} তারিখ ${isPast ? '(শুরুর পূর্বে)' : ''}">
+                <input type="checkbox" value="${d}" ${isChecked ? 'checked' : ''} ${isPast ? 'disabled' : ''} onchange="toggleMonthlyUniformDay(${d}, this.checked)">
+                <span class="cell-num">${dTextBn}</span>
+            </label>
+        `;
+    }
+    container.innerHTML = gridHtml;
+}
+
+function toggleMonthlyUniformDay(d, isChecked) {
+    if (isChecked) {
+        if (!monthlyUniformDays.includes(d)) {
+            monthlyUniformDays.push(d);
+            monthlyUniformDays.sort((a, b) => a - b);
+        }
+    } else {
+        monthlyUniformDays = monthlyUniformDays.filter(day => day !== d);
+    }
+    renderMonthlyUniformDaysUI();
+    syncMonthlyCustomSchedule();
+}
+
+function setMonthlyUniformDaysPreset(daysArray) {
+    const range = getMonthlyDateRange();
+    const startDate = range ? range.startDate : new Date();
+    const startDayNum = startDate.getDate();
+
+    const validDays = daysArray.filter(d => d >= 1 && d <= 30 && d >= startDayNum);
+    monthlyUniformDays = [...validDays].sort((a, b) => a - b);
+    renderMonthlyUniformDaysUI();
+    syncMonthlyCustomSchedule();
+}
+
+function clearMonthlyUniformDays() {
+    monthlyUniformDays = [];
+    renderMonthlyUniformDaysUI();
+    syncMonthlyCustomSchedule();
+}
+
+function renderMonthlyUniformTasksUI() {
+    const container = document.getElementById('monthly-uniform-tasks-container');
+    if (!container) return;
+
+    let html = '';
+    monthlyUniformTasks.forEach((task, idx) => {
+        html += `
+            <div class="monthly-uniform-task-card task-repeater-row" data-task-index="${idx}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <span class="row-badge" style="background:#08783f;color:#fff;">কাজ #${idx + 1}</span>
+                    <button type="button" class="btn-remove-row" onclick="removeMonthlyUniformTaskRow(${idx})" style="${monthlyUniformTasks.length > 1 ? '' : 'display:none;'}">✕ সরান</button>
+                </div>
+                <div class="form-grid">
+                    <div>
+                        <label class="label">কাজের ধরন (Template) <span class="req">*</span></label>
+                        <select class="input" onchange="onMonthlyUniformTaskChange(${idx}, 'templateId', this.value)" required>
+                            ${buildTaskOptions(task.templateId)}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">ফার্ম লোকেশন (প্লট / পুকুর)</label>
+                        <select class="input" onchange="onMonthlyUniformTaskChange(${idx}, 'locationId', this.value)">
+                            ${buildLocationOptions(task.locationId)}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">শুরুর সময় <span class="req">*</span></label>
+                        <input class="input" type="time" value="${task.startTime}" onchange="onMonthlyUniformTaskChange(${idx}, 'startTime', this.value)" required>
+                    </div>
+                    <div>
+                        <label class="label">শেষ সময়</label>
+                        <input class="input" type="time" value="${task.endTime || ''}" onchange="onMonthlyUniformTaskChange(${idx}, 'endTime', this.value)">
+                    </div>
+                    <div>
+                        <label class="label">অগ্রাধিকার</label>
+                        <select class="input" onchange="onMonthlyUniformTaskChange(${idx}, 'priority', this.value)">
+                            <option value="normal" ${task.priority === 'normal' ? 'selected' : ''}>সাধারণ (Normal)</option>
+                            <option value="important" ${task.priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ (Important)</option>
+                            <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>জরুরি (Urgent)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">কাজের নোট (ঐচ্ছিক)</label>
+                        <input class="input" type="text" value="${task.notes || ''}" placeholder="যেমন: সার প্রয়োগ / পরিদর্শন" oninput="onMonthlyUniformTaskChange(${idx}, 'notes', this.value)">
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function addMonthlyUniformTaskRow() {
+    monthlyUniformTasks.push({
+        id: 'mutask_' + Date.now(),
+        templateId: '',
+        locationId: '',
+        startTime: '14:00',
+        endTime: '16:00',
+        priority: 'normal',
+        notes: ''
+    });
+    renderMonthlyUniformTasksUI();
+    syncMonthlyCustomSchedule();
+}
+
+function removeMonthlyUniformTaskRow(idx) {
+    if (monthlyUniformTasks.length > 1) {
+        monthlyUniformTasks.splice(idx, 1);
+        renderMonthlyUniformTasksUI();
+        syncMonthlyCustomSchedule();
+    }
+}
+
+function onMonthlyUniformTaskChange(idx, field, value) {
+    if (monthlyUniformTasks[idx]) {
+        monthlyUniformTasks[idx][field] = value;
+        syncMonthlyCustomSchedule();
+    }
+}
+
 function initMonthlySchedule() {
     if (monthlyInitialized) {
+        renderMonthlyUniformDaysUI();
+        renderMonthlyUniformTasksUI();
+        renderMonthlyTasksPoolUI();
+        renderMonthByMonthCards();
         syncMonthlyCustomSchedule();
         return;
     }
@@ -1838,12 +2407,12 @@ function initMonthlySchedule() {
     const range = getMonthlyDateRange();
     const monthsCount = range ? range.monthsCount : 3;
 
-    // Initialize monthlyTasksPool if empty
+    // Initialize monthlyTasksPool with ONLY 1 unselected task!
     if (monthlyTasksPool.length === 0) {
         monthlyTasksPool = [
             {
                 id: 'mpool_1',
-                templateId: taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '',
+                templateId: '',
                 locationId: '',
                 startTime: '10:00',
                 endTime: '12:00',
@@ -1851,19 +2420,12 @@ function initMonthlySchedule() {
                 notes: ''
             }
         ];
-        if (taskTemplatesList.length > 1) {
-            monthlyTasksPool.push({
-                id: 'mpool_2',
-                templateId: taskTemplatesList[1].id,
-                locationId: '',
-                startTime: '14:00',
-                endTime: '16:00',
-                priority: 'normal',
-                notes: ''
-            });
-        }
     }
     renderMonthlyTasksPoolUI();
+
+    // Render Uniform Monthly elements
+    renderMonthlyUniformDaysUI();
+    renderMonthlyUniformTasksUI();
 
     // Initialize monthsState
     monthsState = [];
@@ -2081,6 +2643,7 @@ function onMonthlyDurationOrStartChange() {
         monthsState = monthsState.slice(0, monthsCount);
     }
 
+    renderMonthlyUniformDaysUI();
     renderMonthByMonthCards();
     syncMonthlyCustomSchedule();
 }
@@ -2433,57 +2996,109 @@ function syncMonthlyCustomSchedule() {
     const uniqueMonthlyDaysSet = new Set();
     let totalWorkDays = 0;
 
-    for (let m = 0; m < monthsCount; m++) {
-        if (!monthsState[m]) continue;
-        const monthAnchor = new Date(startDate.getFullYear(), startDate.getMonth() + m, 1);
-        const daysInActualMonth = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 0).getDate();
-        const selectedDates = monthsState[m].selectedDates || [];
-        totalWorkDays += selectedDates.length;
+    if (monthlyTimingMode === 'uniform') {
+        for (let m = 0; m < monthsCount; m++) {
+            const monthAnchor = new Date(startDate.getFullYear(), startDate.getMonth() + m, 1);
+            const daysInActualMonth = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 0).getDate();
 
-        selectedDates.forEach(d => {
-            uniqueMonthlyDaysSet.add(d);
-            const actualDay = Math.min(d, daysInActualMonth);
-            const candDate = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), actualDay);
+            monthlyUniformDays.forEach(d => {
+                uniqueMonthlyDaysSet.add(d);
+                const actualDay = Math.min(d, daysInActualMonth);
+                const candDate = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), actualDay);
 
-            if (candDate < startDate) return; // skip past dates
+                if (candDate < startDate) return; // skip past dates before start date
 
-            const isoDate = formatISODate(candDate);
-            const dayOfWeekBn = dayNamesBn[dayOrder[(candDate.getDay() + 1) % 7]] || '';
-            const fullDateBn = formatBnDate(candDate);
+                const isoDate = formatISODate(candDate);
+                const dayOfWeekBn = dayNamesBn[dayOrder[(candDate.getDay() + 1) % 7]] || '';
+                const fullDateBn = formatBnDate(candDate);
+                totalWorkDays++;
 
-            const dateTasks = monthsState[m].dateTasks[d] || [];
-            dateTasks.forEach(task => {
-                if (!task.templateId || !task.startTime) return;
+                monthlyUniformTasks.forEach(task => {
+                    if (!task.templateId || !task.startTime) return;
 
-                const tplObj = taskTemplatesList.find(t => String(t.id) === String(task.templateId));
-                const locObj = farmLocationsList.find(l => String(l.id) === String(task.locationId));
-                const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : 'চিহ্নিত কাজ';
-                const locName = locObj ? `${locObj.name} (${locObj.type})` : 'মূল লোকেশন';
+                    const tplObj = taskTemplatesList.find(t => String(t.id) === String(task.templateId));
+                    const locObj = farmLocationsList.find(l => String(l.id) === String(task.locationId));
+                    const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : 'চিহ্নিত কাজ';
+                    const locName = locObj ? `${locObj.name} (${locObj.type})` : 'মূল লোকেশন';
 
-                hiddenHtml += `
-                    <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${isoDate}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${task.templateId}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${task.locationId || ''}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][start_time]" value="${task.startTime}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][end_time]" value="${task.endTime || ''}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${task.priority || 'normal'}">
-                    <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${task.notes || ''}">
-                `;
+                    hiddenHtml += `
+                        <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${isoDate}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${task.templateId}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${task.locationId || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][start_time]" value="${task.startTime}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][end_time]" value="${task.endTime || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${task.priority || 'normal'}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${task.notes || ''}">
+                    `;
 
-                tableHtml += `
-                    <tr style="border-bottom:1px solid #edf4f0;">
-                        <td style="padding:6px 10px;font-weight:600;color:#08783f;">মাস ${toBnDigits(m + 1)}</td>
-                        <td style="padding:6px 10px;"><b>${fullDateBn}</b> (${dayOfWeekBn})</td>
-                        <td style="padding:6px 10px;">${tplName}</td>
-                        <td style="padding:6px 10px;color:var(--muted);">${locName}</td>
-                        <td style="padding:6px 10px;font-weight:600;">${task.startTime} - ${task.endTime || '--:--'}</td>
-                        <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${task.priority}</span></td>
-                    </tr>
-                `;
+                    tableHtml += `
+                        <tr style="border-bottom:1px solid #edf4f0;">
+                            <td style="padding:6px 10px;font-weight:600;color:#08783f;">মাস ${toBnDigits(m + 1)}</td>
+                            <td style="padding:6px 10px;"><b>${fullDateBn}</b> (${dayOfWeekBn})</td>
+                            <td style="padding:6px 10px;">${tplName}</td>
+                            <td style="padding:6px 10px;color:var(--muted);">${locName}</td>
+                            <td style="padding:6px 10px;font-weight:600;">${task.startTime} - ${task.endTime || '--:--'}</td>
+                            <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${task.priority}</span></td>
+                        </tr>
+                    `;
 
-                globalIndex++;
+                    globalIndex++;
+                });
             });
-        });
+        }
+    } else {
+        for (let m = 0; m < monthsCount; m++) {
+            if (!monthsState[m]) continue;
+            const monthAnchor = new Date(startDate.getFullYear(), startDate.getMonth() + m, 1);
+            const daysInActualMonth = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 0).getDate();
+            const selectedDates = monthsState[m].selectedDates || [];
+            totalWorkDays += selectedDates.length;
+
+            selectedDates.forEach(d => {
+                uniqueMonthlyDaysSet.add(d);
+                const actualDay = Math.min(d, daysInActualMonth);
+                const candDate = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), actualDay);
+
+                if (candDate < startDate) return; // skip past dates
+
+                const isoDate = formatISODate(candDate);
+                const dayOfWeekBn = dayNamesBn[dayOrder[(candDate.getDay() + 1) % 7]] || '';
+                const fullDateBn = formatBnDate(candDate);
+
+                const dateTasks = monthsState[m].dateTasks[d] || [];
+                dateTasks.forEach(task => {
+                    if (!task.templateId || !task.startTime) return;
+
+                    const tplObj = taskTemplatesList.find(t => String(t.id) === String(task.templateId));
+                    const locObj = farmLocationsList.find(l => String(l.id) === String(task.locationId));
+                    const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : 'চিহ্নিত কাজ';
+                    const locName = locObj ? `${locObj.name} (${locObj.type})` : 'মূল লোকেশন';
+
+                    hiddenHtml += `
+                        <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${isoDate}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${task.templateId}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${task.locationId || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][start_time]" value="${task.startTime}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][end_time]" value="${task.endTime || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${task.priority || 'normal'}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${task.notes || ''}">
+                    `;
+
+                    tableHtml += `
+                        <tr style="border-bottom:1px solid #edf4f0;">
+                            <td style="padding:6px 10px;font-weight:600;color:#08783f;">মাস ${toBnDigits(m + 1)}</td>
+                            <td style="padding:6px 10px;"><b>${fullDateBn}</b> (${dayOfWeekBn})</td>
+                            <td style="padding:6px 10px;">${tplName}</td>
+                            <td style="padding:6px 10px;color:var(--muted);">${locName}</td>
+                            <td style="padding:6px 10px;font-weight:600;">${task.startTime} - ${task.endTime || '--:--'}</td>
+                            <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${task.priority}</span></td>
+                        </tr>
+                    `;
+
+                    globalIndex++;
+                });
+            });
+        }
     }
 
     // Also append unique monthly_days[] inputs for compatibility

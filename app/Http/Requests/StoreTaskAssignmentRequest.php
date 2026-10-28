@@ -32,7 +32,7 @@ class StoreTaskAssignmentRequest extends FormRequest
                 Rule::exists('farmers', 'id')->whereNull('deleted_at'),
             ],
             'farm_location_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
             ],
@@ -43,6 +43,11 @@ class StoreTaskAssignmentRequest extends FormRequest
         $recurrence = $this->input('recurrence_type', 'once');
 
         if ($recurrence === 'once') {
+            $rules['farm_location_id'] = [
+                'required',
+                'integer',
+                Rule::exists('farm_locations', 'id')->whereNull('deleted_at'),
+            ];
             $rules['task_template_id'] = [
                 'required',
                 'integer',

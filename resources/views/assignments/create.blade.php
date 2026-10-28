@@ -36,42 +36,25 @@
                         <div class="title-left">
                             <span class="iconbox">👤</span>
                             <div>
-                                <h2>বরাদ্দের প্রাপক ও অবস্থান</h2>
-                                <div class="sub">কৃষক এবং ফার্মের নির্দিষ্ট প্লট বা লোকেশন নির্ধারণ</div>
+                                <h2>বরাদ্দের প্রাপক</h2>
+                                <div class="sub">কৃষক নির্ধারণ করুন</div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-grid">
-                        <div>
-                            <label class="label">কৃষক নির্বাচন <span class="req">*</span></label>
-                            <select class="input" name="farmer_id" id="farmer_select" required>
-                                <option value="">-- কৃষক নির্বাচন করুন --</option>
-                                @foreach($farmers as $farmer)
-                                    <option value="{{ $farmer->id }}" {{ old('farmer_id', $selectedFarmerId) == $farmer->id ? 'selected' : '' }}>
-                                        {{ $farmer->full_name }} ({{ $farmer->farmer_code }}) — {{ $farmer->phone }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('farmer_id')
-                                <div class="help" style="color:var(--red)">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label class="label">ফার্ম লোকেশন (প্লট / জমি / পুকুর) <span class="req">*</span></label>
-                            <select class="input" name="farm_location_id" required>
-                                <option value="">-- ফার্মের লোকেশন নির্বাচন করুন --</option>
-                                @foreach($locations as $loc)
-                                    <option value="{{ $loc->id }}" {{ old('farm_location_id', $selectedLocationId) == $loc->id ? 'selected' : '' }}>
-                                        {{ $loc->name }} ({{ $loc->location_code }}) — {{ $loc->type }} [রেডিয়াস: {{ $loc->geofence_radius_meters }}মি]
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('farm_location_id')
-                                <div class="help" style="color:var(--red)">{{ $message }}</div>
-                            @enderror
-                        </div>
+                    <div class="field full">
+                        <label class="label">কৃষক নির্বাচন <span class="req">*</span></label>
+                        <select class="input" name="farmer_id" id="farmer_select" required>
+                            <option value="">-- কৃষক নির্বাচন করুন --</option>
+                            @foreach($farmers as $farmer)
+                                <option value="{{ $farmer->id }}" {{ old('farmer_id', $selectedFarmerId) == $farmer->id ? 'selected' : '' }}>
+                                    {{ $farmer->full_name }} ({{ $farmer->farmer_code }}) — {{ $farmer->phone }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('farmer_id')
+                            <div class="help" style="color:var(--red)">{{ $message }}</div>
+                        @enderror
                     </div>
                 </section>
 
@@ -129,7 +112,7 @@
                     <!-- Panel 1: Once (এককালীন) -->
                     <div id="panel-once" class="rec-panel" style="{{ $activeRecurrence === 'once' ? '' : 'display:none;' }}">
                         <div class="form-grid">
-                            <div class="field full">
+                            <div>
                                 <label class="label">কাজের টেমপ্লেট <span class="req">*</span></label>
                                 <select class="input" name="task_template_id" id="once_task_template_id">
                                     <option value="">-- কাজের ধরন নির্বাচন করুন --</option>
@@ -140,6 +123,21 @@
                                     @endforeach
                                 </select>
                                 @error('task_template_id')
+                                    <div class="help" style="color:var(--red)">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="label">ফার্ম লোকেশন (প্লট / জমি / পুকুর) <span class="req">*</span></label>
+                                <select class="input" name="farm_location_id" id="once_farm_location_id">
+                                    <option value="">-- ফার্মের লোকেশন নির্বাচন করুন --</option>
+                                    @foreach($locations as $loc)
+                                        <option value="{{ $loc->id }}" {{ old('farm_location_id', $selectedLocationId) == $loc->id ? 'selected' : '' }}>
+                                            {{ $loc->name }} ({{ $loc->location_code }}) — {{ $loc->type }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('farm_location_id')
                                     <div class="help" style="color:var(--red)">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -1012,7 +1010,7 @@
 }
 .day-task-grid-row {
     display: grid;
-    grid-template-columns: 1.4fr 1.2fr 95px 95px 105px 32px;
+    grid-template-columns: 1.6fr 1.4fr 100px 100px 32px;
     gap: 8px;
     align-items: center;
     background: #ffffff;
@@ -1020,6 +1018,39 @@
     border-radius: 6px;
     padding: 6px 10px;
     margin-bottom: 6px;
+}
+.locked-task-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #1e293b;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 31px;
+    box-sizing: border-box;
+}
+.locked-loc-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 31px;
+    box-sizing: border-box;
 }
 .day-task-grid-row:last-child {
     margin-bottom: 0;
@@ -1111,15 +1142,18 @@ function switchRecurrence(type) {
 
     // Toggle required attributes for once mode
     const onceTemplateSelect = document.getElementById('once_task_template_id');
+    const onceLocationSelect = document.getElementById('once_farm_location_id');
     const scheduledDateInput = document.getElementById('scheduled_date');
     const startTimeInput = document.getElementById('start_time');
 
     if (type === 'once') {
         if (onceTemplateSelect) onceTemplateSelect.required = true;
+        if (onceLocationSelect) onceLocationSelect.required = true;
         if (scheduledDateInput) scheduledDateInput.required = true;
         if (startTimeInput) startTimeInput.required = true;
     } else {
         if (onceTemplateSelect) onceTemplateSelect.required = false;
+        if (onceLocationSelect) onceLocationSelect.required = false;
         if (scheduledDateInput) scheduledDateInput.required = false;
         if (startTimeInput) startTimeInput.required = false;
     }
@@ -1488,10 +1522,9 @@ function initWeeklySchedule() {
                 id: 'pool_1',
                 templateId: '',
                 locationId: '',
-                startTime: '09:00',
-                endTime: '10:00',
-                priority: 'normal',
-                notes: ''
+                startTime: '08:00',
+                endTime: '12:00',
+                priority: 'normal'
             }
         ];
     }
@@ -1530,12 +1563,11 @@ function initWeeklySchedule() {
             dayTasks[dayKey] = tasksPool.map(pt => ({
                 id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 poolId: pt.id,
+                isExtra: false,
                 templateId: pt.templateId,
                 locationId: pt.locationId,
-                startTime: pt.startTime,
-                endTime: pt.endTime,
-                priority: pt.priority,
-                notes: pt.notes
+                startTime: pt.startTime || '08:00',
+                endTime: pt.endTime || '12:00'
             }));
         });
 
@@ -1562,7 +1594,7 @@ function renderTasksPoolUI() {
                     <span class="row-badge" style="background:#08783f;color:#fff;">রুটিন কাজ #${idx + 1}</span>
                     <button type="button" class="btn-remove-row" onclick="removeWeeklyPoolTaskRow(${idx})" style="${tasksPool.length > 1 ? '' : 'display:none;'}">✕ সরান</button>
                 </div>
-                <div class="form-grid">
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
                     <div>
                         <label class="label">কাজের ধরন (Template) <span class="req">*</span></label>
                         <select class="input pool-template-select" onchange="onPoolTaskChange(${idx}, 'templateId', this.value)">
@@ -1570,30 +1602,18 @@ function renderTasksPoolUI() {
                         </select>
                     </div>
                     <div>
-                        <label class="label">ফার্ম লোকেশন (প্লট / পুকুর)</label>
+                        <label class="label">ফার্ম লোকেশন (প্লট / পুকুর) <span class="req">*</span></label>
                         <select class="input pool-location-select" onchange="onPoolTaskChange(${idx}, 'locationId', this.value)">
                             ${buildLocationOptions(task.locationId)}
                         </select>
                     </div>
                     <div>
-                        <label class="label">ডিফল্ট শুরুর সময় <span class="req">*</span></label>
-                        <input class="input pool-start-time" type="time" value="${task.startTime}" onchange="onPoolTaskChange(${idx}, 'startTime', this.value)">
-                    </div>
-                    <div>
-                        <label class="label">ডিফল্ট শেষ সময়</label>
-                        <input class="input pool-end-time" type="time" value="${task.endTime || ''}" onchange="onPoolTaskChange(${idx}, 'endTime', this.value)">
-                    </div>
-                    <div>
-                        <label class="label">অগ্রাধিকার</label>
+                        <label class="label">অগ্রাধিকার <span class="req">*</span></label>
                         <select class="input pool-priority-select" onchange="onPoolTaskChange(${idx}, 'priority', this.value)">
                             <option value="normal" ${task.priority === 'normal' ? 'selected' : ''}>সাধারণ (Normal)</option>
                             <option value="important" ${task.priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ (Important)</option>
                             <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>জরুরি (Urgent)</option>
                         </select>
-                    </div>
-                    <div>
-                        <label class="label">কাজের নোট (ঐচ্ছিক)</label>
-                        <input class="input pool-notes-input" type="text" value="${task.notes || ''}" placeholder="যেমন: সকালের সেচ / পরিদর্শন" oninput="onPoolTaskChange(${idx}, 'notes', this.value)">
                     </div>
                 </div>
             </div>
@@ -1606,36 +1626,34 @@ function renderTasksPoolUI() {
 function addWeeklyPoolTaskRow() {
     const idx = tasksPool.length;
     let defStart = '14:00';
-    let defEnd = '16:00';
-    if (idx === 1) { defStart = '10:00'; defEnd = '11:00'; }
-    else if (idx === 2) { defStart = '11:30'; defEnd = '13:00'; }
+    let defEnd = '18:00';
+    if (idx === 1) { defStart = '10:00'; defEnd = '12:00'; }
+    else if (idx === 2) { defStart = '13:00'; defEnd = '15:00'; }
 
     const newTask = {
         id: 'pool_' + Date.now() + '_' + idx,
         templateId: taskTemplatesList.length > idx ? taskTemplatesList[idx].id : (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : ''),
-        locationId: '',
+        locationId: farmLocationsList.length > 0 ? farmLocationsList[0].id : '',
         startTime: defStart,
         endTime: defEnd,
-        priority: 'normal',
-        notes: ''
+        priority: 'normal'
     };
 
     tasksPool.push(newTask);
     renderTasksPoolUI();
 
-    // Propagate the new task into all selected days
+    // Propagate the new routine task into all selected days
     weeksState.forEach((wObj) => {
         wObj.selectedDays.forEach(dayKey => {
             if (!wObj.dayTasks[dayKey]) wObj.dayTasks[dayKey] = [];
             wObj.dayTasks[dayKey].push({
                 id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 poolId: newTask.id,
+                isExtra: false,
                 templateId: newTask.templateId,
                 locationId: newTask.locationId,
                 startTime: newTask.startTime,
-                endTime: newTask.endTime,
-                priority: newTask.priority,
-                notes: newTask.notes
+                endTime: newTask.endTime
             });
         });
     });
@@ -1871,34 +1889,68 @@ function renderWeekCardBodyHtml(w, startDate, weekSat) {
 
             let taskRowsHtml = '';
             tasks.forEach((t, tIdx) => {
+                const isExtra = !!t.isExtra;
+                let tplId = t.templateId;
+                let locId = t.locationId;
+                if (!isExtra && t.poolId) {
+                    const poolItem = tasksPool.find(p => p.id === t.poolId);
+                    if (poolItem) {
+                        tplId = poolItem.templateId;
+                        locId = poolItem.locationId;
+                    }
+                }
+                const tplObj = taskTemplatesList.find(item => String(item.id) === String(tplId));
+                const locObj = farmLocationsList.find(item => String(item.id) === String(locId));
+                const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : '<span style="color:#ef4444;font-style:italic;">কাজের ধরন নির্বাচন করুন</span>';
+                const locName = locObj ? `${locObj.name} (${locObj.type})` : '<span style="color:#ef4444;font-style:italic;">লোকেশন নির্বাচন করুন</span>';
+
+                let taskColHtml = '';
+                let locColHtml = '';
+                let actionColHtml = '';
+
+                if (!isExtra) {
+                    // Routine task: locked badges, NO delete button
+                    taskColHtml = `
+                        <div class="locked-task-badge" title="রুটিন কাজ: ${tplObj ? tplObj.name : ''}">
+                            <span style="font-size:12px;">🔒</span> <span style="overflow:hidden;text-overflow:ellipsis;">${tplName}</span>
+                        </div>
+                    `;
+                    locColHtml = `
+                        <div class="locked-loc-badge" title="রুটিন লোকেশন: ${locObj ? locObj.name : ''}">
+                            <span style="font-size:12px;">📍</span> <span style="overflow:hidden;text-overflow:ellipsis;">${locName}</span>
+                        </div>
+                    `;
+                    actionColHtml = `<div></div>`;
+                } else {
+                    // Extra task: editable dropdowns, WITH delete button
+                    taskColHtml = `
+                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'templateId', this.value)">
+                            ${buildTaskOptions(t.templateId)}
+                        </select>
+                    `;
+                    locColHtml = `
+                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'locationId', this.value)">
+                            ${buildLocationOptions(t.locationId)}
+                        </select>
+                    `;
+                    actionColHtml = `
+                        <div style="text-align:right;">
+                            <button type="button" class="btn-remove-session" title="এই অতিরিক্ত কাজ বাদ দিন" onclick="removeTaskFromWeekDay(${w}, '${dayKey}', ${tIdx})">✕</button>
+                        </div>
+                    `;
+                }
+
                 taskRowsHtml += `
                     <div class="day-task-grid-row" data-task-index="${tIdx}">
-                        <div>
-                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'templateId', this.value)">
-                                ${buildTaskOptions(t.templateId)}
-                            </select>
-                        </div>
-                        <div>
-                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'locationId', this.value)">
-                                ${buildLocationOptions(t.locationId)}
-                            </select>
-                        </div>
+                        <div>${taskColHtml}</div>
+                        <div>${locColHtml}</div>
                         <div>
                             <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.startTime}" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'startTime', this.value)">
                         </div>
                         <div>
                             <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.endTime || ''}" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'endTime', this.value)">
                         </div>
-                        <div>
-                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onDayTaskFieldChange(${w}, '${dayKey}', ${tIdx}, 'priority', this.value)">
-                                <option value="normal" ${t.priority === 'normal' ? 'selected' : ''}>সাধারণ</option>
-                                <option value="important" ${t.priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ</option>
-                                <option value="urgent" ${t.priority === 'urgent' ? 'selected' : ''}>জরুরি</option>
-                            </select>
-                        </div>
-                        <div style="text-align:right;">
-                            <button type="button" class="btn-remove-session" title="এই কাজ বাদ দিন" onclick="removeTaskFromWeekDay(${w}, '${dayKey}', ${tIdx})">✕</button>
-                        </div>
+                        ${actionColHtml}
                     </div>
                 `;
             });
@@ -1941,12 +1993,11 @@ function onWeekDayToggle(w, dayKey, isChecked) {
             weeksState[w].dayTasks[dayKey] = tasksPool.map(pt => ({
                 id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 poolId: pt.id,
+                isExtra: false,
                 templateId: pt.templateId,
                 locationId: pt.locationId,
-                startTime: pt.startTime,
-                endTime: pt.endTime,
-                priority: pt.priority,
-                notes: pt.notes
+                startTime: pt.startTime || '08:00',
+                endTime: pt.endTime || '12:00'
             }));
         }
     } else {
@@ -1982,21 +2033,21 @@ function addExtraTaskToWeekDay(w, dayKey) {
 
     const count = weeksState[w].dayTasks[dayKey].length;
     let defStart = '14:00';
-    let defEnd = '16:00';
-    if (count === 1) { defStart = '10:00'; defEnd = '11:00'; }
-    else if (count === 2) { defStart = '11:30'; defEnd = '13:00'; }
+    let defEnd = '18:00';
+    if (count === 1) { defStart = '10:00'; defEnd = '12:00'; }
+    else if (count === 2) { defStart = '13:00'; defEnd = '15:00'; }
 
     const defTpl = taskTemplatesList.length > count ? taskTemplatesList[count].id : (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '');
+    const defLoc = farmLocationsList.length > 0 ? farmLocationsList[0].id : '';
 
     weeksState[w].dayTasks[dayKey].push({
         id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
         poolId: null,
+        isExtra: true,
         templateId: defTpl,
-        locationId: '',
+        locationId: defLoc,
         startTime: defStart,
-        endTime: defEnd,
-        priority: 'normal',
-        notes: ''
+        endTime: defEnd
     });
 
     renderWeekCardBody(w);
@@ -2130,21 +2181,35 @@ function syncWeeklyCustomSchedule() {
 
                 const dayTasks = weeksState[w].dayTasks[dayKey] || [];
                 dayTasks.forEach(task => {
-                    if (!task.templateId || !task.startTime) return;
+                    let tplId = task.templateId;
+                    let locId = task.locationId;
+                    let prio = task.priority || 'normal';
+                    let notes = task.notes || '';
 
-                    const tplObj = taskTemplatesList.find(t => String(t.id) === String(task.templateId));
-                    const locObj = farmLocationsList.find(l => String(l.id) === String(task.locationId));
+                    if (!task.isExtra && task.poolId) {
+                        const poolItem = tasksPool.find(p => p.id === task.poolId);
+                        if (poolItem) {
+                            tplId = poolItem.templateId;
+                            locId = poolItem.locationId;
+                            prio = poolItem.priority || 'normal';
+                        }
+                    }
+
+                    if (!tplId || !task.startTime) return;
+
+                    const tplObj = taskTemplatesList.find(t => String(t.id) === String(tplId));
+                    const locObj = farmLocationsList.find(l => String(l.id) === String(locId));
                     const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : 'চিহ্নিত কাজ';
                     const locName = locObj ? `${locObj.name} (${locObj.type})` : 'মূল লোকেশন';
 
                     hiddenHtml += `
                         <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${isoDate}">
-                        <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${task.templateId}">
-                        <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${task.locationId || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${tplId}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${locId || ''}">
                         <input type="hidden" name="custom_schedule[${globalIndex}][start_time]" value="${task.startTime}">
                         <input type="hidden" name="custom_schedule[${globalIndex}][end_time]" value="${task.endTime || ''}">
-                        <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${task.priority || 'normal'}">
-                        <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${task.notes || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${prio}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${notes}">
                     `;
 
                     tableHtml += `
@@ -2154,7 +2219,7 @@ function syncWeeklyCustomSchedule() {
                             <td style="padding:6px 10px;">${tplName}</td>
                             <td style="padding:6px 10px;color:var(--muted);">${locName}</td>
                             <td style="padding:6px 10px;font-weight:600;">${task.startTime} - ${task.endTime || '--:--'}</td>
-                            <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${task.priority}</span></td>
+                            <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${prio}</span></td>
                         </tr>
                     `;
 
@@ -2467,10 +2532,9 @@ function initMonthlySchedule() {
                 id: 'mpool_1',
                 templateId: '',
                 locationId: '',
-                startTime: '10:00',
+                startTime: '08:00',
                 endTime: '12:00',
-                priority: 'normal',
-                notes: ''
+                priority: 'normal'
             }
         ];
     }
@@ -2501,12 +2565,11 @@ function initMonthlySchedule() {
             dateTasks[dayNum] = monthlyTasksPool.map(pt => ({
                 id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 poolId: pt.id,
+                isExtra: false,
                 templateId: pt.templateId,
                 locationId: pt.locationId,
-                startTime: pt.startTime,
-                endTime: pt.endTime,
-                priority: pt.priority,
-                notes: pt.notes
+                startTime: pt.startTime || '08:00',
+                endTime: pt.endTime || '12:00'
             }));
         });
 
@@ -2533,7 +2596,7 @@ function renderMonthlyTasksPoolUI() {
                     <span class="row-badge" style="background:#08783f;color:#fff;">মাসিক রুটিন কাজ #${idx + 1}</span>
                     <button type="button" class="btn-remove-row" onclick="removeMonthlyPoolTaskRow(${idx})" style="${monthlyTasksPool.length > 1 ? '' : 'display:none;'}">✕ সরান</button>
                 </div>
-                <div class="form-grid">
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
                     <div>
                         <label class="label">কাজের ধরন (Template) <span class="req">*</span></label>
                         <select class="input pool-template-select" onchange="onMonthlyPoolTaskChange(${idx}, 'templateId', this.value)">
@@ -2541,30 +2604,18 @@ function renderMonthlyTasksPoolUI() {
                         </select>
                     </div>
                     <div>
-                        <label class="label">ফার্ম লোকেশন (প্লট / পুকুর)</label>
+                        <label class="label">ফার্ম লোকেশন (প্লট / পুকুর) <span class="req">*</span></label>
                         <select class="input pool-location-select" onchange="onMonthlyPoolTaskChange(${idx}, 'locationId', this.value)">
                             ${buildLocationOptions(task.locationId)}
                         </select>
                     </div>
                     <div>
-                        <label class="label">ডিফল্ট শুরুর সময় <span class="req">*</span></label>
-                        <input class="input pool-start-time" type="time" value="${task.startTime}" onchange="onMonthlyPoolTaskChange(${idx}, 'startTime', this.value)">
-                    </div>
-                    <div>
-                        <label class="label">ডিফল্ট শেষ সময়</label>
-                        <input class="input pool-end-time" type="time" value="${task.endTime || ''}" onchange="onMonthlyPoolTaskChange(${idx}, 'endTime', this.value)">
-                    </div>
-                    <div>
-                        <label class="label">অগ্রাধিকার</label>
+                        <label class="label">অগ্রাধিকার <span class="req">*</span></label>
                         <select class="input pool-priority-select" onchange="onMonthlyPoolTaskChange(${idx}, 'priority', this.value)">
                             <option value="normal" ${task.priority === 'normal' ? 'selected' : ''}>সাধারণ (Normal)</option>
                             <option value="important" ${task.priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ (Important)</option>
                             <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>জরুরি (Urgent)</option>
                         </select>
-                    </div>
-                    <div>
-                        <label class="label">কাজের নোট (ঐচ্ছিক)</label>
-                        <input class="input pool-notes-input" type="text" value="${task.notes || ''}" placeholder="যেমন: সার প্রয়োগ / পরিদর্শন" oninput="onMonthlyPoolTaskChange(${idx}, 'notes', this.value)">
                     </div>
                 </div>
             </div>
@@ -2577,18 +2628,17 @@ function renderMonthlyTasksPoolUI() {
 function addMonthlyPoolTaskRow() {
     const idx = monthlyTasksPool.length;
     let defStart = '14:00';
-    let defEnd = '16:00';
+    let defEnd = '18:00';
     if (idx === 1) { defStart = '10:00'; defEnd = '12:00'; }
-    else if (idx === 2) { defStart = '12:30'; defEnd = '14:00'; }
+    else if (idx === 2) { defStart = '13:00'; defEnd = '15:00'; }
 
     const newTask = {
         id: 'mpool_' + Date.now() + '_' + idx,
         templateId: taskTemplatesList.length > idx ? taskTemplatesList[idx].id : (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : ''),
-        locationId: '',
+        locationId: farmLocationsList.length > 0 ? farmLocationsList[0].id : '',
         startTime: defStart,
         endTime: defEnd,
-        priority: 'normal',
-        notes: ''
+        priority: 'normal'
     };
 
     monthlyTasksPool.push(newTask);
@@ -2601,12 +2651,11 @@ function addMonthlyPoolTaskRow() {
             mObj.dateTasks[d].push({
                 id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 poolId: newTask.id,
+                isExtra: false,
                 templateId: newTask.templateId,
                 locationId: newTask.locationId,
                 startTime: newTask.startTime,
-                endTime: newTask.endTime,
-                priority: newTask.priority,
-                notes: newTask.notes
+                endTime: newTask.endTime
             });
         });
     });
@@ -2677,12 +2726,11 @@ function onMonthlyDurationOrStartChange() {
             dateTasks[dayNum] = monthlyTasksPool.map(pt => ({
                 id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 poolId: pt.id,
+                isExtra: false,
                 templateId: pt.templateId,
                 locationId: pt.locationId,
-                startTime: pt.startTime,
-                endTime: pt.endTime,
-                priority: pt.priority,
-                notes: pt.notes
+                startTime: pt.startTime || '08:00',
+                endTime: pt.endTime || '12:00'
             }));
         });
 
@@ -2826,34 +2874,68 @@ function renderMonthCardBodyHtml(m, startDate, monthAnchor) {
 
             let taskRowsHtml = '';
             tasks.forEach((t, tIdx) => {
+                const isExtra = !!t.isExtra;
+                let tplId = t.templateId;
+                let locId = t.locationId;
+                if (!isExtra && t.poolId) {
+                    const poolItem = monthlyTasksPool.find(p => p.id === t.poolId);
+                    if (poolItem) {
+                        tplId = poolItem.templateId;
+                        locId = poolItem.locationId;
+                    }
+                }
+                const tplObj = taskTemplatesList.find(item => String(item.id) === String(tplId));
+                const locObj = farmLocationsList.find(item => String(item.id) === String(locId));
+                const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : '<span style="color:#ef4444;font-style:italic;">কাজের ধরন নির্বাচন করুন</span>';
+                const locName = locObj ? `${locObj.name} (${locObj.type})` : '<span style="color:#ef4444;font-style:italic;">লোকেশন নির্বাচন করুন</span>';
+
+                let taskColHtml = '';
+                let locColHtml = '';
+                let actionColHtml = '';
+
+                if (!isExtra) {
+                    // Routine task: locked badges, NO delete button
+                    taskColHtml = `
+                        <div class="locked-task-badge" title="মাসিক রুটিন কাজ: ${tplObj ? tplObj.name : ''}">
+                            <span style="font-size:12px;">🔒</span> <span style="overflow:hidden;text-overflow:ellipsis;">${tplName}</span>
+                        </div>
+                    `;
+                    locColHtml = `
+                        <div class="locked-loc-badge" title="রুটিন লোকেশন: ${locObj ? locObj.name : ''}">
+                            <span style="font-size:12px;">📍</span> <span style="overflow:hidden;text-overflow:ellipsis;">${locName}</span>
+                        </div>
+                    `;
+                    actionColHtml = `<div></div>`;
+                } else {
+                    // Extra task: editable dropdowns, WITH delete button
+                    taskColHtml = `
+                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'templateId', this.value)">
+                            ${buildTaskOptions(t.templateId)}
+                        </select>
+                    `;
+                    locColHtml = `
+                        <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'locationId', this.value)">
+                            ${buildLocationOptions(t.locationId)}
+                        </select>
+                    `;
+                    actionColHtml = `
+                        <div style="text-align:right;">
+                            <button type="button" class="btn-remove-session" title="এই অতিরিক্ত কাজ বাদ দিন" onclick="removeTaskFromMonthDate(${m}, ${d}, ${tIdx})">✕</button>
+                        </div>
+                    `;
+                }
+
                 taskRowsHtml += `
                     <div class="day-task-grid-row" data-task-index="${tIdx}">
-                        <div>
-                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'templateId', this.value)">
-                                ${buildTaskOptions(t.templateId)}
-                            </select>
-                        </div>
-                        <div>
-                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'locationId', this.value)">
-                                ${buildLocationOptions(t.locationId)}
-                            </select>
-                        </div>
+                        <div>${taskColHtml}</div>
+                        <div>${locColHtml}</div>
                         <div>
                             <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.startTime}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'startTime', this.value)">
                         </div>
                         <div>
                             <input type="time" class="input" style="font-size:12px;padding:4px 6px;width:100%;" value="${t.endTime || ''}" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'endTime', this.value)">
                         </div>
-                        <div>
-                            <select class="input" style="font-size:12px;padding:4px 6px;width:100%;" onchange="onMonthDateTaskFieldChange(${m}, ${d}, ${tIdx}, 'priority', this.value)">
-                                <option value="normal" ${t.priority === 'normal' ? 'selected' : ''}>সাধারণ</option>
-                                <option value="important" ${t.priority === 'important' ? 'selected' : ''}>গুরুত্বপূর্ণ</option>
-                                <option value="urgent" ${t.priority === 'urgent' ? 'selected' : ''}>জরুরি</option>
-                            </select>
-                        </div>
-                        <div style="text-align:right;">
-                            <button type="button" class="btn-remove-session" title="এই কাজ বাদ দিন" onclick="removeTaskFromMonthDate(${m}, ${d}, ${tIdx})">✕</button>
-                        </div>
+                        ${actionColHtml}
                     </div>
                 `;
             });
@@ -2896,12 +2978,11 @@ function onMonthDateToggle(m, dateNum, isChecked) {
             monthsState[m].dateTasks[dateNum] = monthlyTasksPool.map(pt => ({
                 id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 poolId: pt.id,
+                isExtra: false,
                 templateId: pt.templateId,
                 locationId: pt.locationId,
-                startTime: pt.startTime,
-                endTime: pt.endTime,
-                priority: pt.priority,
-                notes: pt.notes
+                startTime: pt.startTime || '08:00',
+                endTime: pt.endTime || '12:00'
             }));
         }
     } else {
@@ -2931,12 +3012,11 @@ function setMonthCardPreset(m, daysArray) {
             monthsState[m].dateTasks[d] = monthlyTasksPool.map(pt => ({
                 id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 poolId: pt.id,
+                isExtra: false,
                 templateId: pt.templateId,
                 locationId: pt.locationId,
-                startTime: pt.startTime,
-                endTime: pt.endTime,
-                priority: pt.priority,
-                notes: pt.notes
+                startTime: pt.startTime || '08:00',
+                endTime: pt.endTime || '12:00'
             }));
         }
     });
@@ -2977,21 +3057,21 @@ function addExtraTaskToMonthDate(m, dateNum) {
 
     const count = monthsState[m].dateTasks[dateNum].length;
     let defStart = '14:00';
-    let defEnd = '16:00';
+    let defEnd = '18:00';
     if (count === 1) { defStart = '10:00'; defEnd = '12:00'; }
-    else if (count === 2) { defStart = '12:30'; defEnd = '14:00'; }
+    else if (count === 2) { defStart = '13:00'; defEnd = '15:00'; }
 
     const defTpl = taskTemplatesList.length > count ? taskTemplatesList[count].id : (taskTemplatesList.length > 0 ? taskTemplatesList[0].id : '');
+    const defLoc = farmLocationsList.length > 0 ? farmLocationsList[0].id : '';
 
     monthsState[m].dateTasks[dateNum].push({
         id: 'mtask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
         poolId: null,
+        isExtra: true,
         templateId: defTpl,
-        locationId: '',
+        locationId: defLoc,
         startTime: defStart,
-        endTime: defEnd,
-        priority: 'normal',
-        notes: ''
+        endTime: defEnd
     });
 
     renderMonthCardBody(m);
@@ -3120,21 +3200,35 @@ function syncMonthlyCustomSchedule() {
 
                 const dateTasks = monthsState[m].dateTasks[d] || [];
                 dateTasks.forEach(task => {
-                    if (!task.templateId || !task.startTime) return;
+                    let tplId = task.templateId;
+                    let locId = task.locationId;
+                    let prio = task.priority || 'normal';
+                    let notes = task.notes || '';
 
-                    const tplObj = taskTemplatesList.find(t => String(t.id) === String(task.templateId));
-                    const locObj = farmLocationsList.find(l => String(l.id) === String(task.locationId));
+                    if (!task.isExtra && task.poolId) {
+                        const poolItem = monthlyTasksPool.find(p => p.id === task.poolId);
+                        if (poolItem) {
+                            tplId = poolItem.templateId;
+                            locId = poolItem.locationId;
+                            prio = poolItem.priority || 'normal';
+                        }
+                    }
+
+                    if (!tplId || !task.startTime) return;
+
+                    const tplObj = taskTemplatesList.find(t => String(t.id) === String(tplId));
+                    const locObj = farmLocationsList.find(l => String(l.id) === String(locId));
                     const tplName = tplObj ? `${tplObj.name} (${tplObj.task_code})` : 'চিহ্নিত কাজ';
                     const locName = locObj ? `${locObj.name} (${locObj.type})` : 'মূল লোকেশন';
 
                     hiddenHtml += `
                         <input type="hidden" name="custom_schedule[${globalIndex}][scheduled_date]" value="${isoDate}">
-                        <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${task.templateId}">
-                        <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${task.locationId || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][task_template_id]" value="${tplId}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][farm_location_id]" value="${locId || ''}">
                         <input type="hidden" name="custom_schedule[${globalIndex}][start_time]" value="${task.startTime}">
                         <input type="hidden" name="custom_schedule[${globalIndex}][end_time]" value="${task.endTime || ''}">
-                        <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${task.priority || 'normal'}">
-                        <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${task.notes || ''}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][priority]" value="${prio}">
+                        <input type="hidden" name="custom_schedule[${globalIndex}][notes]" value="${notes}">
                     `;
 
                     tableHtml += `
@@ -3144,7 +3238,7 @@ function syncMonthlyCustomSchedule() {
                             <td style="padding:6px 10px;">${tplName}</td>
                             <td style="padding:6px 10px;color:var(--muted);">${locName}</td>
                             <td style="padding:6px 10px;font-weight:600;">${task.startTime} - ${task.endTime || '--:--'}</td>
-                            <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${task.priority}</span></td>
+                            <td style="padding:6px 10px;"><span class="badge" style="font-size:10px;">${prio}</span></td>
                         </tr>
                     `;
 
@@ -3291,6 +3385,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             if (currentRecurrence === 'weekly') {
+                if (weeklyTimingMode === 'custom') {
+                    const invalidPoolItem = tasksPool.find(p => !p.templateId || !p.locationId);
+                    if (invalidPoolItem) {
+                        e.preventDefault();
+                        alert('⚠️ অনুগ্রহ করে রুটিন কাজের ধরন ও লোকেশন নির্বাচন করুন।');
+                        return false;
+                    }
+                }
                 syncWeeklyCustomSchedule();
                 const inputs = document.querySelectorAll('#weekly-hidden-form-inputs input[name^="custom_schedule"]');
                 if (inputs.length === 0) {
@@ -3299,15 +3401,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (weeklyUniformDays.length === 0) {
                             alert('⚠️ অনুগ্রহ করে রুটিন শিডিউলের জন্য সপ্তাহের অন্তত একটি কাজের দিন নির্বাচন করুন।');
                         } else {
-                            alert('⚠️ অনুগ্রহ করে রুটিন শিডিউলে কাজের ধরন (Template) ও সময় নির্বাচন করুন।');
+                            alert('⚠️ অনুগ্রহ করে রুটিন শিডিউলে কাজের ধরন (Template), লোকেশন ও সময় নির্বাচন করুন।');
                         }
                     } else {
-                        alert('⚠️ সাপ্তাহিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি সপ্তাহের দিন এবং কাজের ধরন (Template) নির্বাচন করুন।');
+                        alert('⚠️ সাপ্তাহিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি সপ্তাহের দিন এবং কাজের ধরন (Template) ও লোকেশন নির্বাচন করুন।');
                     }
                     return false;
                 }
             }
             if (currentRecurrence === 'monthly') {
+                if (monthlyTimingMode === 'custom') {
+                    const invalidMonthlyPoolItem = monthlyTasksPool.find(p => !p.templateId || !p.locationId);
+                    if (invalidMonthlyPoolItem) {
+                        e.preventDefault();
+                        alert('⚠️ অনুগ্রহ করে মাসিক রুটিন কাজের ধরন ও লোকেশন নির্বাচন করুন।');
+                        return false;
+                    }
+                }
                 syncMonthlyCustomSchedule();
                 const inputs = document.querySelectorAll('#monthly-hidden-form-inputs input[name^="custom_schedule"]');
                 if (inputs.length === 0) {
@@ -3316,10 +3426,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (monthlyUniformDays.length === 0) {
                             alert('⚠️ অনুগ্রহ করে রুটিন শিডিউলের জন্য মাসের অন্তত একটি তারিখ নির্বাচন করুন।');
                         } else {
-                            alert('⚠️ অনুগ্রহ করে রুটিন শিডিউলে কাজের ধরন (Template) ও সময় নির্বাচন করুন।');
+                            alert('⚠️ অনুগ্রহ করে রুটিন শিডিউলে কাজের ধরন (Template), লোকেশন ও সময় নির্বাচন করুন।');
                         }
                     } else {
-                        alert('⚠️ মাসিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি মাসের তারিখ এবং কাজের ধরন (Template) নির্বাচন করুন।');
+                        alert('⚠️ মাসিক বরাদ্দের জন্য অনুগ্রহ করে অন্তত একটি মাসের তারিখ এবং কাজের ধরন (Template) ও লোকেশন নির্বাচন করুন।');
                     }
                     return false;
                 }

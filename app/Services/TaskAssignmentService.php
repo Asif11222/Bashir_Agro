@@ -91,7 +91,7 @@ class TaskAssignmentService
                     $occurrences[] = [
                         'scheduled_date' => Carbon::parse($item['scheduled_date'])->toDateString(),
                         'task_template_id' => (int) $item['task_template_id'],
-                        'farm_location_id' => !empty($item['farm_location_id']) ? (int) $item['farm_location_id'] : (int) $data['farm_location_id'],
+                        'farm_location_id' => !empty($item['farm_location_id']) ? (int) $item['farm_location_id'] : (int) ($data['farm_location_id'] ?? 0),
                         'start_time' => $item['start_time'],
                         'end_time' => !empty($item['end_time']) ? $item['end_time'] : null,
                         'priority' => $item['priority'] ?? 'normal',
@@ -229,7 +229,7 @@ class TaskAssignmentService
                     'is_recurring' => true,
                     'task_template_id' => $item['task_template_id'],
                     'farmer_id' => $data['farmer_id'],
-                    'farm_location_id' => $item['farm_location_id'] ?? $data['farm_location_id'],
+                    'farm_location_id' => $item['farm_location_id'] ?? ($data['farm_location_id'] ?? null),
                     'scheduled_date' => $item['scheduled_date'],
                     'start_time' => $item['start_time'],
                     'end_time' => $item['end_time'] ?? null,

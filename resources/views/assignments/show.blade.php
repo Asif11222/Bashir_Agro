@@ -34,6 +34,13 @@
                     <div style="display:flex;align-items:center;gap:8px;">
                         <b style="color:#166534;font-size:15.5px;">কৃষক কর্তৃক স্ব-প্রতিবেদিত কাজ</b>
                         <span class="pill" style="background:#dcfce7;color:#15803d;font-size:11px;font-weight:bold;">মাঠের লাইভ রিপোর্ট</span>
+                        @if($assignment->submission)
+                            @if($assignment->submission->geofence_passed === true)
+                                <span class="pill" style="background:#dcfce7;color:#15803d;font-size:11px;font-weight:bold;">📍 প্লটের ভেতরে</span>
+                            @elseif($assignment->submission->geofence_passed === false)
+                                <span class="pill" style="background:#fef3c7;color:#b45309;font-size:11px;font-weight:bold;">⚠️ প্লটের বাইরে ({{ round($assignment->submission->distance_meters ?? 0) }} মি. দূরে)</span>
+                            @endif
+                        @endif
                     </div>
                     <div style="font-size:14px;color:#14532d;margin-top:6px;line-height:1.5;background:#ffffff;padding:8px 12px;border-radius:6px;border:1px solid #bbf7d0;">
                         <b>কৃষকের মুখের বিবরণ:</b> "{{ $assignment->notes }}"

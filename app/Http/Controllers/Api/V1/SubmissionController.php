@@ -261,7 +261,11 @@ class SubmissionController extends Controller
         }
 
         $locationId = $validated['farm_location_id'] ?? null;
-        if (! $locationId) {
+        $location = null;
+        if ($locationId) {
+            $location = FarmLocation::find($locationId);
+        }
+        if (! $location) {
             // If farm_location_id is not provided, fallback to first location if foreign key requires it
             $location = FarmLocation::first();
             $locationId = $location?->id;
@@ -272,7 +276,21 @@ class SubmissionController extends Controller
         $lng = $validated['longitude'] ?? null;
         $accuracy = $validated['accuracy'] ?? null;
 
-        $assignment = DB::transaction(function () use ($farmerId, $template, $locationId, $now, $validated, $lat, $lng, $accuracy, $request) {
+        // Perform authoritative server-side geofence calculation against the selected plot
+        $isWithin = null;
+        $distanceMeters = 0.0;
+        if ($lat !== null && $lng !== null && $location) {
+            $geofenceResult = $this->geofenceService->validate(
+                (float) $lat,
+                (float) $lng,
+                $location,
+                (float) ($accuracy ?? 0.0)
+            );
+            $isWithin = (bool) $geofenceResult['is_within'];
+            $distanceMeters = (float) $geofenceResult['distance_meters'];
+        }
+
+        $assignment = DB::transaction(function () use ($farmerId, $template, $locationId, $now, $validated, $lat, $lng, $accuracy, $isWithin, $distanceMeters, $request) {
             $taskAssignment = TaskAssignment::create([
                 'task_template_id' => $template->id,
                 'farmer_id' => $farmerId,
@@ -296,8 +314,8 @@ class SubmissionController extends Controller
                 'latitude' => $lat,
                 'longitude' => $lng,
                 'accuracy' => $accuracy,
-                'geofence_passed' => $lat !== null ? true : null,
-                'distance_meters' => 0,
+                'geofence_passed' => $isWithin,
+                'distance_meters' => $distanceMeters,
                 'is_late' => false,
                 'status' => 'completed',
                 'verification_status' => 'verified',

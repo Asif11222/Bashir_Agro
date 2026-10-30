@@ -395,6 +395,13 @@
                                         <td>
                                             <span>{{ $assignment->location->name ?? '—' }}</span>
                                             <br><small style="color:var(--muted)">{{ $assignment->location->location_code ?? '' }}</small>
+                                            @if($assignment->submission)
+                                                @if($assignment->submission->geofence_passed === true)
+                                                    <br><span class="pill" style="font-size:10px;padding:1px 6px;background:#dcfce7;color:#15803d;border:1px solid #86efac;margin-top:2px;">📍 প্লটের ভেতরে</span>
+                                                @elseif($assignment->submission->geofence_passed === false)
+                                                    <br><span class="pill" style="font-size:10px;padding:1px 6px;background:#fef3c7;color:#b45309;border:1px solid #fcd34d;margin-top:2px;">⚠️ প্লটের বাইরে ({{ round($assignment->submission->distance_meters ?? 0) }} মি.)</span>
+                                                @endif
+                                            @endif
                                         </td>
                                         <td>
                                             @if($firstDate && $lastDate && $firstDate->ne($lastDate))
@@ -579,6 +586,13 @@
                                             @if($assignment->location)
                                                 <span>{{ $assignment->location->name }}</span>
                                                 <br><small style="color:var(--muted)">{{ $assignment->location->location_code ?? '' }}</small>
+                                                @if($assignment->submission)
+                                                    @if($assignment->submission->geofence_passed === true)
+                                                        <br><span class="pill" style="font-size:10px;padding:1px 6px;background:#dcfce7;color:#15803d;border:1px solid #86efac;margin-top:2px;">📍 প্লটের ভেতরে</span>
+                                                    @elseif($assignment->submission->geofence_passed === false)
+                                                        <br><span class="pill" style="font-size:10px;padding:1px 6px;background:#fef3c7;color:#b45309;border:1px solid #fcd34d;margin-top:2px;">⚠️ প্লটের বাইরে ({{ round($assignment->submission->distance_meters ?? 0) }} মি.)</span>
+                                                    @endif
+                                                @endif
                                             @else
                                                 <span style="color:var(--muted);font-style:italic;">— লোকেশন ছাড়া</span>
                                             @endif

@@ -280,4 +280,27 @@ class TaskAssignment extends Model
             default => 'এককালীন',
         };
     }
+
+    /**
+     * Check if this task was self-reported by the farmer from the field.
+     */
+    public function getIsSelfReportedAttribute(): bool
+    {
+        return is_null($this->assigned_by) && (
+            $this->taskTemplate?->task_code === 'TK-SELF'
+            || $this->taskTemplate?->name === 'স্ব-প্রতিবেদিত কাজ'
+        );
+    }
+
+    /**
+     * Display title for assignment list and views.
+     */
+    public function getDisplayTitleAttribute(): string
+    {
+        if ($this->is_self_reported && ! empty($this->notes)) {
+            return $this->notes;
+        }
+
+        return $this->taskTemplate->name ?? '—';
+    }
 }

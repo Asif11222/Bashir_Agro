@@ -7,13 +7,44 @@
     <div class="head">
         <div>
             <h1>কাজের বরাদ্দ বিবরণ</h1>
-            <p>বরাদ্দ আইডি: <span style="font-weight:700;color:var(--g800)">#{{ $assignment->id }}</span> • {{ $assignment->taskTemplate->name ?? '' }} ({{ $assignment->farmer->full_name ?? '' }})</p>
+            @if($assignment->is_self_reported)
+                <p>বরাদ্দ আইডি: <span style="font-weight:700;color:var(--g800)">#{{ $assignment->id }}</span> • <span class="pill" style="background:#eaf8ef;color:#08783f;font-size:11px;">🌱 স্ব-প্রতিবেদিত কাজ</span> ({{ $assignment->farmer->full_name ?? '' }})</p>
+            @else
+                <p>বরাদ্দ আইডি: <span style="font-weight:700;color:var(--g800)">#{{ $assignment->id }}</span> • {{ $assignment->taskTemplate->name ?? '' }} ({{ $assignment->farmer->full_name ?? '' }})</p>
+            @endif
         </div>
         <div class="actions">
-            <a href="{{ route('admin.assignments.edit', $assignment) }}" class="btn primary">তথ্য সম্পাদনা</a>
+            @if(! $assignment->is_self_reported)
+                <a href="{{ route('admin.assignments.edit', $assignment) }}" class="btn primary">তথ্য সম্পাদনা</a>
+            @endif
+            <form method="POST" action="{{ route('admin.assignments.destroy', $assignment) }}" style="display:inline;" onsubmit="return confirm('আপনি কি নিশ্চিত যে এই কাজের বরাদ্দটি মুছে ফেলতে চান? এটি সফট ডিলিট হবে।');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn red">মুছে ফেলুন</button>
+            </form>
             <a href="{{ route('admin.assignments.index') }}" class="btn">← তালিকায় ফিরুন</a>
         </div>
     </div>
+
+    @if($assignment->is_self_reported)
+        <div style="background:#f0fdf4;border:1.5px solid #86efac;padding:16px 20px;border-radius:10px;margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+                <span style="font-size:28px;">🎙️</span>
+                <div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <b style="color:#166534;font-size:15.5px;">কৃষক কর্তৃক স্ব-প্রতিবেদিত কাজ</b>
+                        <span class="pill" style="background:#dcfce7;color:#15803d;font-size:11px;font-weight:bold;">মাঠের লাইভ রিপোর্ট</span>
+                    </div>
+                    <div style="font-size:14px;color:#14532d;margin-top:6px;line-height:1.5;background:#ffffff;padding:8px 12px;border-radius:6px;border:1px solid #bbf7d0;">
+                        <b>কৃষকের মুখের বিবরণ:</b> "{{ $assignment->notes }}"
+                    </div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:6px;">
+                        কৃষক: <b>{{ $assignment->farmer->full_name }}</b> ({{ $assignment->farmer->farmer_code }}) • মোবাইল: <b>{{ $assignment->farmer->phone }}</b> • জমাদানের সময়: <b>{{ $assignment->completed_at ? $assignment->completed_at->format('d F, Y h:i A') : $assignment->created_at->format('d F, Y h:i A') }}</b>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     @if($assignment->is_recurring)
         <div style="background:#f0fdf4;border:1.5px solid #86efac;padding:14px 18px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
@@ -82,8 +113,12 @@
                     @endif
                 </div>
                 <div>
-                    <span class="label">বরাদ্দকারী (অ্যাডমিন)</span>
-                    <span>{{ $assignment->assigner->name ?? 'সিস্টেম অ্যাডমিন' }}</span>
+                    <span class="label">বরাদ্দকারী (অ্যাডমিন / নিয়োজক)</span>
+                    @if($assignment->is_self_reported)
+                        <span class="pill" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;">🌱 কৃষক নিজে (স্ব-প্রতিবেদিত)</span>
+                    @else
+                        <span>{{ $assignment->assigner->name ?? 'সিস্টেম অ্যাডমিন' }}</span>
+                    @endif
                 </div>
                 <div>
                     <span class="label">বরাদ্দের সময়</span>

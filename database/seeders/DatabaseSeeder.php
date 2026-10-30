@@ -251,6 +251,23 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        $selfReportedTask = TaskTemplate::firstOrCreate(
+            ['task_code' => 'TK-SELF'],
+            [
+                'name' => 'স্ব-প্রতিবেদিত কাজ',
+                'category' => 'মাঠ পর্যায়ের কাজ',
+                'description' => 'কৃষক কর্তৃক মাঠ থেকে সরাসরি ছবি ও বিবরণ সহ রিপোর্টকৃত কাজ।',
+                'instructions' => 'কাজের লাইভ ছবি ও বিস্তারিত বিবরণ প্রদান করুন।',
+                'required_photo_count' => 1,
+                'require_realtime_photo' => true,
+                'allow_gallery_upload' => false,
+                'require_geofence' => false,
+                'recurrence_type' => 'once',
+                'is_active' => true,
+                'created_by' => $admin->id ?? null,
+            ]
+        );
+
         // 6. Task Assignments (for Today)
         TaskAssignment::firstOrCreate(
             [

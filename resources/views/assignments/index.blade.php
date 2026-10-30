@@ -558,18 +558,30 @@
                                             <br><small style="color:var(--muted)">{{ $assignment->farmer->farmer_code ?? '' }} • {{ $assignment->farmer->phone ?? '' }}</small>
                                         </td>
                                         <td>
-                                            <b>{{ $assignment->taskTemplate->name ?? '—' }}</b>
-                                            <br><small style="color:var(--g700)">{{ $assignment->taskTemplate->category ?? '' }}</small>
-                                            @if($assignment->is_recurring)
+                                            @if($assignment->is_self_reported)
+                                                <b title="{{ $assignment->notes }}">{{ \Illuminate\Support\Str::words($assignment->notes, 16, '...') }}</b>
                                                 <br>
                                                 <span class="pill" style="font-size:10.5px;padding:1px 6px;background:#edfcf2;color:#08783f;border:1px solid #bbf7d0;display:inline-flex;align-items:center;gap:3px;margin-top:3px;">
-                                                    🔄 {{ match($assignment->recurrence_type) { 'daily' => 'দৈনিক', 'weekly' => 'সাপ্তাহিক', 'monthly' => 'মাসিক', default => 'সিরিজ' } }} ({{ $assignment->recurrence_seq }}/{{ $assignment->recurrence_total_count }})
+                                                    🌱 স্ব-প্রতিবেদিত কাজ
                                                 </span>
+                                            @else
+                                                <b>{{ $assignment->taskTemplate->name ?? '—' }}</b>
+                                                <br><small style="color:var(--g700)">{{ $assignment->taskTemplate->category ?? '' }}</small>
+                                                @if($assignment->is_recurring)
+                                                    <br>
+                                                    <span class="pill" style="font-size:10.5px;padding:1px 6px;background:#edfcf2;color:#08783f;border:1px solid #bbf7d0;display:inline-flex;align-items:center;gap:3px;margin-top:3px;">
+                                                        🔄 {{ match($assignment->recurrence_type) { 'daily' => 'দৈনিক', 'weekly' => 'সাপ্তাহিক', 'monthly' => 'মাসিক', default => 'সিরিজ' } }} ({{ $assignment->recurrence_seq }}/{{ $assignment->recurrence_total_count }})
+                                                    </span>
+                                                @endif
                                             @endif
                                         </td>
                                         <td>
-                                            <span>{{ $assignment->location->name ?? '—' }}</span>
-                                            <br><small style="color:var(--muted)">{{ $assignment->location->location_code ?? '' }}</small>
+                                            @if($assignment->location)
+                                                <span>{{ $assignment->location->name }}</span>
+                                                <br><small style="color:var(--muted)">{{ $assignment->location->location_code ?? '' }}</small>
+                                            @else
+                                                <span style="color:var(--muted);font-style:italic;">— লোকেশন ছাড়া</span>
+                                            @endif
                                         </td>
                                         <td>
                                             <b>{{ $assignment->scheduled_date ? $assignment->scheduled_date->format('d M, Y') : '—' }}</b>
@@ -593,12 +605,20 @@
                                             @include('components.submission-health', ['assignment' => $assignment])
                                         </td>
                                         <td>
-                                            <small>{{ $assignment->assigner->name ?? 'অ্যাডমিন' }}</small>
+                                            @if($assignment->is_self_reported)
+                                                <span class="pill" style="font-size:11px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;padding:2px 7px;">
+                                                    🌱 কৃষক নিজে
+                                                </span>
+                                            @else
+                                                <small>{{ $assignment->assigner->name ?? 'অ্যাডমিন' }}</small>
+                                            @endif
                                         </td>
                                         <td style="text-align:right">
                                             <div style="display:flex;gap:4px;justify-content:flex-end">
                                                 <a href="{{ route('admin.assignments.show', $assignment) }}" class="btn" style="padding:4px 8px;font-size:11px">দেখুন</a>
-                                                <a href="{{ route('admin.assignments.edit', $assignment) }}" class="btn soft" style="padding:4px 8px;font-size:11px">সম্পাদনা</a>
+                                                @if(! $assignment->is_self_reported)
+                                                    <a href="{{ route('admin.assignments.edit', $assignment) }}" class="btn soft" style="padding:4px 8px;font-size:11px">সম্পাদনা</a>
+                                                @endif
                                                 <form method="POST" action="{{ route('admin.assignments.destroy', $assignment) }}" style="display:inline;" onsubmit="return confirm('আপনি কি নিশ্চিত যে এই কাজের বরাদ্দটি মুছে ফেলতে চান? এটি সফট ডিলিট হবে।');">
                                                     @csrf
                                                     @method('DELETE')

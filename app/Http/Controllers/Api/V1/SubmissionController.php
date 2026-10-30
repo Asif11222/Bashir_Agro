@@ -230,35 +230,55 @@ class SubmissionController extends Controller
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'accuracy' => ['nullable', 'numeric', 'min:0'],
             'farm_location_id' => ['nullable', 'exists:farm_locations,id'],
-            'photos' => ['nullable', 'array'],
-            'photos.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'photos' => ['required', 'array', 'min:1'],
+            'photos.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
+        ], [
+            'photos.required' => 'কাজের ছবি তোলা বাধ্যতামূলক। অনুগ্রহ করে অন্তত একটি ছবি তুলুন।',
+            'photos.min' => 'কাজের ছবি তোলা বাধ্যতামূলক। অনুগ্রহ করে অন্তত একটি ছবি তুলুন।',
+            'description.required' => 'কাজের বিবরণ লিখুন বা মুখে বলুন।',
         ]);
 
         $farmerId = $user->farmerProfile->id;
 
-        // Find or fallback to a general task template
-        $template = TaskTemplate::where('name', 'LIKE', '%স্ব-প্রতিবেদিত%')
-            ->orWhere('name', 'LIKE', '%অন্যান্য%')
-            ->first() ?? TaskTemplate::first();
+        // Dedicated Self-Reported Task Template (TK-SELF)
+        $template = TaskTemplate::where('task_code', 'TK-SELF')->first()
+            ?? TaskTemplate::where('name', 'LIKE', '%স্ব-প্রতিবেদিত%')->first();
+
+        if (! $template) {
+            $template = TaskTemplate::create([
+                'task_code' => 'TK-SELF',
+                'name' => 'স্ব-প্রতিবেদিত কাজ',
+                'category' => 'মাঠ পর্যায়ের কাজ',
+                'description' => 'কৃষক কর্তৃক মাঠ থেকে সরাসরি ছবি ও বিবরণ সহ রিপোর্টকৃত কাজ।',
+                'instructions' => 'কাজের লাইভ ছবি ও বিস্তারিত বিবরণ প্রদান করুন।',
+                'required_photo_count' => 1,
+                'require_realtime_photo' => true,
+                'allow_gallery_upload' => false,
+                'require_geofence' => false,
+                'recurrence_type' => 'once',
+                'is_active' => true,
+            ]);
+        }
 
         $locationId = $validated['farm_location_id'] ?? null;
         if (! $locationId) {
+            // If farm_location_id is not provided, fallback to first location if foreign key requires it
             $location = FarmLocation::first();
             $locationId = $location?->id;
         }
 
         $now = now();
-        $lat = $validated['latitude'] ?? 23.8103;
-        $lng = $validated['longitude'] ?? 90.4125;
-        $accuracy = $validated['accuracy'] ?? 10.0;
+        $lat = $validated['latitude'] ?? null;
+        $lng = $validated['longitude'] ?? null;
+        $accuracy = $validated['accuracy'] ?? null;
 
         $assignment = DB::transaction(function () use ($farmerId, $template, $locationId, $now, $validated, $lat, $lng, $accuracy, $request) {
             $taskAssignment = TaskAssignment::create([
-                'task_template_id' => $template?->id,
+                'task_template_id' => $template->id,
                 'farmer_id' => $farmerId,
                 'farm_location_id' => $locationId,
                 'scheduled_date' => $now->toDateString(),
-                'start_time' => $now->copy()->subHours(1)->format('H:i:s'),
+                'start_time' => $now->copy()->subMinutes(30)->format('H:i:s'),
                 'end_time' => $now->format('H:i:s'),
                 'priority' => 'normal',
                 'notes' => $validated['description'],
@@ -276,7 +296,7 @@ class SubmissionController extends Controller
                 'latitude' => $lat,
                 'longitude' => $lng,
                 'accuracy' => $accuracy,
-                'geofence_passed' => true,
+                'geofence_passed' => $lat !== null ? true : null,
                 'distance_meters' => 0,
                 'is_late' => false,
                 'status' => 'completed',

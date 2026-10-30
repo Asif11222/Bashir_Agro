@@ -2,6 +2,140 @@
 
 @section('title', "কাজের বরাদ্দ বিবরণ — #{$assignment->id} — আমার ফার্ম")
 
+@push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+    <style>
+        .map-verification-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #0f172a;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            margin-top: 14px;
+            margin-bottom: 20px;
+        }
+        #submission-verification-map {
+            width: 100%;
+            height: 400px;
+        }
+        .map-marker-farmer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .map-marker-farmer .dot {
+            width: 18px;
+            height: 18px;
+            background: #0284c7;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(2, 132, 199, 0.9);
+            position: relative;
+            z-index: 2;
+        }
+        .map-marker-farmer .pulse {
+            position: absolute;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(2, 132, 199, 0.4);
+            animation: map-marker-pulse 2s infinite ease-out;
+            z-index: 1;
+        }
+        @keyframes map-marker-pulse {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(1.7); opacity: 0; }
+        }
+        .map-marker-label {
+            background: rgba(15, 23, 42, 0.9);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 4px;
+            margin-top: 4px;
+            white-space: nowrap;
+            border: 1px solid rgba(255,255,255,0.25);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+        }
+        .map-marker-photo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            z-index: 15;
+            transition: transform 0.2s ease;
+        }
+        .map-marker-photo:hover {
+            transform: scale(1.1);
+        }
+        .map-marker-photo .badge {
+            background: #e11d48;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+            border: 1.8px solid #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .map-marker-photo.inside .badge {
+            background: #059669;
+        }
+        .map-marker-farm {
+            background: rgba(15, 23, 42, 0.92);
+            color: #00e676;
+            border: 1.5px solid #00e676;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        .map-legend-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 16px;
+            background: #ffffff;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+        }
+        .map-legend-items {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px;
+        }
+        .map-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        .map-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+    </style>
+@endpush
+
 @section('content')
 <div class="page">
     <div class="head">
@@ -300,7 +434,95 @@
         @php
             $photos = $assignment->submission->evidencePhotos ?? collect();
             $rawPhotos = $assignment->submission->photos ?? [];
+
+            $locationGeoJson = $assignment->location?->getEffectiveBoundaryGeoJson() ?? $assignment->location?->boundary_geojson;
+            $locLat = (float) ($assignment->location?->latitude ?? 0);
+            $locLng = (float) ($assignment->location?->longitude ?? 0);
+            $locRadius = (int) ($assignment->location?->geofence_radius_meters ?? 20);
+            $locName = $assignment->location?->name ?? 'নির্ধারিত কাজের এলাকা';
+            $locCode = $assignment->location?->location_code ?? '';
+
+            $farmerLat = (float) ($assignment->submission->latitude ?? 0);
+            $farmerLng = (float) ($assignment->submission->longitude ?? 0);
+            $farmerAccuracy = (float) ($assignment->submission->accuracy ?? 0);
+            $geofencePassed = (bool) ($assignment->submission->geofence_passed ?? false);
+            $distanceMeters = (float) ($assignment->submission->distance_meters ?? 0);
+
+            $photoMarkers = [];
+            foreach ($photos as $idx => $p) {
+                $pLat = (float) ($p->latitude ?: $farmerLat);
+                $pLng = (float) ($p->longitude ?: $farmerLng);
+                if ($pLat != 0 && $pLng != 0) {
+                    $photoMarkers[] = [
+                        'index' => $idx + 1,
+                        'lat' => $pLat,
+                        'lng' => $pLng,
+                        'time' => $p->captured_at ? $p->captured_at->format('h:i A') : '',
+                        'url' => asset('storage/' . $p->file_path),
+                    ];
+                }
+            }
+            if (empty($photoMarkers) && !empty($rawPhotos)) {
+                foreach ($rawPhotos as $idx => $rp) {
+                    if ($farmerLat != 0 && $farmerLng != 0) {
+                        $photoMarkers[] = [
+                            'index' => $idx + 1,
+                            'lat' => $farmerLat,
+                            'lng' => $farmerLng,
+                            'time' => $assignment->submission->submitted_at ? $assignment->submission->submitted_at->format('h:i A') : '',
+                            'url' => asset('storage/' . $rp),
+                        ];
+                    }
+                }
+            }
         @endphp
+
+        {{-- 🗺️ Spatial Verification Map (Assigned Area + Farmer GPS + Photo Pins) --}}
+        <div style="margin-top:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <h3 style="font-size:14px;font-weight:700;color:var(--text);margin:0;display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:16px;">🗺️</span> মাঠের সীমানা, কৃষকের অবস্থান ও ছবি তোলার স্থান
+                </h3>
+                <div style="font-size:12px;color:var(--muted);">
+                    উপগ্রহ চিত্র (Google Hybrid Satellite)
+                </div>
+            </div>
+
+            <div class="map-verification-card">
+                <div id="submission-verification-map"></div>
+                <div class="map-legend-bar">
+                    <div class="map-legend-items">
+                        <span class="map-legend-item">
+                            <span class="map-legend-dot" style="background:#00e676;border:1px solid #00c853;"></span>
+                            নির্ধারিত এলাকা: <b>{{ $locName }}</b>
+                        </span>
+                        @if($farmerLat && $farmerLng)
+                            <span class="map-legend-item">
+                                <span class="map-legend-dot" style="background:#0284c7;border:1px solid #0369a1;"></span>
+                                কৃষকের অবস্থান ({{ round($farmerLat, 4) }}, {{ round($farmerLng, 4) }})
+                            </span>
+                        @endif
+                        @if(count($photoMarkers) > 0)
+                            <span class="map-legend-item">
+                                <span class="map-legend-dot" style="background:#e11d48;border:1px solid #be123c;"></span>
+                                প্রামাণ্য ছবি তোলার স্থান ({{ count($photoMarkers) }}টি)
+                            </span>
+                        @endif
+                        @if(!$geofencePassed && $distanceMeters > 0)
+                            <span class="map-legend-item" style="color:#b45309;font-weight:600;">
+                                <span style="display:inline-block;width:14px;height:2px;background:#f59e0b;vertical-align:middle;margin-right:2px;"></span>
+                                সীমানা হতে দূরত্ব: {{ $distanceMeters }} মি. (বাইরে)
+                            </span>
+                        @endif
+                    </div>
+                    <div>
+                        <button type="button" class="btn soft" onclick="window.fitVerificationMap && window.fitVerificationMap()" style="font-size:11.5px;padding:4px 10px;cursor:pointer;">
+                            🔍 সম্পূর্ণ ভিউ ফিট করুন
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div style="margin-top:16px;">
             <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text);">সংযুক্ত প্রামাণ্য ছবি ({{ $photos->count() ?: count($rawPhotos) }}টি)</h3>
@@ -310,11 +532,16 @@
                         <a href="{{ asset('storage/' . $photo->file_path) }}" target="_blank" rel="noopener">
                             <img src="{{ asset('storage/' . $photo->file_path) }}" alt="Evidence" style="width:100%;height:140px;object-fit:cover;display:block;">
                         </a>
-                        <div style="padding:8px;font-size:11px;color:var(--muted);">
-                            <span>সময়: {{ $photo->captured_at ? $photo->captured_at->format('h:i A') : '—' }}</span>
-                            @if($photo->latitude && $photo->longitude)
-                                <div style="font-family:monospace;margin-top:2px;">{{ round($photo->latitude, 4) }}, {{ round($photo->longitude, 4) }}</div>
-                            @endif
+                        <div style="padding:8px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <span>সময়: {{ $photo->captured_at ? $photo->captured_at->format('h:i A') : '—' }}</span>
+                                @if($photo->latitude && $photo->longitude)
+                                    <div style="font-family:monospace;margin-top:2px;">{{ round($photo->latitude, 4) }}, {{ round($photo->longitude, 4) }}</div>
+                                @endif
+                            </div>
+                            <button type="button" onclick="window.focusPhotoPin && window.focusPhotoPin({{ $loop->iteration }})" class="btn soft" style="font-size:10px;padding:3px 6px;cursor:pointer;" title="ম্যাপে এই ছবির অবস্থান দেখুন">
+                                📍 ম্যাপে
+                            </button>
                         </div>
                     </div>
                 @empty
@@ -510,7 +737,265 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
 <script>
+// Spatial Verification Map Initialization (Assigned Area + Farmer GPS + Photo Pins)
+document.addEventListener('DOMContentLoaded', function () {
+    const mapContainer = document.getElementById('submission-verification-map');
+    if (!mapContainer) return;
+
+    const locationGeoJson = @json($locationGeoJson ?? null);
+    const locLat = {{ $locLat ?? 0 }};
+    const locLng = {{ $locLng ?? 0 }};
+    const locRadius = {{ $locRadius ?? 20 }};
+    const locName = @json($locName ?? 'নির্ধারিত এলাকা');
+
+    const farmerLat = {{ $farmerLat ?? 0 }};
+    const farmerLng = {{ $farmerLng ?? 0 }};
+    const farmerAccuracy = {{ $farmerAccuracy ?? 0 }};
+    const geofencePassed = {{ !empty($geofencePassed) ? 'true' : 'false' }};
+    const distanceMeters = {{ $distanceMeters ?? 0 }};
+    const photoMarkers = @json($photoMarkers ?? []);
+
+    let initialCenter = [90.4203, 24.7471];
+    if (farmerLng && farmerLat) {
+        initialCenter = [farmerLng, farmerLat];
+    } else if (locLng && locLat) {
+        initialCenter = [locLng, locLat];
+    }
+
+    const satelliteStyle = {
+        version: 8,
+        sources: {
+            'google-hybrid': {
+                type: 'raster',
+                tiles: [
+                    'https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+                    'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+                    'https://mt2.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+                    'https://mt3.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
+                ],
+                tileSize: 256,
+                attribution: '&copy; Google Satellite'
+            }
+        },
+        layers: [
+            {
+                id: 'google-hybrid-layer',
+                type: 'raster',
+                source: 'google-hybrid',
+                minzoom: 0,
+                maxzoom: 22
+            }
+        ]
+    };
+
+    const map = new maplibregl.Map({
+        container: 'submission-verification-map',
+        style: satelliteStyle,
+        center: initialCenter,
+        zoom: 16
+    });
+
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.addControl(new maplibregl.FullscreenControl(), 'top-right');
+
+    const allCoords = [];
+    const photoPopups = {};
+
+    function initLayersAndMarkers() {
+        // 1. Assigned Boundary Polygon / Area
+        if (locationGeoJson && locationGeoJson.coordinates) {
+            if (!map.getSource('assigned-area-source')) {
+                map.addSource('assigned-area-source', {
+                    type: 'geojson',
+                    data: {
+                        type: 'Feature',
+                        geometry: locationGeoJson
+                    }
+                });
+                map.addLayer({
+                    id: 'assigned-area-fill',
+                    type: 'fill',
+                    source: 'assigned-area-source',
+                    paint: {
+                        'fill-color': '#00e676',
+                        'fill-opacity': 0.32
+                    }
+                });
+                map.addLayer({
+                    id: 'assigned-area-stroke',
+                    type: 'line',
+                    source: 'assigned-area-source',
+                    paint: {
+                        'line-color': '#00e676',
+                        'line-width': 3.2
+                    }
+                });
+            }
+
+            try {
+                const polyBbox = turf.bbox({ type: 'Feature', geometry: locationGeoJson });
+                allCoords.push([polyBbox[0], polyBbox[1]], [polyBbox[2], polyBbox[3]]);
+            } catch (e) {}
+        } else if (locLat && locLng && locRadius > 0 && typeof turf !== 'undefined') {
+            try {
+                const circle = turf.circle([locLng, locLat], locRadius / 1000, { units: 'kilometers', steps: 64 });
+                if (!map.getSource('assigned-area-source')) {
+                    map.addSource('assigned-area-source', {
+                        type: 'geojson',
+                        data: circle
+                    });
+                    map.addLayer({
+                        id: 'assigned-area-fill',
+                        type: 'fill',
+                        source: 'assigned-area-source',
+                        paint: { 'fill-color': '#00e676', 'fill-opacity': 0.32 }
+                    });
+                    map.addLayer({
+                        id: 'assigned-area-stroke',
+                        type: 'line',
+                        source: 'assigned-area-source',
+                        paint: { 'line-color': '#00e676', 'line-width': 3 }
+                    });
+                }
+                const cBbox = turf.bbox(circle);
+                allCoords.push([cBbox[0], cBbox[1]], [cBbox[2], cBbox[3]]);
+            } catch (e) {}
+        }
+
+        // Assigned Farm centroid marker
+        if (locLat && locLng) {
+            const farmEl = document.createElement('div');
+            farmEl.className = 'map-marker-farm';
+            farmEl.innerHTML = `<span>🌱</span> ${locName}`;
+            new maplibregl.Marker({ element: farmEl, anchor: 'bottom' })
+                .setLngLat([locLng, locLat])
+                .setPopup(new maplibregl.Popup({ offset: 15 }).setHTML(`
+                    <div style="font-size:12px;padding:4px;">
+                        <b style="color:#059669;">🌱 ${locName}</b><br>
+                        নির্ধারিত কাজের প্লট / এলাকা<br>
+                        <small style="color:#64748b;">স্থানাঙ্ক: ${locLat.toFixed(6)}, ${locLng.toFixed(6)}</small>
+                    </div>
+                `))
+                .addTo(map);
+            allCoords.push([locLng, locLat]);
+        }
+
+        // 2. Farmer's Live GPS Submission Marker
+        if (farmerLat && farmerLng) {
+            const farmerEl = document.createElement('div');
+            farmerEl.className = 'map-marker-farmer';
+            farmerEl.innerHTML = `
+                <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+                    <div class="pulse"></div>
+                    <div class="dot"></div>
+                </div>
+                <div class="map-marker-label">📍 কৃষকের অবস্থান</div>
+            `;
+            new maplibregl.Marker({ element: farmerEl, anchor: 'center' })
+                .setLngLat([farmerLng, farmerLat])
+                .setPopup(new maplibregl.Popup({ offset: 20 }).setHTML(`
+                    <div style="font-size:12px;line-height:1.5;padding:4px;">
+                        <b style="color:#0284c7;">📍 কৃষকের জিপিএস সাবমিশন অবস্থান</b><br>
+                        <b>স্থানাঙ্ক:</b> ${farmerLat.toFixed(6)}, ${farmerLng.toFixed(6)}<br>
+                        ${farmerAccuracy ? `<b>নির্ভুলতা:</b> ±${farmerAccuracy} মি.<br>` : ''}
+                        <b>অবস্থা:</b> ${geofencePassed ? '<span style="color:#059669;font-weight:bold;">✅ সীমার ভেতরে</span>' : `<span style="color:#dc2626;font-weight:bold;">⚠️ সীমার বাইরে (${distanceMeters} মি. দূরে)</span>`}
+                    </div>
+                `))
+                .addTo(map);
+            allCoords.push([farmerLng, farmerLat]);
+        }
+
+        // 3. Photo Capture Pins
+        photoMarkers.forEach(photo => {
+            const photoEl = document.createElement('div');
+            photoEl.className = 'map-marker-photo ' + (geofencePassed ? 'inside' : 'outside');
+            photoEl.innerHTML = `<div class="badge">📸 ছবি #${photo.index}</div>`;
+
+            const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
+                <div style="text-align:center;padding:4px;max-width:180px;">
+                    <a href="${photo.url}" target="_blank" rel="noopener">
+                        <img src="${photo.url}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:6px;display:block;">
+                    </a>
+                    <b style="font-size:12px;color:#0f172a;">📸 প্রামাণ্য ছবি #${photo.index}</b><br>
+                    ${photo.time ? `<span style="font-size:11px;color:#64748b;">সময়: ${photo.time}</span><br>` : ''}
+                    <span style="font-family:monospace;font-size:11px;color:#475569;">${photo.lat.toFixed(5)}, ${photo.lng.toFixed(5)}</span>
+                </div>
+            `);
+
+            const marker = new maplibregl.Marker({ element: photoEl, anchor: 'bottom' })
+                .setLngLat([photo.lng, photo.lat])
+                .setPopup(popup)
+                .addTo(map);
+
+            photoPopups[photo.index] = { marker: marker, popup: popup, lat: photo.lat, lng: photo.lng };
+            allCoords.push([photo.lng, photo.lat]);
+        });
+
+        // 4. Connecting Line if outside
+        if (!geofencePassed && farmerLat && farmerLng && locLat && locLng) {
+            if (!map.getSource('distance-line-source')) {
+                map.addSource('distance-line-source', {
+                    type: 'geojson',
+                    data: {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [[farmerLng, farmerLat], [locLng, locLat]]
+                        }
+                    }
+                });
+                map.addLayer({
+                    id: 'distance-line-layer',
+                    type: 'line',
+                    source: 'distance-line-source',
+                    paint: {
+                        'line-color': '#f59e0b',
+                        'line-width': 2.5,
+                        'line-dasharray': [2, 2]
+                    }
+                });
+            }
+        }
+
+        // Fit Bounds
+        window.fitVerificationMap();
+    }
+
+    window.fitVerificationMap = function () {
+        if (!allCoords.length) return;
+        try {
+            const bounds = allCoords.reduce((b, coord) => b.extend(coord), new maplibregl.LngLatBounds(allCoords[0], allCoords[0]));
+            map.fitBounds(bounds, { padding: 60, maxZoom: 18 });
+        } catch (e) {
+            console.error('Fit bounds error:', e);
+        }
+    };
+
+    window.focusPhotoPin = function (index) {
+        const item = photoPopups[index];
+        if (!item) return;
+        map.flyTo({ center: [item.lng, item.lat], zoom: 18 });
+        item.marker.togglePopup();
+        document.getElementById('submission-verification-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    if (map.loaded()) {
+        initLayersAndMarkers();
+    } else {
+        map.on('load', initLayersAndMarkers);
+    }
+
+    setTimeout(function () {
+        map.resize();
+    }, 250);
+    window.addEventListener('resize', function () {
+        map.resize();
+    });
+});
+
 window.toggleReviewForm = function(showForm) {
     const formContainer = document.getElementById('review-form-container');
     const decisionCard = document.getElementById('verified-decision-card');

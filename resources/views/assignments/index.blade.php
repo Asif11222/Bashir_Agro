@@ -482,6 +482,7 @@
                                                     <thead>
                                                         <tr style="background:#eaf4ee;font-size:11.5px;">
                                                             <th style="padding:6px 10px;width:60px;">পর্ব</th>
+                                                            <th style="padding:6px 10px;">কাজ</th>
                                                             <th style="padding:6px 10px;">নির্ধারিত তারিখ</th>
                                                             <th style="padding:6px 10px;">সময়সীমা</th>
                                                             <th style="padding:6px 10px;">অ্যাসাইনকৃত কৃষক</th>
@@ -496,6 +497,14 @@
                                                                     <span class="badge" style="background:#e0ede5;color:#08783f;font-weight:700;padding:2px 6px;border-radius:4px;font-size:11px;">
                                                                         #{{ $child->recurrence_seq ?? ($loop->iteration) }}
                                                                     </span>
+                                                                </td>
+                                                                <td style="padding:6px 10px;">
+                                                                    <b>{{ $child->taskTemplate->name ?? '—' }}</b>
+                                                                    @if($child->location)
+                                                                        <br><small style="color:var(--muted)">📍 {{ $child->location->name }}</small>
+                                                                    @elseif($child->taskTemplate?->category)
+                                                                        <br><small style="color:var(--muted)">{{ $child->taskTemplate->category }}</small>
+                                                                    @endif
                                                                 </td>
                                                                 <td style="padding:6px 10px;">
                                                                     <b>{{ $child->scheduled_date ? $child->scheduled_date->format('d M, Y') : '—' }}</b>
